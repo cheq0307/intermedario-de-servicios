@@ -25,8 +25,8 @@
             </nav>
 
             <div class="flex items-center gap-2">
-                <button class="hidden rounded-full px-4 py-2 text-sm font-extrabold transition hover:bg-white sm:block" type="button">Ingresar</button>
-                <button class="rounded-full bg-[#17352b] px-4 py-2.5 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#244b3e]" type="button">Crear cuenta</button>
+                <a class="hidden rounded-full px-4 py-2 text-sm font-extrabold transition hover:bg-white sm:block" href="{{ route('login') }}">Ingresar</a>
+                <a class="rounded-full bg-[#17352b] px-4 py-2.5 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#244b3e]" href="{{ route('register') }}">Crear cuenta</a>
             </div>
         </div>
     </header>

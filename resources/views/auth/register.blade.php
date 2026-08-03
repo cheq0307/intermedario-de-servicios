@@ -11,7 +11,7 @@
             <legend class="text-sm font-black">Tipo de cuenta</legend>
             <div class="mt-2 grid grid-cols-2 gap-3">
                 <label class="cursor-pointer">
-                    <input class="peer sr-only" type="radio" name="account_type" value="client" {{ old('account_type', 'client') === 'client' ? 'checked' : '' }}>
+                    <input class="peer sr-only" type="radio" name="account_type" value="client" {{ old('account_type', request('tipo') === 'provider' ? 'provider' : 'client') === 'client' ? 'checked' : '' }}>
                     <span class="block rounded-2xl border border-[#17352b]/15 bg-white p-4 transition peer-checked:border-[#1f6b4f] peer-checked:bg-[#e6f1eb] peer-checked:ring-2 peer-checked:ring-[#1f6b4f]/20">
                         <span class="block text-xl" aria-hidden="true">🛍️</span>
                         <span class="mt-2 block font-black">Cliente</span>
@@ -19,7 +19,7 @@
                     </span>
                 </label>
                 <label class="cursor-pointer">
-                    <input class="peer sr-only" type="radio" name="account_type" value="provider" {{ old('account_type') === 'provider' ? 'checked' : '' }}>
+                    <input class="peer sr-only" type="radio" name="account_type" value="provider" {{ old('account_type', request('tipo')) === 'provider' ? 'checked' : '' }}>
                     <span class="block rounded-2xl border border-[#17352b]/15 bg-white p-4 transition peer-checked:border-[#1f6b4f] peer-checked:bg-[#e6f1eb] peer-checked:ring-2 peer-checked:ring-[#1f6b4f]/20">
                         <span class="block text-xl" aria-hidden="true">🛠️</span>
                         <span class="mt-2 block font-black">Proveedor</span>

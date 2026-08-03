@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Domain\Marketplace\Enums\AccountType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
@@ -33,5 +34,10 @@ class User extends Authenticatable
             'account_type' => AccountType::class,
             'password' => 'hashed',
         ];
+    }
+
+    public function posts(): HasMany
+    {
+        return $this->hasMany(Post::class);
     }
 }

@@ -54,7 +54,7 @@
                     ['Inicio', '#inicio', true],
                     ['Explorar', '#actividad', false],
                     ['Publicar', '#crear-publicacion', false],
-                    ['Mensajes', '#proximamente', false],
+                    ['Mensajes', route('conversations.index'), false],
                     ['Mi perfil', route('profile.show', $currentUser), false],
                 ] as [$label, $href, $active])
                     <a class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black transition {{ $active ? 'bg-[#123B4A] text-white shadow-lg shadow-[#123B4A]/10' : 'text-[#536A72] hover:bg-white hover:text-[#123B4A]' }}" href="{{ $href }}">
@@ -349,7 +349,7 @@
                 ['Inicio', '#inicio'],
                 ['Explorar', '#actividad'],
                 ['Publicar', '#crear-publicacion'],
-                ['Mensajes', '#proximamente'],
+                ['Mensajes', route('conversations.index')],
                 ['Perfil', route('profile.show', $currentUser)],
             ] as [$label, $href])
                 <a class="flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[11px] font-black {{ $label === 'Publicar' ? 'text-[#F97316]' : 'text-[#6B7D83]' }}" href="{{ $href }}">

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
@@ -21,5 +22,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/perfiles/{user}', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/mi-perfil/editar', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/mi-perfil', [ProfileController::class, 'update'])->name('profile.update');
-    Route::post('/publicaciones', [PostController::class, 'store'])->middleware('verified')->name('posts.store');
+    Route::middleware('verified')->group(function () {
+        Route::post('/publicaciones', [PostController::class, 'store'])->name('posts.store');
+        Route::get('/mensajes', [ConversationController::class, 'index'])->name('conversations.index');
+        Route::post('/mensajes/iniciar', [ConversationController::class, 'start'])->name('conversations.start');
+        Route::get('/mensajes/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
+        Route::post('/mensajes/{conversation}', [ConversationController::class, 'store'])->name('conversations.messages.store');
+    });
 });

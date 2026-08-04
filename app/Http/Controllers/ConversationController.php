@@ -1,0 +1,95 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Conversation;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\View\View;
+
+class ConversationController extends Controller
+{
+    public function index(Request $request): View
+    {
+        $conversations = $request->user()->conversations()
+            ->with([
+                'participants:id,name,avatar_path,account_type',
+                'messages' => fn ($query) => $query->with('sender:id,name')->latest()->limit(1),
+            ])
+            ->orderByDesc('last_message_at')
+            ->orderByDesc('conversations.updated_at')
+            ->paginate(20);
+
+        return view('conversations.index', compact('conversations'));
+    }
+
+    public function start(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'recipient_id' => [
+                'required',
+                'integer',
+                Rule::exists('users', 'id')->whereNotNull('email_verified_at'),
+                Rule::notIn([$request->user()->id]),
+            ],
+        ]);
+
+        $participantIds = collect([$request->user()->id, (int) $validated['recipient_id']])->sort()->values();
+        $directKey = $participantIds->implode(':');
+
+        $conversation = DB::transaction(function () use ($participantIds, $directKey): Conversation {
+            $conversation = Conversation::firstOrCreate(
+                ['direct_key' => $directKey],
+                ['public_id' => (string) Str::uuid()],
+            );
+            $conversation->participants()->syncWithoutDetaching($participantIds->all());
+
+            return $conversation;
+        });
+
+        return redirect()->route('conversations.show', $conversation);
+    }
+
+    public function show(Request $request, Conversation $conversation): View
+    {
+        abort_unless($conversation->includesUser($request->user()), 403);
+
+        $conversation->load('participants:id,name,avatar_path,account_type');
+        $messages = $conversation->messages()
+            ->with('sender:id,name,avatar_path')
+            ->latest()
+            ->limit(50)
+            ->get()
+            ->reverse()
+            ->values();
+
+        $conversation->participants()->updateExistingPivot($request->user()->id, ['last_read_at' => now()]);
+        $otherUser = $conversation->participants->firstWhere('id', '!=', $request->user()->id);
+
+        return view('conversations.show', compact('conversation', 'messages', 'otherUser'));
+    }
+
+    public function store(Request $request, Conversation $conversation): RedirectResponse
+    {
+        abort_unless($conversation->includesUser($request->user()), 403);
+
+        $validated = $request->validate([
+            'body' => ['required', 'string', 'max:2000'],
+        ]);
+
+        DB::transaction(function () use ($conversation, $request, $validated): void {
+            $conversation->messages()->create([
+                'sender_id' => $request->user()->id,
+                'type' => 'text',
+                'body' => $validated['body'],
+            ]);
+            $conversation->update(['last_message_at' => now()]);
+            $conversation->participants()->updateExistingPivot($request->user()->id, ['last_read_at' => now()]);
+        });
+
+        return redirect()->route('conversations.show', $conversation)->withFragment('ultimo-mensaje');
+    }
+}

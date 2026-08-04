@@ -77,8 +77,12 @@
 
                 @if (! $isOwner)
                     <div class="mt-7 rounded-2xl border border-[#F97316]/15 bg-[#FFF8F2] p-4">
-                        <button class="rounded-full bg-[#123B4A] px-6 py-3 font-black text-white" type="button" disabled>Contactar dentro de Plaza Local</button>
-                        <p class="mt-2 text-xs font-bold text-[#8A6A55]">El contacto se habilitará con el módulo de conversaciones. Los datos privados nunca se muestran públicamente.</p>
+                        @if ($user->hasVerifiedEmail())
+                            <form method="POST" action="{{ route('conversations.start') }}">@csrf<input type="hidden" name="recipient_id" value="{{ $user->id }}"><button class="rounded-full bg-[#123B4A] px-6 py-3 font-black text-white" type="submit">Contactar dentro de Plaza Local</button></form>
+                            <p class="mt-2 text-xs font-bold text-[#8A6A55]">La conversaci&oacute;n quedar&aacute; protegida dentro de la plataforma. No mostraremos correo ni tel&eacute;fono.</p>
+                        @else
+                            <p class="text-sm font-black text-[#8A6A55]">Esta persona debe verificar su correo antes de recibir conversaciones.</p>
+                        @endif
                     </div>
                 @endif
             </div>

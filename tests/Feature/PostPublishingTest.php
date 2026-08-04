@@ -11,12 +11,15 @@ class PostPublishingTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_a_provider_can_publish_a_service(): void
+    public function test_a_provider_can_publish_a_service_with_a_structured_price(): void
     {
         $provider = User::factory()->create(['account_type' => 'provider']);
 
         $response = $this->actingAs($provider)->post(route('posts.store'), [
             'type' => 'service',
+            'title' => 'Instalación eléctrica',
+            'price_type' => 'starting_at',
+            'price' => '850.50',
             'body' => 'Realizo instalaciones eléctricas dentro de la comunidad.',
         ]);
 
@@ -24,21 +27,59 @@ class PostPublishingTest extends TestCase
             ->assertRedirect(route('dashboard'))
             ->assertSessionHas('status');
 
+        $this->assertDatabaseHas('listings', [
+            'type' => 'service',
+            'name' => 'Instalación eléctrica',
+            'price_type' => 'starting_at',
+            'price_amount' => 85050,
+        ]);
         $this->assertDatabaseHas('posts', [
             'user_id' => $provider->id,
             'type' => 'service',
         ]);
     }
 
-    public function test_a_client_can_publish_a_job_request(): void
+    public function test_a_provider_can_publish_a_product_with_stock(): void
+    {
+        $provider = User::factory()->create(['account_type' => 'provider']);
+
+        $this->actingAs($provider)->post(route('posts.store'), [
+            'type' => 'product',
+            'title' => 'Paquete de hojas blancas',
+            'price_type' => 'fixed',
+            'price' => '95',
+            'stock' => 12,
+            'body' => 'Paquete de quinientas hojas disponible para entrega local.',
+        ])->assertRedirect(route('dashboard'));
+
+        $this->assertDatabaseHas('listings', [
+            'type' => 'product',
+            'price_amount' => 9500,
+            'stock' => 12,
+        ]);
+    }
+
+    public function test_a_client_can_publish_a_structured_job_request(): void
     {
         $client = User::factory()->create(['account_type' => 'client']);
 
         $this->actingAs($client)->post(route('posts.store'), [
             'type' => 'job_request',
+            'title' => 'Reparar una fuga de agua',
+            'budget_min' => '300',
+            'budget_max' => '700.50',
+            'urgency' => 'soon',
+            'location_label' => 'Barrio del centro',
             'body' => 'Busco plomero para revisar una fuga durante esta semana.',
         ])->assertRedirect(route('dashboard'));
 
+        $this->assertDatabaseHas('job_requests', [
+            'client_id' => $client->id,
+            'title' => 'Reparar una fuga de agua',
+            'budget_min_amount' => 30000,
+            'budget_max_amount' => 70050,
+            'status' => 'published',
+        ]);
         $this->assertDatabaseHas('posts', [
             'user_id' => $client->id,
             'type' => 'job_request',

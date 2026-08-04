@@ -10,7 +10,7 @@ class DashboardController extends Controller
     public function __invoke(): View
     {
         $posts = Post::query()
-            ->with('user')
+            ->with(['user', 'listing', 'jobRequest'])
             ->whereNotNull('published_at')
             ->latest('published_at')
             ->latest('id')

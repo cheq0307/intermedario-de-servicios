@@ -99,7 +99,7 @@
                     </div>
                 </div>
 
-                <form class="mt-5 space-y-4" method="POST" action="{{ route('posts.store') }}">
+                <form class="mt-5 space-y-4" method="POST" action="{{ route('posts.store') }}" data-publication-form>
                     @csrf
                     <div class="flex gap-3 overflow-x-auto pb-1">
                         @foreach ($isProvider ? [
@@ -117,11 +117,79 @@
                     </div>
                     @error('type') <p class="text-sm font-bold text-red-600">{{ $message }}</p> @enderror
 
-                    <textarea class="min-h-28 w-full resize-y rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3 text-sm font-semibold leading-6 outline-none transition placeholder:text-[#8A999E] focus:border-[#F97316]/50 focus:ring-4 focus:ring-[#F97316]/10" name="body" maxlength="1500" required placeholder="{{ $isProvider ? 'Cuéntale a la comunidad qué ofreces, precio aproximado, disponibilidad y zona de atención…' : 'Describe el trabajo que necesitas, presupuesto aproximado, zona y cuándo lo requieres…' }}">{{ old('body') }}</textarea>
+                    @if ($isProvider)
+                        <div class="grid gap-4 sm:grid-cols-2" data-listing-fields>
+                            <label class="block sm:col-span-2">
+                                <span class="text-sm font-black">Nombre del producto o servicio</span>
+                                <input class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3 text-sm font-semibold outline-none focus:border-[#F97316]/50 focus:ring-4 focus:ring-[#F97316]/10" type="text" name="title" value="{{ old('title') }}" maxlength="120" placeholder="Ej. Instalación eléctrica o Tacos al pastor" data-listing-required>
+                                @error('title') <span class="mt-1 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
+                            </label>
+
+                            <label class="block">
+                                <span class="text-sm font-black">Forma de precio</span>
+                                <select class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3 text-sm font-semibold outline-none focus:border-[#F97316]/50" name="price_type" data-price-type data-listing-required>
+                                    <option value="fixed" @selected(old('price_type') === 'fixed')>Precio fijo</option>
+                                    <option value="starting_at" @selected(old('price_type') === 'starting_at')>Desde</option>
+                                    <option value="quote" @selected(old('price_type') === 'quote')>Requiere cotización</option>
+                                </select>
+                                @error('price_type') <span class="mt-1 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
+                            </label>
+
+                            <label class="block" data-price-field>
+                                <span class="text-sm font-black">Precio en MXN</span>
+                                <input class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3 text-sm font-semibold outline-none focus:border-[#F97316]/50" type="number" name="price" value="{{ old('price') }}" min="0" step="0.01" inputmode="decimal" placeholder="0.00" data-price-input>
+                                @error('price') <span class="mt-1 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
+                            </label>
+
+                            <label class="block" data-product-field>
+                                <span class="text-sm font-black">Existencias disponibles</span>
+                                <input class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3 text-sm font-semibold outline-none focus:border-[#F97316]/50" type="number" name="stock" value="{{ old('stock') }}" min="0" step="1" inputmode="numeric" placeholder="Opcional">
+                                @error('stock') <span class="mt-1 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
+                            </label>
+                        </div>
+                    @else
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <label class="block sm:col-span-2">
+                                <span class="text-sm font-black">¿Qué necesitas?</span>
+                                <input class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3 text-sm font-semibold outline-none focus:border-[#F97316]/50 focus:ring-4 focus:ring-[#F97316]/10" type="text" name="title" value="{{ old('title') }}" minlength="5" maxlength="120" required placeholder="Ej. Busco plomero para reparar una fuga">
+                                @error('title') <span class="mt-1 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
+                            </label>
+
+                            <label class="block">
+                                <span class="text-sm font-black">Presupuesto mínimo</span>
+                                <input class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3 text-sm font-semibold outline-none focus:border-[#F97316]/50" type="number" name="budget_min" value="{{ old('budget_min') }}" min="0" step="0.01" inputmode="decimal" placeholder="$ MXN">
+                                @error('budget_min') <span class="mt-1 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
+                            </label>
+
+                            <label class="block">
+                                <span class="text-sm font-black">Presupuesto máximo</span>
+                                <input class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3 text-sm font-semibold outline-none focus:border-[#F97316]/50" type="number" name="budget_max" value="{{ old('budget_max') }}" min="0" step="0.01" inputmode="decimal" placeholder="$ MXN">
+                                @error('budget_max') <span class="mt-1 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
+                            </label>
+
+                            <label class="block">
+                                <span class="text-sm font-black">¿Para cuándo?</span>
+                                <select class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3 text-sm font-semibold outline-none focus:border-[#F97316]/50" name="urgency" required>
+                                    <option value="normal" @selected(old('urgency') === 'normal')>Sin prisa</option>
+                                    <option value="soon" @selected(old('urgency') === 'soon')>En los próximos días</option>
+                                    <option value="urgent" @selected(old('urgency') === 'urgent')>Es urgente</option>
+                                </select>
+                                @error('urgency') <span class="mt-1 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
+                            </label>
+
+                            <label class="block">
+                                <span class="text-sm font-black">Zona aproximada</span>
+                                <input class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3 text-sm font-semibold outline-none focus:border-[#F97316]/50" type="text" name="location_label" value="{{ old('location_label') }}" maxlength="120" placeholder="Colonia, barrio o referencia">
+                                @error('location_label') <span class="mt-1 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
+                            </label>
+                        </div>
+                    @endif
+
+                    <textarea class="min-h-28 w-full resize-y rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3 text-sm font-semibold leading-6 outline-none transition placeholder:text-[#8A999E] focus:border-[#F97316]/50 focus:ring-4 focus:ring-[#F97316]/10" name="body" maxlength="1500" required placeholder="{{ $isProvider ? 'Describe lo que ofreces, disponibilidad, entrega y zona de atención…' : 'Explica los detalles necesarios para que los proveedores puedan responderte…' }}">{{ old('body') }}</textarea>
                     @error('body') <p class="text-sm font-bold text-red-600">{{ $message }}</p> @enderror
 
                     <div class="flex items-center justify-between gap-4">
-                        <p class="text-xs font-semibold text-[#8A999E]">Fotos, precio y ubicación se incorporarán en el siguiente módulo.</p>
+                        <p class="text-xs font-semibold text-[#8A999E]">La ubicación exacta nunca se mostrará públicamente.</p>
                         <button class="shrink-0 rounded-full bg-[#F97316] px-5 py-2.5 text-sm font-black text-white transition hover:bg-[#E8660C]" type="submit">Publicar</button>
                     </div>
                 </form>
@@ -151,6 +219,55 @@
                             </div>
 
                             <p class="mt-5 whitespace-pre-line text-[15px] font-medium leading-7 text-[#314B54]">{{ $post->body }}</p>
+
+                            @if ($post->listing)
+                                <div class="mt-5 rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] p-4">
+                                    <div class="flex flex-wrap items-start justify-between gap-3">
+                                        <div>
+                                            <p class="text-xs font-black uppercase tracking-[.14em] text-[#6B7D83]">{{ $post->type === 'product' ? 'Producto disponible' : 'Servicio disponible' }}</p>
+                                            <h4 class="mt-1 text-lg font-black text-[#123B4A]">{{ $post->listing->name }}</h4>
+                                        </div>
+                                        <span class="rounded-full bg-white px-3 py-1.5 text-sm font-black text-[#D85B0B] shadow-sm">
+                                            @if ($post->listing->price_type->value === 'quote')
+                                                Solicitar cotización
+                                            @else
+                                                {{ $post->listing->price_type->value === 'starting_at' ? 'Desde ' : '' }}${{ number_format($post->listing->price_amount / 100, 2) }} MXN
+                                            @endif
+                                        </span>
+                                    </div>
+                                    @if ($post->type === 'product' && $post->listing->stock !== null)
+                                        <p class="mt-3 text-xs font-bold text-[#6B7D83]">{{ $post->listing->stock }} unidades disponibles</p>
+                                    @endif
+                                </div>
+                            @elseif ($post->jobRequest)
+                                @php
+                                    $urgencyLabels = ['normal' => 'Sin prisa', 'soon' => 'Próximos días', 'urgent' => 'Urgente'];
+                                    $minimumBudget = $post->jobRequest->budget_min_amount;
+                                    $maximumBudget = $post->jobRequest->budget_max_amount;
+                                @endphp
+                                <div class="mt-5 rounded-2xl border border-[#F97316]/15 bg-[#FFF8F2] p-4">
+                                    <p class="text-xs font-black uppercase tracking-[.14em] text-[#D85B0B]">Solicitud de la comunidad</p>
+                                    <h4 class="mt-1 text-lg font-black text-[#123B4A]">{{ $post->jobRequest->title }}</h4>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs font-black">
+                                        @if ($minimumBudget !== null || $maximumBudget !== null)
+                                            <span class="rounded-full bg-white px-3 py-1.5 text-[#14734A] shadow-sm">
+                                                Presupuesto:
+                                                @if ($minimumBudget !== null && $maximumBudget !== null)
+                                                    ${{ number_format($minimumBudget / 100, 2) }}–${{ number_format($maximumBudget / 100, 2) }} MXN
+                                                @elseif ($maximumBudget !== null)
+                                                    Hasta ${{ number_format($maximumBudget / 100, 2) }} MXN
+                                                @else
+                                                    Desde ${{ number_format($minimumBudget / 100, 2) }} MXN
+                                                @endif
+                                            </span>
+                                        @endif
+                                        <span class="rounded-full bg-white px-3 py-1.5 text-[#D85B0B] shadow-sm">{{ $urgencyLabels[$post->jobRequest->urgency] ?? 'Sin prisa' }}</span>
+                                        @if ($post->jobRequest->location_label)
+                                            <span class="rounded-full bg-white px-3 py-1.5 text-[#536A72] shadow-sm">{{ $post->jobRequest->location_label }}</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endif
 
                             @if ($post->type === 'service' || $post->type === 'product' || $post->type === 'promotion')
                                 <div class="mt-5 flex items-center gap-2 rounded-2xl bg-[#E9F7F0] px-4 py-3 text-sm font-black text-[#14734A]">

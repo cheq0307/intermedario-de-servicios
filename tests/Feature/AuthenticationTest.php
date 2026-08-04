@@ -28,6 +28,27 @@ class AuthenticationTest extends TestCase
         ]);
     }
 
+    public function test_provider_registration_creates_a_commercial_profile(): void
+    {
+        $response = $this->post('/register', [
+            'account_type' => 'provider',
+            'name' => 'Carpintería Ramírez',
+            'email' => 'carpinteria@example.test',
+            'phone' => '5551234567',
+            'password' => 'Seguro123',
+            'password_confirmation' => 'Seguro123',
+        ]);
+
+        $response->assertRedirect('/dashboard');
+        $this->assertAuthenticated();
+        $this->assertDatabaseHas('vendors', [
+            'user_id' => auth()->id(),
+            'display_name' => 'Carpintería Ramírez',
+            'email' => 'carpinteria@example.test',
+            'status' => 'pending',
+        ]);
+    }
+
     public function test_user_can_login_and_logout(): void
     {
         $user = User::factory()->create(['password' => 'Seguro123']);

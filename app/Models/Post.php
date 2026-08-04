@@ -13,6 +13,7 @@ class Post extends Model
     protected $fillable = [
         'user_id',
         'vendor_id',
+        'listing_id',
         'job_request_id',
         'type',
         'body',
@@ -31,5 +32,20 @@ class Post extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function vendor(): BelongsTo
+    {
+        return $this->belongsTo(Vendor::class);
+    }
+
+    public function listing(): BelongsTo
+    {
+        return $this->belongsTo(Listing::class);
+    }
+
+    public function jobRequest(): BelongsTo
+    {
+        return $this->belongsTo(JobRequest::class);
     }
 }

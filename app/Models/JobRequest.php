@@ -6,6 +6,7 @@ use App\Domain\Marketplace\Enums\JobRequestStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class JobRequest extends Model
@@ -39,6 +40,11 @@ class JobRequest extends Model
         ];
     }
 
+    public function getRouteKeyName(): string
+    {
+        return 'public_id';
+    }
+
     public function client(): BelongsTo
     {
         return $this->belongsTo(User::class, 'client_id');
@@ -47,5 +53,10 @@ class JobRequest extends Model
     public function post(): HasOne
     {
         return $this->hasOne(Post::class);
+    }
+
+    public function proposals(): HasMany
+    {
+        return $this->hasMany(JobProposal::class);
     }
 }

@@ -294,11 +294,21 @@
                         <div class="grid grid-cols-3 border-t border-[#123B4A]/8 px-3 py-2 text-xs font-black text-[#6B7D83]">
                             @if ($post->user_id === $currentUser->id)
                                 <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button">Administrar</button>
-                                <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button">Ver respuestas</button>
+                                @if ($post->jobRequest)
+                                    <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-[#FAF8F4] hover:text-[#F97316]" href="{{ route('job-proposals.index', $post->jobRequest) }}">Ver propuestas</a>
+                                @else
+                                    <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button">Ver respuestas</button>
+                                @endif
                             @else
-                                <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button">
-                                    {{ $post->jobRequest ? 'Enviar propuesta' : ($post->listing?->price_type?->value === 'quote' ? 'Solicitar cotización' : 'Me interesa') }}
-                                </button>
+                                @if ($post->jobRequest && $isProvider)
+                                    <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-[#FAF8F4] hover:text-[#F97316]" href="{{ route('job-proposals.index', $post->jobRequest) }}">Enviar propuesta</a>
+                                @elseif ($post->jobRequest)
+                                    <span class="rounded-xl px-3 py-2.5 text-center text-[#A4B0B4]">Solo proveedores</span>
+                                @else
+                                    <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button">
+                                        {{ $post->listing?->price_type?->value === 'quote' ? 'Solicitar cotización' : 'Me interesa' }}
+                                    </button>
+                                @endif
                                 <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button">Comentar</button>
                             @endif
                             <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button">Compartir</button>

@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\JobProposalController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -28,5 +29,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/mensajes/iniciar', [ConversationController::class, 'start'])->name('conversations.start');
         Route::get('/mensajes/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
         Route::post('/mensajes/{conversation}', [ConversationController::class, 'store'])->name('conversations.messages.store');
+        Route::get('/solicitudes/{jobRequest}/propuestas', [JobProposalController::class, 'index'])->name('job-proposals.index');
+        Route::post('/solicitudes/{jobRequest}/propuestas', [JobProposalController::class, 'store'])->name('job-proposals.store');
+        Route::patch('/solicitudes/{jobRequest}/propuestas/{proposal}/aceptar', [JobProposalController::class, 'accept'])->name('job-proposals.accept');
+        Route::patch('/solicitudes/{jobRequest}/propuestas/{proposal}/rechazar', [JobProposalController::class, 'reject'])->name('job-proposals.reject');
+        Route::patch('/solicitudes/{jobRequest}/propuestas/{proposal}/retirar', [JobProposalController::class, 'withdraw'])->name('job-proposals.withdraw');
     });
 });

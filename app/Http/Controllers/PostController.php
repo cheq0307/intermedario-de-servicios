@@ -10,6 +10,7 @@ use App\Models\Post;
 use App\Models\Vendor;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -24,25 +25,35 @@ class PostController extends Controller
             : ['job_request'];
 
         $postData = $request->validate([
+            'submission_token' => ['required', 'uuid'],
             'type' => ['required', 'string', Rule::in($allowedTypes)],
             'body' => ['required', 'string', 'min:10', 'max:1500'],
         ]);
 
-        if (! $isProvider) {
-            $this->publishJobRequest($request, $postData);
-        } elseif (in_array($postData['type'], ['product', 'service'], true)) {
-            $this->publishListing($request, $postData);
-        } else {
-            Post::create([
-                ...$postData,
-                'user_id' => $request->user()->id,
-                'published_at' => now(),
-            ]);
-        }
+        return Cache::lock('publication:'.$postData['submission_token'], 10)
+            ->block(5, function () use ($request, $postData, $isProvider): RedirectResponse {
+                if (Post::where('submission_token', $postData['submission_token'])->exists()) {
+                    return redirect()
+                        ->route('dashboard')
+                        ->with('status', 'La publicación ya había sido procesada; no se creó un duplicado.');
+                }
 
-        return redirect()
-            ->route('dashboard')
-            ->with('status', 'Tu publicación ya está visible en la comunidad.');
+                if (! $isProvider) {
+                    $this->publishJobRequest($request, $postData);
+                } elseif (in_array($postData['type'], ['product', 'service'], true)) {
+                    $this->publishListing($request, $postData);
+                } else {
+                    Post::create([
+                        ...$postData,
+                        'user_id' => $request->user()->id,
+                        'published_at' => now(),
+                    ]);
+                }
+
+                return redirect()
+                    ->route('dashboard')
+                    ->with('status', 'Tu publicación ya está visible en la comunidad.');
+            });
     }
 
     private function publishJobRequest(Request $request, array $postData): void

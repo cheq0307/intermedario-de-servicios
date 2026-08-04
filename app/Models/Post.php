@@ -15,6 +15,7 @@ class Post extends Model
         'vendor_id',
         'listing_id',
         'job_request_id',
+        'submission_token',
         'type',
         'body',
         'comments_enabled',

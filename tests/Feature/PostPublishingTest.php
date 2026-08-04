@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class PostPublishingTest extends TestCase
@@ -16,6 +17,7 @@ class PostPublishingTest extends TestCase
         $provider = User::factory()->create(['account_type' => 'provider']);
 
         $response = $this->actingAs($provider)->post(route('posts.store'), [
+            'submission_token' => (string) Str::uuid(),
             'type' => 'service',
             'title' => 'Instalación eléctrica',
             'price_type' => 'starting_at',
@@ -44,6 +46,7 @@ class PostPublishingTest extends TestCase
         $provider = User::factory()->create(['account_type' => 'provider']);
 
         $this->actingAs($provider)->post(route('posts.store'), [
+            'submission_token' => (string) Str::uuid(),
             'type' => 'product',
             'title' => 'Paquete de hojas blancas',
             'price_type' => 'fixed',
@@ -64,6 +67,7 @@ class PostPublishingTest extends TestCase
         $client = User::factory()->create(['account_type' => 'client']);
 
         $this->actingAs($client)->post(route('posts.store'), [
+            'submission_token' => (string) Str::uuid(),
             'type' => 'job_request',
             'title' => 'Reparar una fuga de agua',
             'budget_min' => '300',
@@ -93,11 +97,41 @@ class PostPublishingTest extends TestCase
         $this->actingAs($client)
             ->from(route('dashboard'))
             ->post(route('posts.store'), [
+                'submission_token' => (string) Str::uuid(),
                 'type' => 'product',
                 'body' => 'Estoy intentando publicar un producto como cliente.',
             ])
             ->assertRedirect(route('dashboard'))
             ->assertSessionHasErrors('type');
+    }
+
+    public function test_repeated_submission_token_creates_only_one_request(): void
+    {
+        $client = User::factory()->create(['account_type' => 'client']);
+        $token = (string) Str::uuid();
+        $payload = [
+            'submission_token' => $token,
+            'type' => 'job_request',
+            'title' => 'Necesito reparar una tubería',
+            'budget_min' => '500',
+            'budget_max' => '1000',
+            'urgency' => 'urgent',
+            'location_label' => 'Zona centro',
+            'body' => 'La tubería debajo del fregadero tiene una fuga constante.',
+        ];
+
+        $this->actingAs($client)
+            ->post(route('posts.store'), $payload)
+            ->assertRedirect(route('dashboard'));
+
+        $this->actingAs($client)
+            ->post(route('posts.store'), $payload)
+            ->assertRedirect(route('dashboard'))
+            ->assertSessionHas('status', 'La publicación ya había sido procesada; no se creó un duplicado.');
+
+        $this->assertDatabaseCount('job_requests', 1);
+        $this->assertDatabaseCount('posts', 1);
+        $this->assertDatabaseHas('posts', ['submission_token' => $token]);
     }
 
     public function test_published_posts_appear_in_the_feed(): void

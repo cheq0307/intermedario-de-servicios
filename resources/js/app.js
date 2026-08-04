@@ -38,6 +38,16 @@ if (publicationForm) {
     };
 
     typeInputs.forEach((input) => input.addEventListener('change', syncPublicationFields));
+
+    publicationForm.addEventListener('submit', () => {
+        const submitButton = publicationForm.querySelector('[data-submit-button]');
+
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = 'Publicando…';
+            publicationForm.setAttribute('aria-busy', 'true');
+        }
+    });
     priceType?.addEventListener('change', syncPublicationFields);
     syncPublicationFields();
 }

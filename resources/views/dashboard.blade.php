@@ -101,6 +101,7 @@
 
                 <form class="mt-5 space-y-4" method="POST" action="{{ route('posts.store') }}" data-publication-form>
                     @csrf
+                    <input type="hidden" name="submission_token" value="{{ old('submission_token', (string) \Illuminate\Support\Str::uuid()) }}">
                     <div class="flex gap-3 overflow-x-auto pb-1">
                         @foreach ($isProvider ? [
                             'service' => 'Servicio',
@@ -190,7 +191,7 @@
 
                     <div class="flex items-center justify-between gap-4">
                         <p class="text-xs font-semibold text-[#8A999E]">La ubicación exacta nunca se mostrará públicamente.</p>
-                        <button class="shrink-0 rounded-full bg-[#F97316] px-5 py-2.5 text-sm font-black text-white transition hover:bg-[#E8660C]" type="submit">Publicar</button>
+                        <button class="shrink-0 rounded-full bg-[#F97316] px-5 py-2.5 text-sm font-black text-white transition hover:bg-[#E8660C] disabled:cursor-wait disabled:opacity-60" type="submit" data-submit-button>Publicar</button>
                     </div>
                 </form>
             </section>
@@ -276,8 +277,15 @@
                             @endif
                         </div>
                         <div class="grid grid-cols-3 border-t border-[#123B4A]/8 px-3 py-2 text-xs font-black text-[#6B7D83]">
-                            <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button">Me interesa</button>
-                            <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button">Comentar</button>
+                            @if ($post->user_id === $currentUser->id)
+                                <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button">Administrar</button>
+                                <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button">Ver respuestas</button>
+                            @else
+                                <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button">
+                                    {{ $post->jobRequest ? 'Enviar propuesta' : ($post->listing?->price_type?->value === 'quote' ? 'Solicitar cotización' : 'Me interesa') }}
+                                </button>
+                                <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button">Comentar</button>
+                            @endif
                             <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button">Compartir</button>
                         </div>
                     </article>

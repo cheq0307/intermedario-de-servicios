@@ -70,16 +70,16 @@
                     </div>
                 </div>
 
-                <div class="relative mx-auto w-full max-w-xl">
+                <div class="relative mx-auto min-w-0 w-full max-w-full sm:max-w-xl">
                     <div class="absolute -left-5 top-10 z-10 hidden rotate-[-7deg] rounded-2xl bg-[#f2c66d] px-4 py-3 text-sm font-black text-[#17352b] shadow-xl sm:block">A 5 minutos de ti</div>
-                    <div class="overflow-hidden rounded-[2.25rem] bg-[#17352b] p-4 shadow-[0_35px_90px_rgba(23,53,43,.25)]">
-                        <div class="rounded-[1.65rem] bg-[#eef1e8] p-5 sm:p-6">
-                            <div class="flex items-center justify-between gap-3">
-                                <div>
+                    <div class="max-w-full overflow-hidden rounded-[2.25rem] bg-[#17352b] p-3 shadow-[0_35px_90px_rgba(23,53,43,.25)] sm:p-4">
+                        <div class="min-w-0 max-w-full overflow-hidden rounded-[1.65rem] bg-[#eef1e8] p-4 sm:p-6">
+                            <div class="flex min-w-0 items-center justify-between gap-3">
+                                <div class="min-w-0">
                                     <p class="text-xs font-black uppercase tracking-[.18em] text-[#d2693c]">Abierto ahora</p>
-                                    <h2 class="mt-1 text-2xl font-black">Lo más cerca de ti</h2>
+                                    <h2 class="mt-1 break-words text-xl font-black leading-tight sm:text-2xl">Lo más cerca de ti</h2>
                                 </div>
-                                <span class="shrink-0 rounded-full bg-white px-3 py-2 text-xs font-extrabold shadow-sm">Tu comunidad</span>
+                                <span class="hidden shrink-0 rounded-full bg-white px-3 py-2 text-xs font-extrabold shadow-sm sm:inline-flex">Tu comunidad</span>
                             </div>
 
                             <div class="mt-6 space-y-3">
@@ -88,28 +88,28 @@
                                     ['🔧', '#dbeae3', 'Reparaciones Martínez', 'Hogar · Disponible hoy', '4.8'],
                                     ['✏️', '#f8ebba', 'Papelería La Esquina', 'Productos · A 600 m', '4.7'],
                                 ] as [$icon, $color, $name, $details, $rating])
-                                    <article class="group flex items-center gap-4 rounded-2xl bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                                        <div class="grid size-16 shrink-0 place-items-center rounded-2xl text-3xl" style="background-color: {{ $color }}" aria-hidden="true">{{ $icon }}</div>
+                                    <article class="group flex min-w-0 max-w-full items-center gap-3 rounded-2xl bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:gap-4">
+                                        <div class="grid size-14 shrink-0 place-items-center rounded-2xl text-2xl sm:size-16 sm:text-3xl" style="background-color: {{ $color }}" aria-hidden="true">{{ $icon }}</div>
                                         <div class="min-w-0 flex-1">
                                             <h3 class="truncate font-black">{{ $name }}</h3>
                                             <p class="mt-1 text-xs font-semibold text-[#6f827b]">{{ $details }}</p>
                                         </div>
-                                        <span class="rounded-full bg-[#e2f1e9] px-2.5 py-1 text-xs font-black text-[#1f6b4f]">{{ $rating }} ★</span>
+                                        <span class="shrink-0 rounded-full bg-[#e2f1e9] px-2 py-1 text-[11px] font-black text-[#1f6b4f] sm:px-2.5 sm:text-xs">{{ $rating }} ★</span>
                                     </article>
                                 @endforeach
                             </div>
                         </div>
                     </div>
-                    <div class="absolute -bottom-6 right-5 rounded-2xl bg-white px-4 py-3 text-sm font-black shadow-xl">Compra local ♡</div>
+                    <div class="absolute -bottom-6 right-5 hidden rounded-2xl bg-white px-4 py-3 text-sm font-black shadow-xl sm:block">Compra local ♡</div>
                 </div>
             </div>
         </section>
 
-        <section id="categorias" class="mx-auto max-w-7xl scroll-mt-28 px-5 py-16 lg:px-8">
+        <section id="categorias" class="mx-auto min-w-0 max-w-7xl scroll-mt-28 px-4 py-16 sm:px-5 lg:px-8">
             <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                 <div>
                     <p class="text-xs font-black uppercase tracking-[.2em] text-[#d2693c]">Explora tu comunidad</p>
-                    <h2 class="mt-2 text-3xl font-black tracking-tight sm:text-4xl">¿Qué necesitas hoy?</h2>
+                    <h2 class="mt-2 break-words text-3xl font-black tracking-tight sm:text-4xl">¿Qué necesitas hoy?</h2>
                 </div>
                 <a class="text-sm font-black text-[#1f6b4f] hover:text-[#d2693c]" href="#">Ver todas las categorías →</a>
             </div>

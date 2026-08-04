@@ -50,7 +50,8 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
+        $request->session()->put('auth.password_confirmed_at', time());
 
-        return redirect()->route('dashboard');
+        return redirect()->route('security');
     }
 }

@@ -5,6 +5,10 @@
         <p class="mt-3 text-[#6f827b]">Accede a tus mensajes, pedidos y publicaciones.</p>
     </div>
 
+    @if (session('status'))
+        <div class="mt-6 rounded-2xl border border-[#22A06B]/20 bg-[#E9F7F0] px-4 py-3 text-sm font-bold text-[#14734A]" role="status">{{ session('status') }}</div>
+    @endif
+
     <form class="mt-8 space-y-5" method="POST" action="{{ route('login') }}">
         @csrf
         <label class="block">
@@ -17,6 +21,10 @@
             <span class="text-sm font-black">Contraseña</span>
             <input class="mt-2 w-full rounded-2xl border border-[#17352b]/15 bg-white px-4 py-3.5 outline-none transition focus:border-[#1f6b4f] focus:ring-4 focus:ring-[#1f6b4f]/10" type="password" name="password" required autocomplete="current-password">
         </label>
+
+        <div class="text-right">
+            <a class="text-sm font-black text-[#1f6b4f] hover:underline" href="{{ route('password.request') }}">Olvid&eacute; mi contrase&ntilde;a</a>
+        </div>
 
         <label class="flex items-center gap-3 text-sm font-bold text-[#6f827b]">
             <input class="size-4 rounded border-[#17352b]/20 text-[#1f6b4f]" type="checkbox" name="remember">

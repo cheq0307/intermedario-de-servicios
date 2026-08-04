@@ -20,7 +20,7 @@ class AuthenticationTest extends TestCase
             'password_confirmation' => 'Seguro123',
         ]);
 
-        $response->assertRedirect('/dashboard');
+        $response->assertRedirect('/seguridad');
         $this->assertAuthenticated();
         $this->assertDatabaseHas('users', [
             'email' => 'cliente@example.test',
@@ -39,7 +39,7 @@ class AuthenticationTest extends TestCase
             'password_confirmation' => 'Seguro123',
         ]);
 
-        $response->assertRedirect('/dashboard');
+        $response->assertRedirect('/seguridad');
         $this->assertAuthenticated();
         $this->assertDatabaseHas('vendors', [
             'user_id' => auth()->id(),

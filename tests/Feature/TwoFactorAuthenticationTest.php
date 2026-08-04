@@ -36,6 +36,18 @@ class TwoFactorAuthenticationTest extends TestCase
             ->assertSee('Autenticación en dos pasos');
     }
 
+    public function test_users_must_configure_two_factor_before_using_the_marketplace(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->withSession(['auth.password_confirmed_at' => time()])
+            ->get('/dashboard')
+            ->assertRedirect('/seguridad');
+
+        $this->actingAs(User::factory()->withTwoFactorAuthentication()->create(['account_type' => 'client']))
+            ->get('/dashboard')
+            ->assertOk();
+    }
+
     public function test_user_with_two_factor_enabled_must_enter_a_valid_code(): void
     {
         $google2fa = new Google2FA;

@@ -19,6 +19,7 @@
     </header>
 
     <main class="mx-auto max-w-4xl px-5 py-10">
+        <div class="mb-7 rounded-2xl border border-[#F97316]/20 bg-[#FFF1E8] px-5 py-4 text-sm font-black text-[#A94708]">Esta protecci&oacute;n es obligatoria para usar Plaza Local.</div>
         <div class="max-w-2xl">
             <p class="text-xs font-black uppercase tracking-[.2em] text-[#F97316]">Seguridad de la cuenta</p>
             <h1 class="mt-2 text-4xl font-black tracking-tight">Autenticación en dos pasos</h1>
@@ -79,12 +80,6 @@
                         <button class="text-sm font-black text-[#D85B0B]" type="submit">Generar códigos nuevos</button>
                     </form>
                 </div>
-
-                <form class="mt-6" method="POST" action="{{ route('two-factor.disable') }}">
-                    @csrf
-                    @method('DELETE')
-                    <button class="rounded-full border border-red-200 px-5 py-3 text-sm font-black text-red-700" type="submit">Desactivar segundo paso</button>
-                </form>
             @endif
         </section>
     </main>

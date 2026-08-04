@@ -14,7 +14,7 @@ class PostPublishingTest extends TestCase
 
     public function test_a_provider_can_publish_a_service_with_a_structured_price(): void
     {
-        $provider = User::factory()->create(['account_type' => 'provider']);
+        $provider = User::factory()->withTwoFactorAuthentication()->create(['account_type' => 'provider']);
 
         $response = $this->actingAs($provider)->post(route('posts.store'), [
             'submission_token' => (string) Str::uuid(),
@@ -43,7 +43,7 @@ class PostPublishingTest extends TestCase
 
     public function test_a_provider_can_publish_a_product_with_stock(): void
     {
-        $provider = User::factory()->create(['account_type' => 'provider']);
+        $provider = User::factory()->withTwoFactorAuthentication()->create(['account_type' => 'provider']);
 
         $this->actingAs($provider)->post(route('posts.store'), [
             'submission_token' => (string) Str::uuid(),
@@ -64,7 +64,7 @@ class PostPublishingTest extends TestCase
 
     public function test_a_client_can_publish_a_structured_job_request(): void
     {
-        $client = User::factory()->create(['account_type' => 'client']);
+        $client = User::factory()->withTwoFactorAuthentication()->create(['account_type' => 'client']);
 
         $this->actingAs($client)->post(route('posts.store'), [
             'submission_token' => (string) Str::uuid(),
@@ -92,7 +92,7 @@ class PostPublishingTest extends TestCase
 
     public function test_a_client_cannot_publish_a_provider_offer(): void
     {
-        $client = User::factory()->create(['account_type' => 'client']);
+        $client = User::factory()->withTwoFactorAuthentication()->create(['account_type' => 'client']);
 
         $this->actingAs($client)
             ->from(route('dashboard'))
@@ -107,7 +107,7 @@ class PostPublishingTest extends TestCase
 
     public function test_repeated_submission_token_creates_only_one_request(): void
     {
-        $client = User::factory()->create(['account_type' => 'client']);
+        $client = User::factory()->withTwoFactorAuthentication()->create(['account_type' => 'client']);
         $token = (string) Str::uuid();
         $payload = [
             'submission_token' => $token,
@@ -136,7 +136,7 @@ class PostPublishingTest extends TestCase
 
     public function test_published_posts_appear_in_the_feed(): void
     {
-        $provider = User::factory()->create(['account_type' => 'provider']);
+        $provider = User::factory()->withTwoFactorAuthentication()->create(['account_type' => 'provider']);
         Post::create([
             'user_id' => $provider->id,
             'type' => 'promotion',

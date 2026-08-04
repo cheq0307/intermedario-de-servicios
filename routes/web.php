@@ -15,8 +15,11 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::view('/seguridad', 'security')->middleware('password.confirm')->name('security');
-    Route::post('/publicaciones', [PostController::class, 'store'])->name('posts.store');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+
+    Route::middleware('two-factor.required')->group(function () {
+        Route::get('/dashboard', DashboardController::class)->name('dashboard');
+        Route::post('/publicaciones', [PostController::class, 'store'])->name('posts.store');
+    });
 });

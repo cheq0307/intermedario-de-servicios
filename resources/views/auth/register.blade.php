@@ -44,14 +44,21 @@
             </label>
             <label class="block">
                 <span class="text-sm font-black">Contraseña</span>
-                <input class="mt-2 w-full rounded-2xl border border-[#17352b]/15 bg-white px-4 py-3.5 outline-none focus:border-[#1f6b4f] focus:ring-4 focus:ring-[#1f6b4f]/10" type="password" name="password" required autocomplete="new-password">
+                <input class="mt-2 w-full rounded-2xl border border-[#17352b]/15 bg-white px-4 py-3.5 outline-none focus:border-[#1f6b4f] focus:ring-4 focus:ring-[#1f6b4f]/10" type="password" name="password" minlength="8" required autocomplete="new-password" data-password>
             </label>
             <label class="block">
                 <span class="text-sm font-black">Confirmar</span>
-                <input class="mt-2 w-full rounded-2xl border border-[#17352b]/15 bg-white px-4 py-3.5 outline-none focus:border-[#1f6b4f] focus:ring-4 focus:ring-[#1f6b4f]/10" type="password" name="password_confirmation" required autocomplete="new-password">
+                <input class="mt-2 w-full rounded-2xl border border-[#17352b]/15 bg-white px-4 py-3.5 outline-none focus:border-[#1f6b4f] focus:ring-4 focus:ring-[#1f6b4f]/10" type="password" name="password_confirmation" minlength="8" required autocomplete="new-password" data-password-confirmation>
             </label>
         </div>
         @error('password') <span class="block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
+
+        <ul class="grid gap-1.5 text-xs font-bold text-[#75857f] sm:grid-cols-2" aria-live="polite" data-password-requirements>
+            <li class="flex items-center gap-2" data-password-rule="length"><span aria-hidden="true">&bull;</span> Al menos 8 caracteres</li>
+            <li class="flex items-center gap-2" data-password-rule="letter"><span aria-hidden="true">&bull;</span> Incluye una letra</li>
+            <li class="flex items-center gap-2" data-password-rule="number"><span aria-hidden="true">&bull;</span> Incluye un n&uacute;mero</li>
+            <li class="flex items-center gap-2" data-password-rule="match"><span aria-hidden="true">&bull;</span> Las contrase&ntilde;as coinciden</li>
+        </ul>
 
         <button class="w-full rounded-2xl bg-[#d2693c] px-5 py-4 font-black text-white transition hover:bg-[#b9552d]" type="submit">Crear mi cuenta</button>
     </form>

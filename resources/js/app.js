@@ -51,3 +51,34 @@ if (publicationForm) {
     priceType?.addEventListener('change', syncPublicationFields);
     syncPublicationFields();
 }
+
+const passwordInput = document.querySelector('[data-password]');
+const passwordConfirmation = document.querySelector('[data-password-confirmation]');
+const passwordRequirements = document.querySelector('[data-password-requirements]');
+
+if (passwordInput && passwordConfirmation && passwordRequirements) {
+    const rules = {
+        length: (password) => password.length >= 8,
+        letter: (password) => /\p{L}/u.test(password),
+        number: (password) => /\d/.test(password),
+        match: (password, confirmation) => confirmation.length > 0 && password === confirmation,
+    };
+
+    const syncPasswordRequirements = () => {
+        Object.entries(rules).forEach(([name, passes]) => {
+            const item = passwordRequirements.querySelector(`[data-password-rule="${name}"]`);
+            const valid = passes(passwordInput.value, passwordConfirmation.value);
+
+            item?.classList.toggle('text-[#168458]', valid);
+            item?.classList.toggle('text-[#75857f]', !valid);
+
+            if (item?.firstElementChild) {
+                item.firstElementChild.textContent = valid ? '\u2713' : '\u2022';
+            }
+        });
+    };
+
+    passwordInput.addEventListener('input', syncPasswordRequirements);
+    passwordConfirmation.addEventListener('input', syncPasswordRequirements);
+    syncPasswordRequirements();
+}

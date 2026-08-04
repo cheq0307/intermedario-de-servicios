@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Fortify\Fortify;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -42,6 +43,11 @@ class User extends Authenticatable
             'account_type' => AccountType::class,
             'password' => 'hashed',
         ];
+    }
+
+    public function twoFactorSecretKey(): string
+    {
+        return Fortify::currentEncrypter()->decrypt($this->two_factor_secret);
     }
 
     public function posts(): HasMany

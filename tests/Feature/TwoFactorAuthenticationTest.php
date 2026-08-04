@@ -36,6 +36,22 @@ class TwoFactorAuthenticationTest extends TestCase
             ->assertSee('Autenticación en dos pasos');
     }
 
+    public function test_security_setup_displays_the_unconfirmed_secret(): void
+    {
+        $secret = 'JBSWY3DPEHPK3PXP';
+        $user = User::factory()->create([
+            'two_factor_secret' => Crypt::encrypt($secret),
+            'two_factor_recovery_codes' => Crypt::encrypt(json_encode(['recovery-code'])),
+            'two_factor_confirmed_at' => null,
+        ]);
+
+        $this->actingAs($user)
+            ->withSession(['auth.password_confirmed_at' => time()])
+            ->get('/seguridad')
+            ->assertOk()
+            ->assertSee($secret);
+    }
+
     public function test_users_must_configure_two_factor_before_using_the_marketplace(): void
     {
         $this->actingAs(User::factory()->create())

@@ -7,14 +7,14 @@
     <title>Plaza Local - Todo cerca de ti</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen overflow-x-hidden bg-[#f7f5ef] text-[#17352b] antialiased selection:bg-[#f2c66d] selection:text-[#17352b]">
+<body class="min-h-screen w-full overflow-x-clip bg-[#f7f5ef] text-[#17352b] antialiased selection:bg-[#f2c66d] selection:text-[#17352b]">
     <header class="sticky top-0 z-50 border-b border-[#17352b]/10 bg-[#f7f5ef]/90 backdrop-blur-xl">
-        <div class="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
-            <a href="{{ route('home') }}" class="flex items-center gap-3" aria-label="Ir al inicio">
-                <span class="grid size-11 place-items-center rounded-2xl bg-[#1f6b4f] text-xl font-black text-white shadow-[0_8px_24px_rgba(31,107,79,.22)]">P</span>
-                <span>
-                    <span class="block text-lg font-black leading-none tracking-tight">Plaza Local</span>
-                    <span class="mt-1 block text-[10px] font-bold uppercase tracking-[.22em] text-[#d2693c]">Tu comunidad, conectada</span>
+        <div class="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-4 sm:gap-4 sm:px-5 lg:px-8">
+            <a href="{{ route('home') }}" class="flex min-w-0 items-center gap-2 sm:gap-3" aria-label="Ir al inicio">
+                <span class="grid size-10 shrink-0 place-items-center rounded-2xl bg-[#1f6b4f] text-lg font-black text-white shadow-[0_8px_24px_rgba(31,107,79,.22)] sm:size-11 sm:text-xl">P</span>
+                <span class="min-w-0">
+                    <span class="block text-base font-black leading-none tracking-tight sm:text-lg">Plaza Local</span>
+                    <span class="mt-1 block text-[8px] font-bold uppercase leading-3 tracking-[.14em] text-[#d2693c] sm:text-[10px] sm:tracking-[.22em]">Tu comunidad, conectada</span>
                 </span>
             </a>
 
@@ -26,7 +26,7 @@
 
             <div class="flex items-center gap-2">
                 <a class="hidden rounded-full px-4 py-2 text-sm font-extrabold transition hover:bg-white sm:block" href="{{ route('login') }}">Ingresar</a>
-                <a class="rounded-full bg-[#17352b] px-4 py-2.5 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#244b3e]" href="{{ route('register') }}">Crear cuenta</a>
+                <a class="shrink-0 whitespace-nowrap rounded-full bg-[#17352b] px-3.5 py-2.5 text-xs font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#244b3e] sm:px-4 sm:text-sm" href="{{ route('register') }}">Crear cuenta</a>
             </div>
         </div>
     </header>
@@ -38,28 +38,28 @@
                 <div class="absolute -right-20 top-0 size-96 rounded-full bg-[#70aa8e]/20 blur-3xl"></div>
             </div>
 
-            <div class="relative mx-auto grid max-w-7xl items-center gap-12 px-5 py-16 lg:grid-cols-[1.08fr_.92fr] lg:px-8 lg:py-24">
-                <div>
+            <div class="relative mx-auto grid min-w-0 max-w-7xl items-center gap-12 px-4 py-14 sm:px-5 sm:py-16 lg:grid-cols-[1.08fr_.92fr] lg:px-8 lg:py-24">
+                <div class="min-w-0 max-w-full">
                     <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-[#1f6b4f]/15 bg-white/80 px-4 py-2 text-xs font-extrabold text-[#1f6b4f] shadow-sm">
                         <span class="size-2 rounded-full bg-[#d2693c]"></span>
                         Compra y contrata dentro de tu comunidad
                     </div>
 
-                    <h1 class="max-w-3xl text-5xl font-black leading-[.98] tracking-[-.055em] sm:text-6xl lg:text-7xl">
+                    <h1 class="max-w-full break-words text-[clamp(2.5rem,11vw,4.5rem)] font-black leading-[1.02] tracking-[-.05em]">
                         Todo lo que necesitas,
                         <span class="text-[#d2693c]">cerca de ti.</span>
                     </h1>
-                    <p class="mt-6 max-w-2xl text-lg leading-8 text-[#45635a]">
+                    <p class="mt-6 max-w-full break-words text-base leading-7 text-[#45635a] sm:max-w-2xl sm:text-lg sm:leading-8">
                         Descubre comida, productos, comercios y personas de confianza que ofrecen sus servicios en tu propia comunidad.
                     </p>
 
-                    <form class="mt-8 flex max-w-2xl flex-col gap-3 rounded-[1.75rem] bg-white p-3 shadow-[0_24px_70px_rgba(23,53,43,.13)] sm:flex-row" role="search">
+                    <form class="mt-8 flex w-full max-w-2xl flex-col gap-3 overflow-hidden rounded-[1.75rem] bg-white p-3 shadow-[0_24px_70px_rgba(23,53,43,.13)] sm:flex-row" role="search">
                         <label class="flex min-w-0 flex-1 items-center gap-3 px-3" for="busqueda">
                             <span class="text-xl" aria-hidden="true">⌕</span>
                             <span class="sr-only">Buscar</span>
                             <input id="busqueda" class="w-full border-0 bg-transparent py-3 text-base font-semibold text-[#17352b] outline-none placeholder:text-[#8b9c96]" type="search" placeholder="¿Qué estás buscando?">
                         </label>
-                        <button class="rounded-2xl bg-[#d2693c] px-7 py-3.5 font-extrabold text-white transition hover:bg-[#b9552d]" type="submit">Buscar cerca</button>
+                        <button class="w-full rounded-2xl bg-[#d2693c] px-7 py-3.5 font-extrabold text-white transition hover:bg-[#b9552d] sm:w-auto" type="submit">Buscar cerca</button>
                     </form>
 
                     <div class="mt-6 flex flex-wrap items-center gap-2 text-sm">

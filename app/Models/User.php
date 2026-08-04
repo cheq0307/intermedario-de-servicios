@@ -20,6 +20,9 @@ class User extends Authenticatable
         'email',
         'account_type',
         'phone',
+        'avatar_path',
+        'bio',
+        'city',
         'password',
     ];
 
@@ -49,6 +52,11 @@ class User extends Authenticatable
     public function vendor(): HasOne
     {
         return $this->hasOne(Vendor::class);
+    }
+
+    public function reviewsReceived(): HasMany
+    {
+        return $this->hasMany(Review::class, 'subject_user_id');
     }
 
     public function jobRequests(): HasMany

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ $user->name }} - Plaza Local</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+</head>
+<body class="min-h-screen bg-[#FAF8F4] text-[#17313A] antialiased">
+    @php
+        $isOwner = auth()->id() === $user->id;
+        $isProvider = $user->account_type->value === 'provider';
+        $vendor = $user->vendor;
+        $availability = [
+            'available' => ['Disponible', '#14734A', '#E9F7F0'],
+            'busy' => ['Ocupado', '#9A5A0A', '#FFF4D6'],
+            'unavailable' => ['No disponible', '#8A3A3A', '#FCE8E8'],
+        ][$vendor?->availability_status ?? 'available'];
+    @endphp
+
+    <header class="border-b border-[#123B4A]/10 bg-white/90 backdrop-blur-xl">
+        <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
+            <a class="flex items-center gap-3 font-black" href="{{ route('dashboard') }}"><span class="grid size-10 place-items-center rounded-2xl bg-[#123B4A] text-white">P</span> Plaza Local</a>
+            <div class="flex gap-2">
+                @if ($isOwner)
+                    <a class="rounded-full bg-[#F97316] px-5 py-2.5 text-sm font-black text-white" href="{{ route('profile.edit') }}">Editar perfil</a>
+                @endif
+                <a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2.5 text-sm font-black" href="{{ route('dashboard') }}">Inicio</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-5 py-8">
+        @if (session('status'))
+            <div class="mb-6 rounded-2xl border border-[#22A06B]/20 bg-[#E9F7F0] px-5 py-4 text-sm font-black text-[#14734A]">{{ session('status') }}</div>
+        @endif
+
+        <section class="overflow-hidden rounded-[2rem] border border-[#123B4A]/10 bg-white shadow-sm">
+            <div class="h-32 bg-[linear-gradient(120deg,#123B4A,#1F6B4F_55%,#F2C66D)] sm:h-44"></div>
+            <div class="px-6 pb-7 sm:px-9">
+                <div class="-mt-14 flex flex-col gap-5 sm:-mt-16 sm:flex-row sm:items-end sm:justify-between">
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
+                        @if ($user->avatar_path)
+                            <img class="size-28 rounded-[2rem] border-4 border-white object-cover shadow-lg sm:size-32" src="{{ asset('storage/'.$user->avatar_path) }}" alt="Foto de {{ $user->name }}">
+                        @else
+                            <span class="grid size-28 place-items-center rounded-[2rem] border-4 border-white bg-[#DCEAE6] text-4xl font-black text-[#123B4A] shadow-lg sm:size-32">{{ mb_strtoupper(mb_substr($user->name, 0, 1)) }}</span>
+                        @endif
+                        <div class="pb-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h1 class="text-3xl font-black tracking-tight">{{ $isProvider ? ($vendor?->display_name ?? $user->name) : $user->name }}</h1>
+                                @if ($vendor?->verified_at)<span class="rounded-full bg-[#E9F7F0] px-3 py-1 text-xs font-black text-[#14734A]">Verificado</span>@endif
+                            </div>
+                            <p class="mt-1 font-bold text-[#6B7D83]">{{ $isProvider ? ($vendor?->specialty ?: 'Proveedor local') : 'Cliente de la comunidad' }} @if($user->city) · {{ $user->city }} @endif</p>
+                        </div>
+                    </div>
+                    @if ($isProvider)
+                        <span class="w-fit rounded-full px-4 py-2 text-sm font-black" style="color: {{ $availability[1] }}; background: {{ $availability[2] }}"><span class="mr-2 inline-block size-2 rounded-full" style="background: {{ $availability[1] }}"></span>{{ $availability[0] }}</span>
+                    @endif
+                </div>
+
+                <div class="mt-7 grid gap-6 lg:grid-cols-[1fr_300px]">
+                    <div>
+                        <p class="max-w-2xl whitespace-pre-line leading-7 text-[#536A72]">{{ $isProvider ? ($vendor?->description ?: $user->bio ?: 'Este proveedor todavía está completando su presentación.') : ($user->bio ?: 'Este cliente todavía está completando su presentación.') }}</p>
+                        @if ($isProvider)
+                            <div class="mt-5 flex flex-wrap gap-2 text-sm font-bold text-[#536A72]">
+                                @if ($vendor?->service_area)<span class="rounded-full bg-[#FAF8F4] px-4 py-2">Zona: {{ $vendor->service_area }}</span>@endif
+                                @if ($vendor?->years_experience !== null)<span class="rounded-full bg-[#FAF8F4] px-4 py-2">{{ $vendor->years_experience }} años de experiencia</span>@endif
+                            </div>
+                        @endif
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 rounded-2xl bg-[#FAF8F4] p-4 text-center">
+                        <div><strong class="block text-xl">{{ $user->posts_count }}</strong><span class="text-xs font-bold text-[#6B7D83]">Publicaciones</span></div>
+                        <div><strong class="block text-xl">{{ $isProvider ? $user->posts_count : $user->job_requests_count }}</strong><span class="text-xs font-bold text-[#6B7D83]">Actividad</span></div>
+                        <div><strong class="block text-xl">{{ $rating ? number_format($rating, 1) : '—' }}</strong><span class="text-xs font-bold text-[#6B7D83]">{{ $reviewsCount }} reseñas</span></div>
+                    </div>
+                </div>
+
+                @if (! $isOwner)
+                    <div class="mt-7 rounded-2xl border border-[#F97316]/15 bg-[#FFF8F2] p-4">
+                        <button class="rounded-full bg-[#123B4A] px-6 py-3 font-black text-white" type="button" disabled>Contactar dentro de Plaza Local</button>
+                        <p class="mt-2 text-xs font-bold text-[#8A6A55]">El contacto se habilitará con el módulo de conversaciones. Los datos privados nunca se muestran públicamente.</p>
+                    </div>
+                @endif
+            </div>
+        </section>
+
+        @if ($isProvider && ($vendor?->certifications || $vendor?->tools))
+            <section class="mt-6 grid gap-4 sm:grid-cols-2">
+                @if ($vendor?->certifications)<div class="rounded-3xl border border-[#123B4A]/10 bg-white p-6"><h2 class="font-black">Certificaciones y preparación</h2><p class="mt-3 whitespace-pre-line text-sm leading-7 text-[#536A72]">{{ $vendor->certifications }}</p></div>@endif
+                @if ($vendor?->tools)<div class="rounded-3xl border border-[#123B4A]/10 bg-white p-6"><h2 class="font-black">Herramientas y capacidades</h2><p class="mt-3 whitespace-pre-line text-sm leading-7 text-[#536A72]">{{ $vendor->tools }}</p></div>@endif
+            </section>
+        @endif
+
+        <section class="mt-9">
+            <p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Actividad pública</p>
+            <h2 class="mt-1 text-2xl font-black">Publicaciones de {{ explode(' ', trim($user->name))[0] }}</h2>
+            <div class="mt-5 grid gap-4 md:grid-cols-2">
+                @forelse ($posts as $post)
+                    <article class="rounded-3xl border border-[#123B4A]/10 bg-white p-6 shadow-sm">
+                        <div class="flex items-center justify-between gap-3"><span class="text-xs font-black uppercase tracking-[.12em] text-[#F97316]">{{ str_replace('_', ' ', $post->type) }}</span><time class="text-xs font-bold text-[#8A999E]">{{ $post->published_at->diffForHumans() }}</time></div>
+                        <p class="mt-4 whitespace-pre-line leading-7 text-[#314B54]">{{ $post->body }}</p>
+                        @if ($post->listing)<p class="mt-4 rounded-2xl bg-[#FAF8F4] px-4 py-3 font-black">{{ $post->listing->name }}</p>@endif
+                        @if ($post->jobRequest)<p class="mt-4 rounded-2xl bg-[#FFF8F2] px-4 py-3 font-black">{{ $post->jobRequest->title }}</p>@endif
+                    </article>
+                @empty
+                    <div class="rounded-3xl border border-dashed border-[#123B4A]/20 bg-white/60 p-10 text-center text-sm font-bold text-[#6B7D83] md:col-span-2">Todavía no hay publicaciones públicas.</div>
+                @endforelse
+            </div>
+            @if ($posts->hasPages())<div class="mt-6">{{ $posts->links() }}</div>@endif
+        </section>
+    </main>
+</body>
+</html>

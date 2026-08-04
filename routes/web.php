@@ -16,14 +16,10 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::view('/seguridad', 'security')->middleware('password.confirm')->name('security');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
-
-    Route::middleware('two-factor.required')->group(function () {
-        Route::get('/dashboard', DashboardController::class)->name('dashboard');
-        Route::get('/perfiles/{user}', [ProfileController::class, 'show'])->name('profile.show');
-        Route::get('/mi-perfil/editar', [ProfileController::class, 'edit'])->name('profile.edit');
-        Route::put('/mi-perfil', [ProfileController::class, 'update'])->name('profile.update');
-        Route::post('/publicaciones', [PostController::class, 'store'])->name('posts.store');
-    });
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/perfiles/{user}', [ProfileController::class, 'show'])->name('profile.show');
+    Route::get('/mi-perfil/editar', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/mi-perfil', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/publicaciones', [PostController::class, 'store'])->middleware('verified')->name('posts.store');
 });

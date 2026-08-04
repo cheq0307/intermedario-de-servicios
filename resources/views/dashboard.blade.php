@@ -56,7 +56,6 @@
                     ['Publicar', '#crear-publicacion', false],
                     ['Mensajes', '#proximamente', false],
                     ['Mi perfil', route('profile.show', $currentUser), false],
-                    ['Seguridad', route('security'), false],
                 ] as [$label, $href, $active])
                     <a class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black transition {{ $active ? 'bg-[#123B4A] text-white shadow-lg shadow-[#123B4A]/10' : 'text-[#536A72] hover:bg-white hover:text-[#123B4A]' }}" href="{{ $href }}">
                         <span class="size-2 rounded-full {{ $active ? 'bg-[#F97316]' : 'bg-[#B8C4C7]' }}"></span>{{ $label }}
@@ -73,6 +72,15 @@
             @if (session('status'))
                 <div class="rounded-2xl border border-[#22A06B]/20 bg-[#E9F7F0] px-5 py-4 text-sm font-black text-[#14734A]" role="status">
                     {{ session('status') }}
+                </div>
+            @endif
+
+            @if (! $currentUser->hasVerifiedEmail())
+                <div class="rounded-2xl border border-[#F97316]/20 bg-[#FFF1E8] px-5 py-4" role="status">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div><p class="font-black text-[#A94708]">Verifica tu correo</p><p class="mt-1 text-sm font-semibold text-[#8A6A55]">Te enviamos un enlace a {{ $currentUser->email }}. Podr&aacute;s explorar y completar tu perfil, pero necesitas verificarlo antes de publicar.</p></div>
+                        <form method="POST" action="{{ route('verification.send') }}">@csrf<button class="shrink-0 rounded-full bg-[#F97316] px-5 py-2.5 text-sm font-black text-white" type="submit">Reenviar correo</button></form>
+                    </div>
                 </div>
             @endif
 

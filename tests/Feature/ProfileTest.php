@@ -13,8 +13,8 @@ class ProfileTest extends TestCase
 
     public function test_authenticated_user_can_view_a_public_profile_without_private_contact_data(): void
     {
-        $viewer = User::factory()->withTwoFactorAuthentication()->create(['account_type' => 'client']);
-        $provider = User::factory()->withTwoFactorAuthentication()->create([
+        $viewer = User::factory()->create(['account_type' => 'client']);
+        $provider = User::factory()->create([
             'account_type' => 'provider',
             'phone' => '5550001122',
         ]);
@@ -38,7 +38,7 @@ class ProfileTest extends TestCase
 
     public function test_provider_can_update_professional_profile(): void
     {
-        $provider = User::factory()->withTwoFactorAuthentication()->create(['account_type' => 'provider']);
+        $provider = User::factory()->create(['account_type' => 'provider']);
         $provider->vendor()->create([
             'display_name' => $provider->name,
             'slug' => 'proveedor-'.$provider->id,
@@ -72,7 +72,7 @@ class ProfileTest extends TestCase
 
     public function test_profile_displays_user_publications(): void
     {
-        $user = User::factory()->withTwoFactorAuthentication()->create(['account_type' => 'client']);
+        $user = User::factory()->create(['account_type' => 'client']);
         Post::create([
             'user_id' => $user->id,
             'type' => 'job_request',

@@ -4,7 +4,6 @@ namespace Database\Factories;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -37,15 +36,6 @@ class UserFactory extends Factory
     /**
      * Indicate that the model's email address should be unverified.
      */
-    public function withTwoFactorAuthentication(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'two_factor_secret' => Crypt::encrypt('TESTTWOFACSECRET'),
-            'two_factor_recovery_codes' => Crypt::encrypt(json_encode(['test-recovery-code'])),
-            'two_factor_confirmed_at' => now(),
-        ]);
-    }
-
     public function unverified(): static
     {
         return $this->state(fn (array $attributes) => [

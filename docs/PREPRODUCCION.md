@@ -4,7 +4,8 @@
 
 Estas métricas miden cosas distintas y no deben mezclarse:
 
-- MVP funcional sin pagos reales: **75%**.
+- Flujo de contratación de servicios sin pagos reales: **90%**.
+- MVP completo, incluyendo productos, búsqueda, notificaciones y administración: **65%**.
 - Preparación para preproducción controlada: **55%**.
 - Preparación para producción con dinero real: **35%**.
 

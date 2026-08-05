@@ -50,4 +50,9 @@ class Vendor extends Model
     {
         return $this->hasMany(Listing::class);
     }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
 }

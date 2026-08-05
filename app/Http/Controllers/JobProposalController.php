@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Domain\Marketplace\Enums\AccountType;
 use App\Domain\Marketplace\Enums\JobRequestStatus;
+use App\Domain\Marketplace\Enums\OrderStatus;
 use App\Domain\Marketplace\Enums\ProposalStatus;
+use App\Domain\Marketplace\Services\CommissionCalculator;
 use App\Models\Conversation;
 use App\Models\JobProposal;
 use App\Models\JobRequest;
+use App\Models\Order;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +20,8 @@ use Illuminate\View\View;
 
 class JobProposalController extends Controller
 {
+    public function __construct(private readonly CommissionCalculator $commissionCalculator) {}
+
     public function index(Request $request, JobRequest $jobRequest): View
     {
         $isOwner = $jobRequest->client_id === $request->user()->id;
@@ -25,7 +30,7 @@ class JobProposalController extends Controller
 
         $jobRequest->load('client:id,name,avatar_path');
         $proposals = $jobRequest->proposals()
-            ->with('provider.vendor')
+            ->with(['provider.vendor', 'order'])
             ->when(! $isOwner, fn ($query) => $query->where('provider_id', $request->user()->id))
             ->latest()
             ->get();
@@ -37,6 +42,7 @@ class JobProposalController extends Controller
     public function store(Request $request, JobRequest $jobRequest): RedirectResponse
     {
         abort_unless($request->user()->account_type === AccountType::Provider, 403);
+        abort_unless($request->user()->vendor, 422, 'Completa tu perfil comercial antes de enviar propuestas.');
         abort_if($jobRequest->client_id === $request->user()->id, 403);
         abort_unless(in_array($jobRequest->status, [JobRequestStatus::Published, JobRequestStatus::InConversation], true), 422);
 
@@ -71,12 +77,46 @@ class JobProposalController extends Controller
     {
         $this->assertOwnerAndProposal($request, $jobRequest, $proposal);
 
-        DB::transaction(function () use ($request, $jobRequest, $proposal): void {
+        $order = DB::transaction(function () use ($request, $jobRequest, $proposal): Order {
             $lockedRequest = JobRequest::query()->lockForUpdate()->findOrFail($jobRequest->id);
-            $lockedProposal = JobProposal::query()->lockForUpdate()->findOrFail($proposal->id);
+            $lockedProposal = JobProposal::query()->with('provider.vendor')->lockForUpdate()->findOrFail($proposal->id);
 
             abort_unless(in_array($lockedRequest->status, [JobRequestStatus::Published, JobRequestStatus::InConversation], true), 422);
             abort_unless($lockedProposal->status === ProposalStatus::Pending, 422);
+            abort_unless($lockedProposal->provider->vendor, 422, 'El proveedor debe completar su perfil comercial antes de ser contratado.');
+
+            $vendor = $lockedProposal->provider->vendor;
+            $commissionAmount = $this->commissionCalculator->calculate(
+                $lockedProposal->amount,
+                $vendor->commission_rate_basis_points,
+            );
+
+            $order = Order::create([
+                'public_id' => (string) Str::uuid(),
+                'buyer_id' => $lockedRequest->client_id,
+                'vendor_id' => $vendor->id,
+                'job_request_id' => $lockedRequest->id,
+                'job_proposal_id' => $lockedProposal->id,
+                'status' => OrderStatus::Accepted,
+                'fulfillment_type' => 'service',
+                'subtotal_amount' => $lockedProposal->amount,
+                'commission_amount' => $commissionAmount,
+                'total_amount' => $lockedProposal->amount,
+                'currency' => $lockedProposal->currency,
+                'buyer_notes' => $lockedRequest->description,
+                'accepted_at' => now(),
+                'due_at' => now()->addDays($lockedProposal->estimated_days),
+            ]);
+            $order->items()->create([
+                'name_snapshot' => $lockedRequest->title,
+                'quantity' => 1,
+                'unit_price_amount' => $lockedProposal->amount,
+                'line_total_amount' => $lockedProposal->amount,
+                'metadata' => [
+                    'proposal_message' => $lockedProposal->message,
+                    'estimated_days' => $lockedProposal->estimated_days,
+                ],
+            ]);
 
             $lockedProposal->update(['status' => ProposalStatus::Accepted, 'responded_at' => now()]);
             $lockedRequest->proposals()
@@ -98,11 +138,14 @@ class JobProposalController extends Controller
                 'sender_id' => $request->user()->id,
                 'type' => 'system',
                 'body' => 'Propuesta aceptada por $'.number_format($lockedProposal->amount / 100, 2).' MXN, plazo estimado de '.$lockedProposal->estimated_days.' días.',
+                'metadata' => ['order_public_id' => $order->public_id],
             ]);
             $conversation->update(['last_message_at' => now()]);
+
+            return $order;
         });
 
-        return redirect()->route('job-proposals.index', $jobRequest)->with('status', 'Propuesta aceptada. Ya pueden coordinar los detalles en el chat.');
+        return redirect()->route('orders.show', $order)->with('status', 'Propuesta aceptada. La contratación quedó registrada.');
     }
 
     public function reject(Request $request, JobRequest $jobRequest, JobProposal $proposal): RedirectResponse

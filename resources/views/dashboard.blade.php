@@ -55,6 +55,7 @@
                     ['Explorar', '#actividad', false],
                     ['Publicar', '#crear-publicacion', false],
                     ['Mensajes', route('conversations.index'), false],
+                    ['Mis trabajos', route('orders.index'), false],
                     ['Mi perfil', route('profile.show', $currentUser), false],
                 ] as [$label, $href, $active])
                     <a class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black transition {{ $active ? 'bg-[#123B4A] text-white shadow-lg shadow-[#123B4A]/10' : 'text-[#536A72] hover:bg-white hover:text-[#123B4A]' }}" href="{{ $href }}">
@@ -357,8 +358,8 @@
         <div class="mx-auto grid max-w-lg grid-cols-5">
             @foreach ([
                 ['Inicio', '#inicio'],
-                ['Explorar', '#actividad'],
                 ['Publicar', '#crear-publicacion'],
+                ['Trabajos', route('orders.index')],
                 ['Mensajes', route('conversations.index')],
                 ['Perfil', route('profile.show', $currentUser)],
             ] as [$label, $href])

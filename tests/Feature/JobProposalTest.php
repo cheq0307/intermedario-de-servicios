@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\JobProposal;
 use App\Models\JobRequest;
 use App\Models\User;
+use App\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -28,7 +29,7 @@ class JobProposalTest extends TestCase
     public function test_client_accepts_one_proposal_and_remaining_proposals_are_rejected(): void
     {
         [$client, $provider, $jobRequest] = $this->scenario();
-        $otherProvider = User::factory()->create(['account_type' => 'provider']);
+        $otherProvider = $this->provider();
         $this->actingAs($provider)->post(route('job-proposals.store', $jobRequest), $this->payload('850'));
         $this->actingAs($otherProvider)->post(route('job-proposals.store', $jobRequest), $this->payload('900'));
         $accepted = JobProposal::where('provider_id', $provider->id)->firstOrFail();
@@ -40,12 +41,18 @@ class JobProposalTest extends TestCase
         $this->assertSame('assigned', $jobRequest->fresh()->status->value);
         $this->assertDatabaseCount('conversations', 1);
         $this->assertDatabaseHas('messages', ['type' => 'system', 'sender_id' => $client->id]);
+        $this->assertDatabaseHas('orders', ['job_proposal_id' => $accepted->id, 'total_amount' => 85000, 'commission_amount' => 6800]);
+        $this->assertDatabaseHas('order_items', ['name_snapshot' => $jobRequest->title, 'line_total_amount' => 85000]);
+        $this->actingAs($provider)
+            ->get(route('job-proposals.index', $jobRequest))
+            ->assertOk()
+            ->assertSee('Ver contratación');
     }
 
     public function test_provider_cannot_see_competing_proposals(): void
     {
         [, $provider, $jobRequest] = $this->scenario();
-        $otherProvider = User::factory()->create(['account_type' => 'provider']);
+        $otherProvider = $this->provider();
         $this->actingAs($otherProvider)->post(route('job-proposals.store', $jobRequest), $this->payload('1234'));
 
         $this->actingAs($provider)
@@ -65,10 +72,20 @@ class JobProposalTest extends TestCase
         $this->actingAs($outsider)->patch(route('job-proposals.accept', [$jobRequest, $proposal]))->assertForbidden();
     }
 
+    public function test_provider_without_commercial_profile_cannot_submit_proposal(): void
+    {
+        [, , $jobRequest] = $this->scenario();
+        $incompleteProvider = User::factory()->create(['account_type' => 'provider']);
+
+        $this->actingAs($incompleteProvider)
+            ->post(route('job-proposals.store', $jobRequest), $this->payload('850'))
+            ->assertStatus(422);
+    }
+
     private function scenario(): array
     {
         $client = User::factory()->create(['account_type' => 'client']);
-        $provider = User::factory()->create(['account_type' => 'provider']);
+        $provider = $this->provider();
         $jobRequest = JobRequest::create([
             'public_id' => (string) Str::uuid(),
             'client_id' => $client->id,
@@ -80,6 +97,20 @@ class JobProposalTest extends TestCase
         ]);
 
         return [$client, $provider, $jobRequest];
+    }
+
+    private function provider(): User
+    {
+        $provider = User::factory()->create(['account_type' => 'provider']);
+        Vendor::create([
+            'user_id' => $provider->id,
+            'display_name' => 'Proveedor de prueba',
+            'slug' => 'proveedor-'.Str::lower(Str::random(8)),
+            'status' => 'active',
+            'commission_rate_basis_points' => 800,
+        ]);
+
+        return $provider;
     }
 
     private function payload(string $amount): array

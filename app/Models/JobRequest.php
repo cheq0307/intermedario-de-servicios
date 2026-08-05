@@ -59,4 +59,9 @@ class JobRequest extends Model
     {
         return $this->hasMany(JobProposal::class);
     }
+
+    public function order(): HasOne
+    {
+        return $this->hasOne(Order::class);
+    }
 }

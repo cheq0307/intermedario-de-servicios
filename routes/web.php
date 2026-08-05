@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\JobProposalController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ServiceOrderController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'home')->name('home');
@@ -34,5 +35,11 @@ Route::middleware('auth')->group(function () {
         Route::patch('/solicitudes/{jobRequest}/propuestas/{proposal}/aceptar', [JobProposalController::class, 'accept'])->name('job-proposals.accept');
         Route::patch('/solicitudes/{jobRequest}/propuestas/{proposal}/rechazar', [JobProposalController::class, 'reject'])->name('job-proposals.reject');
         Route::patch('/solicitudes/{jobRequest}/propuestas/{proposal}/retirar', [JobProposalController::class, 'withdraw'])->name('job-proposals.withdraw');
+        Route::get('/trabajos', [ServiceOrderController::class, 'index'])->name('orders.index');
+        Route::get('/trabajos/{order}', [ServiceOrderController::class, 'show'])->name('orders.show');
+        Route::patch('/trabajos/{order}/iniciar', [ServiceOrderController::class, 'start'])->name('orders.start');
+        Route::patch('/trabajos/{order}/entregar', [ServiceOrderController::class, 'deliver'])->name('orders.deliver');
+        Route::patch('/trabajos/{order}/completar', [ServiceOrderController::class, 'complete'])->name('orders.complete');
+        Route::patch('/trabajos/{order}/cancelar', [ServiceOrderController::class, 'cancel'])->name('orders.cancel');
     });
 });

@@ -8,6 +8,7 @@
 </head>
 <body class="min-h-screen bg-[#FAF8F4] text-[#17313A] antialiased">
     @php($statusLabels = ['accepted' => 'Contratación aceptada', 'in_progress' => 'En progreso', 'delivered' => 'Esperando confirmación', 'completed' => 'Completado', 'cancelled' => 'Cancelado', 'disputed' => 'En disputa'])
+    @php($statusLabels = array_merge($statusLabels, ['awaiting_payment' => 'Pendiente de pago', 'paid' => 'Pagado', 'ready' => 'Listo para entregar']))
     <header class="border-b border-[#123B4A]/10 bg-white">
         <div class="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
             <a class="font-black" href="{{ route('dashboard') }}">Plaza Local</a>
@@ -22,10 +23,11 @@
         <div class="mt-8 space-y-4">
             @forelse ($orders as $order)
                 @php($isBuyer = $order->buyer_id === auth()->id())
+                @php($isProduct = $order->fulfillment_type === 'pickup')
                 <a class="block rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-[#F97316]/25" href="{{ route('orders.show', $order) }}">
                     <div class="flex flex-wrap items-start justify-between gap-4">
                         <div>
-                            <span class="rounded-full bg-[#E8F1EE] px-3 py-1.5 text-xs font-black text-[#14734A]">{{ $isBuyer ? 'Contrataste' : 'Te contrataron' }}</span>
+                            <span class="rounded-full bg-[#E8F1EE] px-3 py-1.5 text-xs font-black text-[#14734A]">{{ $isProduct ? ($isBuyer ? 'Compraste' : 'Te compraron') : ($isBuyer ? 'Contrataste' : 'Te contrataron') }}</span>
                             <h2 class="mt-3 text-xl font-black">{{ $order->jobRequest?->title ?? $order->items->first()?->name_snapshot ?? 'Trabajo local' }}</h2>
                             <p class="mt-2 text-sm font-bold text-[#6B7D83]">Con {{ $isBuyer ? $order->vendor->display_name : $order->buyer->name }}</p>
                         </div>

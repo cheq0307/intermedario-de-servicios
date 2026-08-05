@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DisputeController;
 use App\Http\Controllers\JobProposalController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\ProductOrderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ServiceOrderController;
@@ -29,6 +30,12 @@ Route::middleware('auth')->group(function () {
     Route::put('/mi-perfil', [ProfileController::class, 'update'])->name('profile.update');
     Route::middleware('verified')->group(function () {
         Route::post('/publicaciones', [PostController::class, 'store'])->name('posts.store');
+        Route::get('/productos/{listing}/comprar', [ProductOrderController::class, 'checkout'])->name('products.checkout');
+        Route::post('/productos/{listing}/pedidos', [ProductOrderController::class, 'store'])->name('products.orders.store');
+        Route::post('/pedidos/{order}/simular-pago', [ProductOrderController::class, 'simulatePayment'])->name('products.orders.simulate-payment');
+        Route::patch('/pedidos/{order}/listo', [ProductOrderController::class, 'ready'])->name('products.orders.ready');
+        Route::patch('/pedidos/{order}/entregar', [ProductOrderController::class, 'deliver'])->name('products.orders.deliver');
+        Route::patch('/pedidos/{order}/cancelar', [ProductOrderController::class, 'cancel'])->name('products.orders.cancel');
         Route::get('/mensajes', [ConversationController::class, 'index'])->name('conversations.index');
         Route::post('/mensajes/iniciar', [ConversationController::class, 'start'])->name('conversations.start');
         Route::get('/mensajes/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');

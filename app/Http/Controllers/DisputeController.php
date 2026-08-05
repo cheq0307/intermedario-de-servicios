@@ -49,7 +49,7 @@ class DisputeController extends Controller
         $dispute = DB::transaction(function () use ($request, $order, $validated): Dispute {
             $lockedOrder = Order::with('vendor')->lockForUpdate()->findOrFail($order->id);
             abort_unless($lockedOrder->isParticipant($request->user()), 403);
-            abort_unless(in_array($lockedOrder->status, [OrderStatus::InProgress, OrderStatus::Delivered], true), 422);
+            abort_unless(in_array($lockedOrder->status, [OrderStatus::Paid, OrderStatus::InProgress, OrderStatus::Ready, OrderStatus::Delivered], true), 422);
             abort_if($lockedOrder->dispute()->exists(), 422, 'Esta orden ya tiene una disputa.');
 
             $dispute = Dispute::create([

@@ -83,6 +83,11 @@ class Order extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function inventoryReservation(): HasOne
+    {
+        return $this->hasOne(InventoryReservation::class);
+    }
+
     public function dispute(): HasOne
     {
         return $this->hasOne(Dispute::class);

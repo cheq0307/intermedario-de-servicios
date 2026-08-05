@@ -54,6 +54,7 @@ class ServiceOrderController extends Controller
         ], 'El proveedor marcó el trabajo como entregado. Falta la confirmación del cliente.');
 
         return back()->with('status', 'Entrega registrada. Esperamos la confirmación del cliente.');
+        abort_unless(in_array($lockedOrder->fulfillment_type, ['service', 'pickup'], true), 422);
     }
 
     public function complete(Request $request, Order $order): RedirectResponse

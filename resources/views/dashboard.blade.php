@@ -316,6 +316,10 @@
                                     <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-[#FAF8F4] hover:text-[#F97316]" href="{{ route('job-proposals.index', $post->jobRequest) }}">Enviar propuesta</a>
                                 @elseif ($post->jobRequest)
                                     <span class="rounded-xl px-3 py-2.5 text-center text-[#A4B0B4]">Solo proveedores</span>
+                                @elseif ($post->listing?->type?->value === 'product' && $post->listing?->price_type?->value === 'fixed')
+                                    <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-[#FAF8F4] hover:text-[#F97316]" href="{{ route('products.checkout', $post->listing) }}">
+                                        Comprar
+                                    </a>
                                 @else
                                     <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button">
                                         {{ $post->listing?->price_type?->value === 'quote' ? 'Solicitar cotización' : 'Me interesa' }}

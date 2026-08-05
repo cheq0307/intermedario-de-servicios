@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Contracts\MarketplacePaymentGateway;
+use App\Services\Payments\FakePaymentGateway;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\ServiceProvider;
@@ -10,7 +12,18 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->app->bind(MarketplacePaymentGateway::class, function () {
+            $driver = config('marketplace.payment_driver');
+
+            if ($driver === 'fake') {
+                $allowed = app()->environment(['local', 'testing']) || (app()->environment('staging') && config('marketplace.allow_fake_payments'));
+                abort_unless($allowed, 503, 'Configura una pasarela de pago real para este entorno.');
+
+                return new FakePaymentGateway;
+            }
+
+            throw new \RuntimeException("Pasarela de pago no soportada: {$driver}");
+        });
     }
 
     public function boot(): void

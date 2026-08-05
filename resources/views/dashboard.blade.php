@@ -308,7 +308,7 @@
                         </div>
                         <div class="grid grid-cols-3 border-t border-[#123B4A]/8 px-3 py-2 text-xs font-black text-[#6B7D83]">
                             @if ($post->user_id === $currentUser->id)
-                                <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button">Administrar</button>
+                                <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-[#FAF8F4] hover:text-[#F97316]" href="{{ route('posts.edit', $post) }}">Editar</a>
                                 @if ($post->jobRequest)
                                     <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-[#FAF8F4] hover:text-[#F97316]" href="{{ route('job-proposals.index', $post->jobRequest) }}">Ver propuestas</a>
                                 @else

@@ -10,6 +10,7 @@ use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\JobProposalController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\PostManagementController;
 use App\Http\Controllers\ProductOrderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
@@ -33,6 +34,8 @@ Route::middleware('auth')->group(function () {
     Route::put('/mi-perfil', [ProfileController::class, 'update'])->name('profile.update');
     Route::middleware('verified')->group(function () {
         Route::post('/publicaciones', [PostController::class, 'store'])->name('posts.store');
+        Route::get('/publicaciones/{post}/editar', [PostManagementController::class, 'edit'])->name('posts.edit');
+        Route::put('/publicaciones/{post}', [PostManagementController::class, 'update'])->name('posts.update');
         Route::get('/productos/{listing}/comprar', [ProductOrderController::class, 'checkout'])->name('products.checkout');
         Route::post('/productos/{listing}/pedidos', [ProductOrderController::class, 'store'])->name('products.orders.store');
         Route::post('/pedidos/{order}/simular-pago', [ProductOrderController::class, 'simulatePayment'])->name('products.orders.simulate-payment');

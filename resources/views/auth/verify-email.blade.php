@@ -5,8 +5,12 @@
         <p class="mt-3 leading-7 text-[#6f827b]">Enviamos un enlace de verificación a <strong>{{ auth()->user()->email }}</strong>. Ábrelo para confirmar que el correo te pertenece.</p>
     </div>
 
+    @if(config('mail.default') === 'log')
+        <div class="mt-6 rounded-2xl border border-[#F5D48D] bg-[#FFF8E6] px-4 py-3 text-sm font-bold leading-6 text-[#79551E]">Modo local: todavía no existe un servidor SMTP conectado. El enlace se guarda en <code>storage/logs/laravel.log</code> y no llegará a tu bandeja.</div>
+    @endif
+
     @if (session('status') === 'verification-link-sent')
-        <div class="mt-6 rounded-2xl border border-[#22A06B]/20 bg-[#E9F7F0] px-4 py-3 text-sm font-bold text-[#14734A]">Enviamos un enlace nuevo. Revisa también la carpeta de spam.</div>
+        <div class="mt-6 rounded-2xl border border-[#22A06B]/20 bg-[#E9F7F0] px-4 py-3 text-sm font-bold text-[#14734A]">{{ config('mail.default') === 'log' ? 'Generamos un enlace nuevo en el registro local.' : 'Enviamos un enlace nuevo. Revisa también la carpeta de spam.' }}</div>
     @endif
 
     <form class="mt-8" method="POST" action="{{ route('verification.send') }}">

@@ -29,7 +29,7 @@ class ServiceOrderController extends Controller
 
     public function show(Request $request, Order $order): View
     {
-        $order->load(['buyer:id,name,avatar_path', 'vendor.user:id,name,avatar_path', 'jobRequest', 'jobProposal', 'items']);
+        $order->load(['buyer:id,name,avatar_path', 'vendor.user:id,name,avatar_path', 'jobRequest', 'jobProposal', 'items', 'dispute', 'reviews.author:id,name']);
         $this->authorizeParticipant($request, $order);
 
         $participantIds = collect([$order->buyer_id, $order->vendor->user_id])->sort()->values();

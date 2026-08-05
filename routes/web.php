@@ -4,9 +4,11 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DisputeController;
 use App\Http\Controllers\JobProposalController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ServiceOrderController;
 use Illuminate\Support\Facades\Route;
 
@@ -41,5 +43,11 @@ Route::middleware('auth')->group(function () {
         Route::patch('/trabajos/{order}/entregar', [ServiceOrderController::class, 'deliver'])->name('orders.deliver');
         Route::patch('/trabajos/{order}/completar', [ServiceOrderController::class, 'complete'])->name('orders.complete');
         Route::patch('/trabajos/{order}/cancelar', [ServiceOrderController::class, 'cancel'])->name('orders.cancel');
+        Route::post('/trabajos/{order}/disputas', [DisputeController::class, 'store'])->name('disputes.store');
+        Route::get('/disputas/{dispute}', [DisputeController::class, 'show'])->name('disputes.show');
+        Route::post('/disputas/{dispute}/respuestas', [DisputeController::class, 'reply'])->name('disputes.reply');
+        Route::patch('/disputas/{dispute}/resolver', [DisputeController::class, 'resolve'])->name('disputes.resolve');
+        Route::get('/administracion/disputas', [DisputeController::class, 'adminIndex'])->name('disputes.admin-index');
+        Route::post('/trabajos/{order}/calificaciones', [ReviewController::class, 'store'])->name('reviews.store');
     });
 });

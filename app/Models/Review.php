@@ -33,4 +33,9 @@ class Review extends Model
     {
         return $this->belongsTo(User::class, 'subject_user_id');
     }
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
+    }
 }

@@ -19,6 +19,7 @@ class ServiceOrderTest extends TestCase
     public function test_provider_and_client_follow_the_service_order_lifecycle(): void
     {
         [$client, $provider, $order, $jobRequest] = $this->scenario();
+        $this->actingAs($provider)->get(route('orders.show', $order))->assertOk();
 
         $this->actingAs($provider)->patch(route('orders.start', $order))->assertRedirect();
         $this->assertSame('in_progress', $order->fresh()->status->value);
@@ -33,6 +34,7 @@ class ServiceOrderTest extends TestCase
         $this->actingAs($client)->patch(route('orders.complete', $order))->assertRedirect();
         $this->assertSame('completed', $order->fresh()->status->value);
         $this->assertSame('completed', $jobRequest->fresh()->status->value);
+        $this->actingAs($client)->get(route('orders.show', $order))->assertOk()->assertSee('Califica esta experiencia');
     }
 
     public function test_participant_can_cancel_only_before_work_starts_and_reason_is_recorded(): void

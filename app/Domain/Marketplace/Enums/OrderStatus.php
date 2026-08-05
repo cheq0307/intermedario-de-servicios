@@ -26,7 +26,7 @@ enum OrderStatus: string
             self::InProgress => [self::Ready, self::Delivered, self::Disputed, self::Cancelled],
             self::Ready => [self::Delivered, self::Disputed, self::Cancelled],
             self::Delivered => [self::Completed, self::Disputed],
-            self::Disputed => [self::Completed, self::Refunded, self::Cancelled],
+            self::Disputed => [self::InProgress, self::Delivered, self::Completed, self::Refunded, self::Cancelled],
             self::Completed, self::Cancelled, self::Refunded => [],
         }, true);
     }

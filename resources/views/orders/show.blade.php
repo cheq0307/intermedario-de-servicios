@@ -12,6 +12,7 @@
         $statusLabels = ['accepted' => 'Aceptada', 'in_progress' => 'En progreso', 'delivered' => 'Entregada', 'completed' => 'Completada', 'cancelled' => 'Cancelada', 'disputed' => 'En disputa'];
         $steps = ['accepted' => 'Acuerdo', 'in_progress' => 'En progreso', 'delivered' => 'Entregado', 'completed' => 'Completado'];
         $currentStep = array_search($order->status->value, array_keys($steps), true);
+        $ownReview = $order->reviews->firstWhere('author_id', auth()->id());
     @endphp
     <header class="border-b border-[#123B4A]/10 bg-white"><div class="mx-auto flex max-w-5xl items-center justify-between px-5 py-4"><a class="font-black" href="{{ route('dashboard') }}">Plaza Local</a><a class="rounded-full border border-[#123B4A]/10 px-4 py-2 text-sm font-black" href="{{ route('orders.index') }}">Mis trabajos</a></div></header>
     <main class="mx-auto max-w-5xl px-5 py-9">
@@ -42,6 +43,12 @@
                 <div class="mt-6 rounded-2xl bg-[#FAF8F4] p-4"><p class="text-xs font-black uppercase tracking-[.12em] text-[#6B7D83]">Incluye</p><p class="mt-2 whitespace-pre-line leading-7">{{ $order->jobProposal?->message }}</p></div>
                 <div class="mt-5 rounded-2xl border border-[#F5D48D] bg-[#FFF8E6] p-4 text-sm font-bold leading-6 text-[#79551E]">El pago en línea todavía no está configurado. Esta orden documenta el acuerdo y su seguimiento, pero no significa que Plaza Local haya recibido o retenido dinero.</div>
                 @if ($order->cancellation_reason)<div class="mt-5 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700"><strong>Motivo de cancelación:</strong> {{ $order->cancellation_reason }}</div>@endif
+                @if($order->reviews->isNotEmpty())<div class="mt-6 border-t border-[#123B4A]/10 pt-6"><h2 class="text-xl font-black">Calificaciones verificadas</h2><div class="mt-4 space-y-3">@foreach($order->reviews as $review)<article class="rounded-2xl bg-[#FAF8F4] p-4"><strong>{{ $review->author->name }} · {{ str_repeat('★', $review->rating) }}</strong>@if($review->comment)<p class="mt-2 text-sm leading-6 text-[#536A72]">{{ $review->comment }}</p>@endif</article>@endforeach</div></div>@endif
+                @if($order->status->value === 'completed' && ! $ownReview)
+                    <form class="mt-6 border-t border-[#123B4A]/10 pt-6" method="POST" action="{{ route('reviews.store', $order) }}">@csrf<h2 class="text-xl font-black">Califica esta experiencia</h2><div class="mt-4 grid gap-3 sm:grid-cols-[160px_1fr]"><select class="rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" name="rating" required><option value="5">5 - Excelente</option><option value="4">4 - Muy buena</option><option value="3">3 - Regular</option><option value="2">2 - Mala</option><option value="1">1 - Muy mala</option></select><textarea class="min-h-24 rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" name="comment" maxlength="1500" placeholder="Comentario opcional"></textarea></div><button class="mt-3 rounded-full bg-[#123B4A] px-5 py-3 text-sm font-black text-white" type="submit">Publicar calificación</button></form>
+                @elseif($ownReview)
+                    <p class="mt-6 rounded-2xl bg-[#E9F7F0] p-4 text-sm font-black text-[#14734A]">Ya calificaste esta contratación.</p>
+                @endif
             </section>
 
             <aside class="space-y-4">
@@ -57,6 +64,11 @@
 
                 @if ($order->status->value === 'accepted')
                     <section class="rounded-[1.75rem] border border-red-100 bg-white p-5"><h2 class="font-black">Cancelar antes de iniciar</h2><p class="mt-2 text-xs font-bold leading-5 text-[#6B7D83]">El motivo quedará registrado para ambas partes.</p><form class="mt-4 space-y-3" method="POST" action="{{ route('orders.cancel', $order) }}">@csrf @method('PATCH')<textarea class="min-h-24 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3 text-sm" name="reason" minlength="10" maxlength="1000" required placeholder="Explica el motivo"></textarea><button class="w-full rounded-full border border-red-200 px-5 py-2.5 text-sm font-black text-red-700" type="submit">Cancelar contratación</button></form></section>
+                @endif
+                @if($order->dispute)
+                    <a class="block rounded-[1.75rem] bg-[#FFF1E8] p-5 font-black text-[#D85B0B]" href="{{ route('disputes.show', $order->dispute) }}">Ver expediente de disputa →</a>
+                @elseif(in_array($order->status->value, ['in_progress', 'delivered'], true))
+                    <section class="rounded-[1.75rem] border border-red-100 bg-white p-5"><h2 class="font-black">Reportar un problema</h2><p class="mt-2 text-xs font-bold leading-5 text-[#6B7D83]">Se pausará el flujo hasta una resolución administrativa.</p><form class="mt-4 space-y-3" method="POST" action="{{ route('disputes.store', $order) }}">@csrf<select class="w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3 text-sm" name="reason" required><option value="not_delivered">No entregó</option><option value="different_work">Trabajo diferente</option><option value="price_problem">Problema con el precio</option><option value="poor_service">Mal servicio</option><option value="no_show">No se presentó</option><option value="other">Otro</option></select><textarea class="min-h-28 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3 text-sm" name="description" minlength="30" maxlength="3000" required placeholder="Describe con detalle qué ocurrió"></textarea><button class="w-full rounded-full border border-red-200 px-5 py-2.5 text-sm font-black text-red-700" type="submit">Abrir disputa</button></form></section>
                 @endif
             </aside>
         </div>

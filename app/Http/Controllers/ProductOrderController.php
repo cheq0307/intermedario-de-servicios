@@ -11,6 +11,8 @@ use App\Models\Conversation;
 use App\Models\InventoryReservation;
 use App\Models\Listing;
 use App\Models\Order;
+use App\Models\User;
+use App\Notifications\MarketplaceActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -103,6 +105,7 @@ class ProductOrderController extends Controller
 
             return $order;
         });
+        $this->notify($order->vendor->user, 'Nuevo pedido recibido', 'Un cliente reservó '.$order->items()->firstOrFail()->name_snapshot.'.', $order, 'order_created');
 
         return redirect()->route('orders.show', $order)->with('status', 'Pedido creado. El inventario quedó reservado temporalmente.');
     }
@@ -125,6 +128,7 @@ class ProductOrderController extends Controller
             $lockedOrder->inventoryReservation?->update(['status' => 'consumed', 'consumed_at' => now()]);
             $lockedOrder->update(['status' => OrderStatus::Paid]);
         });
+        $this->notify($order->vendor->user, 'Pago confirmado', 'El pago del pedido fue confirmado; ya puedes prepararlo.', $order, 'payment_paid');
 
         return back()->with('status', 'Pago simulado correctamente. En producción esta acción será reemplazada por la pasarela real.');
     }
@@ -132,6 +136,7 @@ class ProductOrderController extends Controller
     public function ready(Request $request, Order $order): RedirectResponse
     {
         $this->vendorTransition($request, $order, OrderStatus::Paid, OrderStatus::Ready);
+        $this->notify($order->buyer, 'Tu pedido está listo', 'El comercio marcó tu pedido como listo para entregar.', $order, 'order_ready');
 
         return back()->with('status', 'Pedido marcado como listo para entregar.');
     }
@@ -139,6 +144,7 @@ class ProductOrderController extends Controller
     public function deliver(Request $request, Order $order): RedirectResponse
     {
         $this->vendorTransition($request, $order, OrderStatus::Ready, OrderStatus::Delivered, ['delivered_at' => now()]);
+        $this->notify($order->buyer, 'Entrega registrada', 'El comercio registró la entrega; confirma que recibiste correctamente.', $order, 'order_delivered');
 
         return back()->with('status', 'Entrega registrada. Falta la confirmación del comprador.');
     }
@@ -158,8 +164,20 @@ class ProductOrderController extends Controller
                 'cancellation_reason' => 'Cancelado por el comprador antes del pago.',
             ]);
         });
+        $this->notify($order->vendor->user, 'Pedido cancelado', 'El comprador canceló el pedido antes del pago y se liberó el inventario.', $order, 'order_cancelled');
 
         return back()->with('status', 'Pedido cancelado e inventario liberado.');
+    }
+
+    private function notify(User $recipient, string $title, string $body, Order $order, string $kind): void
+    {
+        $recipient->notify(new MarketplaceActivity(
+            $title,
+            $body,
+            'orders.show',
+            ['order' => $order->public_id],
+            $kind,
+        ));
     }
 
     private function ensurePurchasable(Request $request, Listing $listing): void

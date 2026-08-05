@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DisputeController;
 use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\JobProposalController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProductOrderController;
 use App\Http\Controllers\ProfileController;
@@ -38,6 +39,9 @@ Route::middleware('auth')->group(function () {
         Route::patch('/pedidos/{order}/listo', [ProductOrderController::class, 'ready'])->name('products.orders.ready');
         Route::patch('/pedidos/{order}/entregar', [ProductOrderController::class, 'deliver'])->name('products.orders.deliver');
         Route::patch('/pedidos/{order}/cancelar', [ProductOrderController::class, 'cancel'])->name('products.orders.cancel');
+        Route::get('/notificaciones', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::patch('/notificaciones/leer-todas', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+        Route::patch('/notificaciones/{notification}/abrir', [NotificationController::class, 'open'])->name('notifications.open');
         Route::get('/mensajes', [ConversationController::class, 'index'])->name('conversations.index');
         Route::post('/mensajes/iniciar', [ConversationController::class, 'start'])->name('conversations.start');
         Route::get('/mensajes/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');

@@ -8,6 +8,7 @@ use App\Domain\Marketplace\Enums\OrderStatus;
 use App\Models\Conversation;
 use App\Models\Dispute;
 use App\Models\Order;
+use App\Notifications\MarketplaceActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -67,6 +68,7 @@ class DisputeController extends Controller
 
             return $dispute;
         });
+        $this->notifyParticipants($dispute, 'Se abrió una disputa', 'La otra parte reportó un problema en la contratación.', $request->user()->id);
 
         return redirect()->route('disputes.show', $dispute)->with('status', 'La incidencia quedó registrada para revisión.');
     }
@@ -122,8 +124,27 @@ class DisputeController extends Controller
             ]);
             $this->recordSystemMessage($order, 'La disputa fue resuelta: '.$validated['resolution'], $request->user()->id);
         });
+        $this->notifyParticipants($dispute, 'Disputa resuelta', 'Administración registró una resolución en el expediente.');
 
         return back()->with('status', 'La disputa fue resuelta y la orden actualizada.');
+    }
+
+    private function notifyParticipants(Dispute $dispute, string $title, string $body, ?int $excludeUserId = null): void
+    {
+        $dispute->loadMissing(['order.buyer', 'order.vendor.user']);
+        $participants = collect([$dispute->order->buyer, $dispute->order->vendor->user])
+            ->filter(fn ($user) => $user->id !== $excludeUserId)
+            ->unique('id');
+
+        foreach ($participants as $user) {
+            $user->notify(new MarketplaceActivity(
+                $title,
+                $body,
+                'disputes.show',
+                ['dispute' => $dispute->public_id],
+                'dispute',
+            ));
+        }
     }
 
     private function authorizeViewer(Request $request, Dispute $dispute): void

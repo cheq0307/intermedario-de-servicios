@@ -11,6 +11,8 @@ use App\Models\Conversation;
 use App\Models\JobProposal;
 use App\Models\JobRequest;
 use App\Models\Order;
+use App\Models\User;
+use App\Notifications\MarketplaceActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -53,6 +55,7 @@ class JobProposalController extends Controller
         ]);
 
         $proposal = $jobRequest->proposals()->firstOrNew(['provider_id' => $request->user()->id]);
+        $isUpdate = $proposal->exists;
         if ($proposal->exists && $proposal->status !== ProposalStatus::Pending) {
             throw ValidationException::withMessages(['proposal' => 'Esta propuesta ya no puede modificarse.']);
         }
@@ -69,6 +72,13 @@ class JobProposalController extends Controller
         if ($jobRequest->status === JobRequestStatus::Published) {
             $jobRequest->update(['status' => JobRequestStatus::InConversation]);
         }
+        $jobRequest->client->notify(new MarketplaceActivity(
+            $isUpdate ? 'Propuesta actualizada' : 'Nueva propuesta recibida',
+            $request->user()->name.' envió una propuesta para “'.$jobRequest->title.'”.',
+            'job-proposals.index',
+            ['jobRequest' => $jobRequest->public_id],
+            'proposal',
+        ));
 
         return redirect()->route('job-proposals.index', $jobRequest)->with('status', 'Tu propuesta fue enviada correctamente.');
     }
@@ -76,6 +86,10 @@ class JobProposalController extends Controller
     public function accept(Request $request, JobRequest $jobRequest, JobProposal $proposal): RedirectResponse
     {
         $this->assertOwnerAndProposal($request, $jobRequest, $proposal);
+
+        $otherPendingProviderIds = $jobRequest->proposals()->where('id', '!=', $proposal->id)
+            ->where('status', ProposalStatus::Pending->value)
+            ->pluck('provider_id');
 
         $order = DB::transaction(function () use ($request, $jobRequest, $proposal): Order {
             $lockedRequest = JobRequest::query()->lockForUpdate()->findOrFail($jobRequest->id);
@@ -144,6 +158,20 @@ class JobProposalController extends Controller
 
             return $order;
         });
+        $proposal->provider->notify(new MarketplaceActivity(
+            'Tu propuesta fue aceptada',
+            'El cliente aceptó tu propuesta para “'.$jobRequest->title.'”.',
+            'orders.show',
+            ['order' => $order->public_id],
+            'proposal_accepted',
+        ));
+        User::whereIn('id', $otherPendingProviderIds)->each(fn (User $provider) => $provider->notify(new MarketplaceActivity(
+            'La solicitud eligió otra propuesta',
+            'La solicitud “'.$jobRequest->title.'” ya fue asignada a otro proveedor.',
+            'job-proposals.index',
+            ['jobRequest' => $jobRequest->public_id],
+            'proposal_rejected',
+        )));
 
         return redirect()->route('orders.show', $order)->with('status', 'Propuesta aceptada. La contratación quedó registrada.');
     }
@@ -153,6 +181,13 @@ class JobProposalController extends Controller
         $this->assertOwnerAndProposal($request, $jobRequest, $proposal);
         abort_unless($proposal->status === ProposalStatus::Pending, 422);
         $proposal->update(['status' => ProposalStatus::Rejected, 'responded_at' => now()]);
+        $proposal->provider->notify(new MarketplaceActivity(
+            'Propuesta no seleccionada',
+            'El cliente no seleccionó tu propuesta para “'.$jobRequest->title.'”.',
+            'job-proposals.index',
+            ['jobRequest' => $jobRequest->public_id],
+            'proposal_rejected',
+        ));
 
         return back()->with('status', 'Propuesta rechazada.');
     }

@@ -6,6 +6,7 @@ use App\Domain\Marketplace\Enums\JobRequestStatus;
 use App\Domain\Marketplace\Enums\OrderStatus;
 use App\Models\Conversation;
 use App\Models\Order;
+use App\Notifications\MarketplaceActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -43,6 +44,7 @@ class ServiceOrderController extends Controller
         $this->transition($request, $order, OrderStatus::Accepted, OrderStatus::InProgress, 'provider', [
             'started_at' => now(),
         ], 'El proveedor inició el trabajo.');
+        $this->notifyCounterpart($order, $request->user()->id, 'Trabajo iniciado', 'El proveedor marcó la contratación como iniciada.', 'order_started');
 
         return back()->with('status', 'Trabajo marcado como iniciado.');
     }
@@ -52,9 +54,9 @@ class ServiceOrderController extends Controller
         $this->transition($request, $order, OrderStatus::InProgress, OrderStatus::Delivered, 'provider', [
             'delivered_at' => now(),
         ], 'El proveedor marcó el trabajo como entregado. Falta la confirmación del cliente.');
+        $this->notifyCounterpart($order, $request->user()->id, 'Trabajo entregado', 'El proveedor registró la entrega; revisa y confirma el resultado.', 'order_delivered');
 
         return back()->with('status', 'Entrega registrada. Esperamos la confirmación del cliente.');
-        abort_unless(in_array($lockedOrder->fulfillment_type, ['service', 'pickup'], true), 422);
     }
 
     public function complete(Request $request, Order $order): RedirectResponse
@@ -62,6 +64,7 @@ class ServiceOrderController extends Controller
         DB::transaction(function () use ($request, $order): void {
             $lockedOrder = $this->lockedOrderFor($request, $order, 'buyer');
             abort_unless($lockedOrder->status === OrderStatus::Delivered, 422);
+            abort_unless(in_array($lockedOrder->fulfillment_type, ['service', 'pickup'], true), 422);
 
             $lockedOrder->update([
                 'status' => OrderStatus::Completed,
@@ -70,6 +73,7 @@ class ServiceOrderController extends Controller
             $lockedOrder->jobRequest?->update(['status' => JobRequestStatus::Completed]);
             $this->recordSystemMessage($lockedOrder, 'El cliente confirmó la entrega. Trabajo completado.', $request->user()->id);
         });
+        $this->notifyCounterpart($order, $request->user()->id, 'Trabajo completado', 'El cliente confirmó la entrega de la contratación.', 'order_completed');
 
         return back()->with('status', 'Confirmaste la entrega. El trabajo quedó completado.');
     }
@@ -92,6 +96,7 @@ class ServiceOrderController extends Controller
             $lockedOrder->jobRequest?->update(['status' => JobRequestStatus::Cancelled]);
             $this->recordSystemMessage($lockedOrder, 'La contratación fue cancelada antes de iniciar. Motivo: '.$validated['reason'], $request->user()->id);
         });
+        $this->notifyCounterpart($order, $request->user()->id, 'Contratación cancelada', 'La otra parte canceló la contratación antes de iniciar.', 'order_cancelled');
 
         return back()->with('status', 'La contratación fue cancelada y el motivo quedó registrado.');
     }
@@ -128,6 +133,19 @@ class ServiceOrderController extends Controller
         }, 403);
 
         return $lockedOrder;
+    }
+
+    private function notifyCounterpart(Order $order, int $actorId, string $title, string $body, string $kind): void
+    {
+        $order->loadMissing(['buyer', 'vendor.user']);
+        $recipient = $order->buyer_id === $actorId ? $order->vendor->user : $order->buyer;
+        $recipient->notify(new MarketplaceActivity(
+            $title,
+            $body,
+            'orders.show',
+            ['order' => $order->public_id],
+            $kind,
+        ));
     }
 
     private function authorizeParticipant(Request $request, Order $order): void

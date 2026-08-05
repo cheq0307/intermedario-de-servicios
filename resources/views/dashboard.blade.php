@@ -38,6 +38,7 @@
             </form>
 
             <div class="flex shrink-0 items-center gap-2">
+                <a class="relative grid size-10 place-items-center rounded-full border border-[#123B4A]/10 bg-white font-black" href="{{ route('notifications.index') }}" aria-label="Notificaciones">🔔@if($currentUser->unreadNotifications()->count())<span class="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-[#F97316] px-1 text-[10px] text-white">{{ min(99, $currentUser->unreadNotifications()->count()) }}</span>@endif</a>
                 <span class="hidden max-w-36 truncate text-sm font-bold text-[#536A72] md:block">{{ $currentUser->name }}</span>
                 <a class="grid size-10 place-items-center rounded-full bg-[#DCEAE6] font-black text-[#123B4A] transition hover:ring-4 hover:ring-[#22A06B]/15" href="{{ route('profile.show', $currentUser) }}" aria-label="Ver mi perfil">{{ mb_strtoupper(mb_substr($currentUser->name, 0, 1)) }}</a>
                 <form method="POST" action="{{ route('logout') }}">
@@ -56,6 +57,7 @@
                     ['Explorar', route('explore'), false],
                     ['Publicar', '#crear-publicacion', false],
                     ['Mensajes', route('conversations.index'), false],
+                    ['Notificaciones', route('notifications.index'), false],
                     ['Mis trabajos', route('orders.index'), false],
                     ['Mi perfil', route('profile.show', $currentUser), false],
                 ] as [$label, $href, $active])

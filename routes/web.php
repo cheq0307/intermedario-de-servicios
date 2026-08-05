@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ConversationController;
@@ -49,5 +50,10 @@ Route::middleware('auth')->group(function () {
         Route::patch('/disputas/{dispute}/resolver', [DisputeController::class, 'resolve'])->name('disputes.resolve');
         Route::get('/administracion/disputas', [DisputeController::class, 'adminIndex'])->name('disputes.admin-index');
         Route::post('/trabajos/{order}/calificaciones', [ReviewController::class, 'store'])->name('reviews.store');
+        Route::get('/administracion', [AdminController::class, 'index'])->name('admin.index');
+        Route::patch('/administracion/proveedores/{vendor}/aprobar', [AdminController::class, 'approveVendor'])->name('admin.vendors.approve');
+        Route::patch('/administracion/proveedores/{vendor}/suspender', [AdminController::class, 'suspendVendor'])->name('admin.vendors.suspend');
+        Route::post('/administracion/usuarios/{user}/administrador', [AdminController::class, 'grantAdmin'])->name('admin.users.grant');
+        Route::delete('/administracion/usuarios/{user}/administrador', [AdminController::class, 'revokeAdmin'])->name('admin.users.revoke');
     });
 });

@@ -20,6 +20,10 @@ class PostController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $isProvider = $request->user()->account_type === AccountType::Provider;
+        if ($isProvider) {
+            abort_unless($request->user()->vendor?->status === 'active', 422, 'Tu perfil comercial debe ser aprobado antes de publicar ofertas.');
+        }
+
         $allowedTypes = $isProvider
             ? ['portfolio', 'business_update', 'product', 'service', 'promotion']
             : ['job_request'];

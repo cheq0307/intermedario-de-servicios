@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Post;
 use App\Models\User;
+use App\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -14,7 +15,7 @@ class PostPublishingTest extends TestCase
 
     public function test_a_provider_can_publish_a_service_with_a_structured_price(): void
     {
-        $provider = User::factory()->create(['account_type' => 'provider']);
+        $provider = $this->approvedProvider();
 
         $response = $this->actingAs($provider)->post(route('posts.store'), [
             'submission_token' => (string) Str::uuid(),
@@ -43,7 +44,7 @@ class PostPublishingTest extends TestCase
 
     public function test_a_provider_can_publish_a_product_with_stock(): void
     {
-        $provider = User::factory()->create(['account_type' => 'provider']);
+        $provider = $this->approvedProvider();
 
         $this->actingAs($provider)->post(route('posts.store'), [
             'submission_token' => (string) Str::uuid(),
@@ -148,5 +149,20 @@ class PostPublishingTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Promoción especial disponible');
+    }
+
+    public function test_pending_provider_cannot_publish_commercial_offer(): void
+    {
+        $provider = User::factory()->create(['account_type' => 'provider']);
+        Vendor::create(['user_id' => $provider->id, 'display_name' => $provider->name, 'slug' => 'pendiente-'.$provider->id, 'status' => 'pending']);
+        $this->actingAs($provider)->post(route('posts.store'), [])->assertStatus(422);
+    }
+
+    private function approvedProvider(): User
+    {
+        $provider = User::factory()->create(['account_type' => 'provider']);
+        Vendor::create(['user_id' => $provider->id, 'display_name' => $provider->name, 'slug' => 'aprobado-'.$provider->id, 'status' => 'active']);
+
+        return $provider;
     }
 }

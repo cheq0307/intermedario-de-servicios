@@ -42,7 +42,7 @@ class JobProposalController extends Controller
     public function store(Request $request, JobRequest $jobRequest): RedirectResponse
     {
         abort_unless($request->user()->account_type === AccountType::Provider, 403);
-        abort_unless($request->user()->vendor, 422, 'Completa tu perfil comercial antes de enviar propuestas.');
+        abort_unless($request->user()->vendor?->status === 'active', 422, 'Tu perfil comercial debe estar aprobado antes de enviar propuestas.');
         abort_if($jobRequest->client_id === $request->user()->id, 403);
         abort_unless(in_array($jobRequest->status, [JobRequestStatus::Published, JobRequestStatus::InConversation], true), 422);
 

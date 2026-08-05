@@ -62,6 +62,11 @@
                         <span class="size-2 rounded-full {{ $active ? 'bg-[#F97316]' : 'bg-[#B8C4C7]' }}"></span>{{ $label }}
                     </a>
                 @endforeach
+                @if($currentUser->hasAnyRole(['admin', 'superadmin']))
+                    <a class="mt-3 flex items-center gap-3 rounded-2xl bg-[#FFF1E8] px-4 py-3 text-sm font-black text-[#D85B0B]" href="{{ route('admin.index') }}">
+                        <span class="size-2 rounded-full bg-[#F97316]"></span>Administración
+                    </a>
+                @endif
                 <div class="mt-6 rounded-3xl bg-[#E8F1EE] p-5">
                     <p class="text-xs font-black uppercase tracking-[.16em] text-[#22A06B]">Tu comunidad</p>
                     <p class="mt-2 text-sm font-bold leading-6 text-[#536A72]">Compra y contrata dentro de la plataforma para conservar respaldo y reputación.</p>
@@ -82,6 +87,12 @@
                         <div><p class="font-black text-[#A94708]">Verifica tu correo</p><p class="mt-1 text-sm font-semibold text-[#8A6A55]">Te enviamos un enlace a {{ $currentUser->email }}. Podr&aacute;s explorar y completar tu perfil, pero necesitas verificarlo antes de publicar.</p></div>
                         <form method="POST" action="{{ route('verification.send') }}">@csrf<button class="shrink-0 rounded-full bg-[#F97316] px-5 py-2.5 text-sm font-black text-white" type="submit">Reenviar correo</button></form>
                     </div>
+                </div>
+            @endif
+
+            @if($isProvider && $currentUser->vendor?->status !== 'active')
+                <div class="rounded-2xl border border-[#F5D48D] bg-[#FFF8E6] px-5 py-4 text-sm font-bold leading-6 text-[#79551E]" role="status">
+                    Tu perfil comercial está {{ $currentUser->vendor?->status === 'suspended' ? 'suspendido' : 'pendiente de aprobación' }}. Puedes completar tu perfil, pero publicar ofertas y enviar propuestas permanecerá bloqueado hasta la aprobación administrativa.
                 </div>
             @endif
 

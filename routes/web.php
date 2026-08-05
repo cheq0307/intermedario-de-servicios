@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DisputeController;
+use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\JobProposalController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProductOrderController;
@@ -25,6 +26,7 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/explorar', ExploreController::class)->name('explore');
     Route::get('/perfiles/{user}', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/mi-perfil/editar', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/mi-perfil', [ProfileController::class, 'update'])->name('profile.update');

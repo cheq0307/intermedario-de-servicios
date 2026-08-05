@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Explorar - Plaza Local</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+</head>
+<body class="min-h-screen bg-[#FAF8F4] text-[#17313A] antialiased">
+    <header class="sticky top-0 z-30 border-b border-[#123B4A]/10 bg-white/90 backdrop-blur-xl"><div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4"><a class="font-black" href="{{ route('dashboard') }}">Plaza Local</a><a class="rounded-full border border-[#123B4A]/10 px-4 py-2 text-sm font-black" href="{{ route('dashboard') }}">Volver al inicio</a></div></header>
+    <main class="mx-auto max-w-6xl px-5 py-8">
+        <p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Tu comunidad</p>
+        <h1 class="mt-2 text-3xl font-black sm:text-4xl">Encuentra algo cerca de ti</h1>
+
+        <form class="mt-7 grid gap-3 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-4 shadow-sm md:grid-cols-[1fr_180px_130px_130px_auto]" method="GET" action="{{ route('explore') }}">
+            <input class="rounded-2xl bg-[#FAF8F4] px-4 py-3 outline-none focus:ring-4 focus:ring-[#F97316]/10" type="search" name="q" value="{{ $filters['q'] ?? '' }}" maxlength="100" placeholder="Producto, servicio o persona">
+            <select class="rounded-2xl bg-[#FAF8F4] px-4 py-3" name="type"><option value="all">Todo</option><option value="product" @selected($type === 'product')>Productos</option><option value="service" @selected($type === 'service')>Servicios</option><option value="provider" @selected($type === 'provider')>Proveedores</option><option value="job_request" @selected($type === 'job_request')>Solicitudes</option></select>
+            <input class="rounded-2xl bg-[#FAF8F4] px-4 py-3" type="number" name="min_price" value="{{ $filters['min_price'] ?? '' }}" min="0" step="0.01" placeholder="Precio mín.">
+            <input class="rounded-2xl bg-[#FAF8F4] px-4 py-3" type="number" name="max_price" value="{{ $filters['max_price'] ?? '' }}" min="0" step="0.01" placeholder="Precio máx.">
+            <button class="rounded-full bg-[#123B4A] px-6 py-3 font-black text-white" type="submit">Buscar</button>
+            <input class="rounded-2xl bg-[#FAF8F4] px-4 py-3 md:col-span-2" type="text" name="city" value="{{ $filters['city'] ?? '' }}" maxlength="100" placeholder="Pueblo o ciudad (opcional)">
+            @if(request()->hasAny(['q', 'type', 'min_price', 'max_price', 'city']))<a class="self-center text-center text-sm font-black text-[#D85B0B]" href="{{ route('explore') }}">Limpiar filtros</a>@endif
+        </form>
+        @if($errors->any())<p class="mt-4 rounded-2xl bg-red-50 p-4 font-bold text-red-700">{{ $errors->first() }}</p>@endif
+
+        @if(in_array($type, ['all', 'product', 'service'], true))
+            <section class="mt-10"><div class="flex items-end justify-between"><div><p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Compra y contrata</p><h2 class="mt-1 text-2xl font-black">Productos y servicios</h2></div><span class="text-sm font-bold text-[#6B7D83]">{{ $listings->total() }} resultados</span></div>
+                <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">@forelse($listings as $listing)<article class="rounded-[1.5rem] border border-[#123B4A]/10 bg-white p-5 shadow-sm"><div class="flex items-start justify-between gap-3"><span class="rounded-full bg-[#E9F7F0] px-3 py-1 text-xs font-black text-[#14734A]">{{ $listing->type->value === 'product' ? 'Producto' : 'Servicio' }}</span>@if($listing->stock !== null)<span class="text-xs font-bold text-[#6B7D83]">{{ $listing->stock }} disponibles</span>@endif</div><h3 class="mt-4 text-lg font-black">{{ $listing->name }}</h3><p class="mt-1 text-sm font-bold text-[#6B7D83]">{{ $listing->vendor->display_name }}</p><p class="mt-3 line-clamp-2 text-sm leading-6">{{ $listing->description }}</p><div class="mt-5 flex items-center justify-between gap-3"><strong>{{ $listing->price_amount !== null ? '$'.number_format($listing->price_amount / 100, 2).' MXN' : 'Cotización' }}</strong>@if($listing->type->value === 'product' && $listing->price_type->value === 'fixed')<a class="rounded-full bg-[#F97316] px-4 py-2 text-sm font-black text-white" href="{{ route('products.checkout', $listing) }}">Comprar</a>@else<a class="rounded-full border border-[#123B4A]/10 px-4 py-2 text-sm font-black" href="{{ route('profile.show', $listing->vendor->user) }}">Ver perfil</a>@endif</div></article>@empty<p class="col-span-full rounded-2xl border border-dashed border-[#123B4A]/20 p-8 text-center font-bold text-[#6B7D83]">No encontramos ofertas con esos filtros.</p>@endforelse</div>
+                @if($listings->hasPages())<div class="mt-5">{{ $listings->links() }}</div>@endif
+            </section>
+        @endif
+
+        @if(in_array($type, ['all', 'provider'], true))
+            <section class="mt-12"><div class="flex items-end justify-between"><div><p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Personas verificadas</p><h2 class="mt-1 text-2xl font-black">Proveedores</h2></div><span class="text-sm font-bold text-[#6B7D83]">{{ $providers->total() }} resultados</span></div><div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">@forelse($providers as $vendor)<a class="rounded-[1.5rem] border border-[#123B4A]/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5" href="{{ route('profile.show', $vendor->user) }}"><div class="flex items-center gap-3"><span class="grid size-12 place-items-center rounded-full bg-[#DCEAE6] font-black">{{ mb_strtoupper(mb_substr($vendor->display_name, 0, 1)) }}</span><div><h3 class="font-black">{{ $vendor->display_name }}</h3><p class="text-sm font-bold text-[#6B7D83]">{{ $vendor->specialty ?: 'Proveedor local' }}</p></div></div>@if($vendor->description)<p class="mt-4 line-clamp-2 text-sm leading-6">{{ $vendor->description }}</p>@endif<p class="mt-4 text-xs font-black text-[#14734A]">✓ Perfil comercial aprobado</p></a>@empty<p class="col-span-full rounded-2xl border border-dashed border-[#123B4A]/20 p-8 text-center font-bold text-[#6B7D83]">No encontramos proveedores con esos filtros.</p>@endforelse</div>@if($providers->hasPages())<div class="mt-5">{{ $providers->links() }}</div>@endif</section>
+        @endif
+
+        @if(in_array($type, ['all', 'job_request'], true))
+            <section class="mt-12 pb-16"><div class="flex items-end justify-between"><div><p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Oportunidades</p><h2 class="mt-1 text-2xl font-black">Solicitudes de la comunidad</h2></div><span class="text-sm font-bold text-[#6B7D83]">{{ $jobRequests->total() }} resultados</span></div><div class="mt-5 grid gap-4 sm:grid-cols-2">@forelse($jobRequests as $job)<article class="rounded-[1.5rem] border border-[#F97316]/15 bg-[#FFF9F3] p-5"><span class="text-xs font-black uppercase tracking-[.12em] text-[#D85B0B]">{{ $job->urgency === 'urgent' ? 'Urgente' : 'Solicitud activa' }}</span><h3 class="mt-3 text-lg font-black">{{ $job->title }}</h3><p class="mt-2 line-clamp-2 text-sm leading-6">{{ $job->description }}</p><div class="mt-5 flex items-center justify-between"><span class="text-sm font-bold text-[#6B7D83]">{{ $job->location_label ?: $job->client->city ?: 'Tu comunidad' }}</span>@if(auth()->user()->account_type->value === 'provider')<a class="rounded-full bg-[#123B4A] px-4 py-2 text-sm font-black text-white" href="{{ route('job-proposals.index', $job) }}">Enviar propuesta</a>@else<span class="text-xs font-black text-[#8A999E]">Solo proveedores</span>@endif</div></article>@empty<p class="col-span-full rounded-2xl border border-dashed border-[#123B4A]/20 p-8 text-center font-bold text-[#6B7D83]">No encontramos solicitudes con esos filtros.</p>@endforelse</div>@if($jobRequests->hasPages())<div class="mt-5">{{ $jobRequests->links() }}</div>@endif</section>
+        @endif
+    </main>
+</body>
+</html>

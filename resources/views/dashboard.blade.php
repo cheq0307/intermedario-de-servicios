@@ -31,10 +31,11 @@
                 </span>
             </a>
 
-            <label class="flex max-w-xl flex-1 items-center gap-3 rounded-full border border-[#123B4A]/10 bg-white px-4 py-2.5 shadow-sm" for="global-search">
+            <form class="flex max-w-xl flex-1 items-center gap-3 rounded-full border border-[#123B4A]/10 bg-white px-4 py-2.5 shadow-sm" method="GET" action="{{ route('explore') }}">
                 <svg class="size-5 shrink-0 text-[#6B7D83]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-                <input id="global-search" class="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none placeholder:text-[#8A999E]" type="search" placeholder="Buscar productos, servicios o personas">
-            </label>
+                <input id="global-search" class="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none placeholder:text-[#8A999E]" type="search" name="q" maxlength="100" placeholder="Buscar productos, servicios o personas">
+                <button class="sr-only" type="submit">Buscar</button>
+            </form>
 
             <div class="flex shrink-0 items-center gap-2">
                 <span class="hidden max-w-36 truncate text-sm font-bold text-[#536A72] md:block">{{ $currentUser->name }}</span>
@@ -52,7 +53,7 @@
             <nav class="sticky top-24 space-y-1" aria-label="Navegación principal">
                 @foreach ([
                     ['Inicio', '#inicio', true],
-                    ['Explorar', '#actividad', false],
+                    ['Explorar', route('explore'), false],
                     ['Publicar', '#crear-publicacion', false],
                     ['Mensajes', route('conversations.index'), false],
                     ['Mis trabajos', route('orders.index'), false],

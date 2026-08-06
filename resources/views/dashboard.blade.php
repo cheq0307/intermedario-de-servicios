@@ -22,7 +22,7 @@
     @endphp
 
     <header class="sticky top-0 z-40 border-b border-[#123B4A]/10 bg-[#FAF8F4]/90 backdrop-blur-xl">
-        <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+        <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:flex-nowrap sm:gap-4 sm:px-6">
             <a href="{{ route('dashboard') }}" class="flex shrink-0 items-center gap-3">
                 <span class="grid size-10 place-items-center rounded-2xl bg-[#123B4A] text-lg font-black text-white shadow-[0_8px_24px_rgba(18,59,74,.2)]">P</span>
                 <span class="hidden sm:block">
@@ -31,7 +31,7 @@
                 </span>
             </a>
 
-            <form class="flex max-w-xl flex-1 items-center gap-3 rounded-full border border-[#123B4A]/10 bg-white px-4 py-2.5 shadow-sm" method="GET" action="{{ route('explore') }}">
+            <form class="order-last flex w-full items-center gap-3 rounded-full border border-[#123B4A]/10 bg-white px-4 py-2.5 shadow-sm sm:order-none sm:max-w-xl sm:flex-1" method="GET" action="{{ route('explore') }}">
                 <svg class="size-5 shrink-0 text-[#6B7D83]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
                 <input id="global-search" class="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none placeholder:text-[#8A999E]" type="search" name="q" maxlength="100" placeholder="Buscar productos, servicios o personas">
                 <button class="sr-only" type="submit">Buscar</button>
@@ -43,6 +43,7 @@
                 <a class="grid size-10 place-items-center rounded-full bg-[#DCEAE6] font-black text-[#123B4A] transition hover:ring-4 hover:ring-[#22A06B]/15" href="{{ route('profile.show', $currentUser) }}" aria-label="Ver mi perfil">{{ mb_strtoupper(mb_substr($currentUser->name, 0, 1)) }}</a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
+                    <button class="grid size-10 place-items-center rounded-full border border-[#123B4A]/10 bg-white text-[#536A72] transition hover:border-[#F97316]/30 hover:text-[#F97316] sm:hidden" type="submit" aria-label="Cerrar sesión" title="Cerrar sesión"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M14 3h4a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3h-4"/></svg></button>
                     <button class="hidden rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black transition hover:border-[#F97316]/30 hover:text-[#F97316] sm:block" type="submit">Salir</button>
                 </form>
             </div>

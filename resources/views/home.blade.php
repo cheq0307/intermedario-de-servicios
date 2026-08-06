@@ -24,9 +24,9 @@
                 <a class="transition hover:text-[#d2693c]" href="#proveedores">Para negocios</a>
             </nav>
 
-            <div class="flex items-center gap-2">
-                <a class="hidden rounded-full px-4 py-2 text-sm font-extrabold transition hover:bg-white sm:block" href="{{ route('login') }}">Ingresar</a>
-                <a class="shrink-0 whitespace-nowrap rounded-full bg-[#17352b] px-3.5 py-2.5 text-xs font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#244b3e] sm:px-4 sm:text-sm" href="{{ route('register') }}">Crear cuenta</a>
+            <div class="flex shrink-0 items-center gap-1 sm:gap-2">
+                <a class="inline-flex rounded-full px-2.5 py-2 text-xs font-extrabold transition hover:bg-white sm:px-4 sm:text-sm" href="{{ route('login') }}"><span class="sm:hidden">Entrar</span><span class="hidden sm:inline">Ingresar</span></a>
+                <a class="inline-flex shrink-0 whitespace-nowrap rounded-full bg-[#17352b] px-3 py-2.5 text-xs font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#244b3e] sm:px-4 sm:text-sm" href="{{ route('register') }}"><span class="sm:hidden">Crear</span><span class="hidden sm:inline">Crear cuenta</span></a>
             </div>
         </div>
     </header>

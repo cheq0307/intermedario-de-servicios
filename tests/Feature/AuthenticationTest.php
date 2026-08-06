@@ -49,6 +49,28 @@ class AuthenticationTest extends TestCase
         ]);
     }
 
+    public function test_duplicate_email_error_is_clear_and_in_spanish(): void
+    {
+        User::factory()->create(['email' => 'registrado@example.test']);
+
+        $response = $this->from('/register')->post('/register', [
+            'account_type' => 'client',
+            'name' => 'Cuenta duplicada',
+            'email' => 'registrado@example.test',
+            'password' => 'Seguro123',
+            'password_confirmation' => 'Seguro123',
+        ]);
+
+        $response
+            ->assertRedirect('/register')
+            ->assertSessionHasErrors([
+                'email' => 'Este correo ya está registrado. Inicia sesión o recupera tu contraseña.',
+            ]);
+
+        $this->assertGuest();
+        $this->assertDatabaseCount('users', 1);
+    }
+
     public function test_user_can_login_and_logout(): void
     {
         $user = User::factory()->create(['password' => 'Seguro123']);

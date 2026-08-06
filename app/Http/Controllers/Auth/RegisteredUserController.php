@@ -29,6 +29,20 @@ class RegisteredUserController extends Controller
             'phone' => ['nullable', 'string', 'max:30'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
+        ], [
+            'email.unique' => 'Este correo ya está registrado. Inicia sesión o recupera tu contraseña.',
+            'account_type.required' => 'Selecciona si comenzarás como cliente o proveedor.',
+            'account_type.in' => 'El tipo de cuenta seleccionado no es válido.',
+            'name.required' => 'Escribe tu nombre completo.',
+            'name.max' => 'El nombre no puede superar 120 caracteres.',
+            'email.required' => 'Escribe tu correo electrónico.',
+            'email.email' => 'Escribe un correo electrónico válido.',
+            'email.max' => 'El correo electrónico es demasiado largo.',
+            'password.required' => 'Crea una contraseña.',
+            'password.confirmed' => 'Las contraseñas no coinciden.',
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.letters' => 'La contraseña debe incluir al menos una letra.',
+            'password.numbers' => 'La contraseña debe incluir al menos un número.',
         ]);
 
         $user = DB::transaction(function () use ($validated): User {

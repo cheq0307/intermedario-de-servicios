@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
 /**
  * @extends Factory<User>
@@ -28,9 +29,23 @@ class UserFactory extends Factory
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
+            'account_type' => 'client',
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
+    }
+
+    public function configure(): static
+    {
+        return $this->afterCreating(function (User $user): void {
+            $accountType = is_object($user->account_type)
+                ? $user->account_type->value
+                : (string) $user->account_type;
+
+            if (in_array($accountType, ['client', 'provider'], true)) {
+                $user->assignRole(Role::findOrCreate($accountType));
+            }
+        });
     }
 
     /**

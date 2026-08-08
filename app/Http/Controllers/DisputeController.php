@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Domain\Marketplace\Enums\DisputeStatus;
 use App\Domain\Marketplace\Enums\JobRequestStatus;
 use App\Domain\Marketplace\Enums\OrderStatus;
+use App\Domain\Marketplace\Enums\PaymentStatus;
 use App\Models\Conversation;
 use App\Models\Dispute;
 use App\Models\Order;
@@ -95,7 +96,7 @@ class DisputeController extends Controller
         DB::transaction(function () use ($request, $dispute, $validated): void {
             $lockedDispute = Dispute::lockForUpdate()->findOrFail($dispute->id);
             abort_unless($lockedDispute->status === DisputeStatus::Open, 422);
-            $order = Order::with(['vendor', 'jobRequest'])->lockForUpdate()->findOrFail($lockedDispute->order_id);
+            $order = Order::with(['vendor', 'jobRequest', 'payments'])->lockForUpdate()->findOrFail($lockedDispute->order_id);
             abort_unless($order->status === OrderStatus::Disputed, 422);
 
             $nextStatus = match ($validated['outcome']) {
@@ -111,8 +112,21 @@ class DisputeController extends Controller
                 $order->jobRequest?->update(['status' => JobRequestStatus::Completed]);
             } elseif ($nextStatus === OrderStatus::Cancelled) {
                 $orderAttributes['cancelled_at'] = now();
+
                 $orderAttributes['cancellation_reason'] = 'Resolución administrativa de disputa: '.$validated['resolution'];
                 $order->jobRequest?->update(['status' => JobRequestStatus::Cancelled]);
+            }
+
+            if ($nextStatus === OrderStatus::Completed) {
+                $order->payments()
+                    ->where('provider', 'fake')
+                    ->where('status', PaymentStatus::Paid->value)
+                    ->update(['status' => PaymentStatus::Released->value, 'released_at' => now()]);
+            } elseif ($nextStatus === OrderStatus::Cancelled) {
+                $order->payments()->where('provider', 'fake')->where('status', PaymentStatus::Pending->value)
+                    ->update(['status' => PaymentStatus::Cancelled->value]);
+                $order->payments()->where('provider', 'fake')->where('status', PaymentStatus::Paid->value)
+                    ->update(['status' => PaymentStatus::Refunded->value, 'refunded_at' => now()]);
             }
             $order->update($orderAttributes);
             $lockedDispute->update([

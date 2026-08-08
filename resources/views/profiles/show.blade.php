@@ -9,7 +9,7 @@
 <body class="min-h-screen bg-[#FAF8F4] text-[#17313A] antialiased">
     @php
         $isOwner = auth()->id() === $user->id;
-        $isProvider = $user->account_type->value === 'provider';
+        $isProvider = $user->canActAsProvider();
         $vendor = $user->vendor;
         $availability = [
             'available' => ['Disponible', '#14734A', '#E9F7F0'],

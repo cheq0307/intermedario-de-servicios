@@ -46,7 +46,7 @@ class ProfileController extends Controller
 
             $user->update($userData);
 
-            if ($user->account_type->value === 'provider') {
+            if ($user->canActAsProvider()) {
                 $vendorData = collect($validated)->only([
                     'display_name',
                     'description',

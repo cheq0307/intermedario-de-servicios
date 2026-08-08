@@ -22,7 +22,7 @@ class UpdateProfileRequest extends FormRequest
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ];
 
-        if ($this->user()->account_type->value === 'provider') {
+        if ($this->user()->canActAsProvider()) {
             $rules = array_merge($rules, [
                 'display_name' => ['required', 'string', 'max:120'],
                 'description' => ['nullable', 'string', 'max:1200'],

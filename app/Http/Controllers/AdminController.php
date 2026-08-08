@@ -10,6 +10,7 @@ use App\Models\Vendor;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Role;
 
@@ -22,7 +23,7 @@ class AdminController extends Controller
             'users' => User::count(),
             'pending_vendors' => Vendor::where('status', 'pending')->count(),
             'open_disputes' => Dispute::where('status', 'open')->count(),
-            'active_orders' => Order::whereIn('status', ['accepted', 'in_progress', 'delivered', 'disputed'])->count(),
+            'active_orders' => Order::whereIn('status', ['accepted', 'awaiting_payment', 'paid', 'in_progress', 'ready', 'delivered', 'disputed'])->count(),
         ];
         $vendors = Vendor::with('user:id,name,email')->orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END")->latest()->limit(30)->get();
         $users = User::with('roles:id,name')->latest()->limit(30)->get();
@@ -67,6 +68,58 @@ class AdminController extends Controller
         $this->audit($request, 'admin.revoked', $user);
 
         return back()->with('status', 'Permiso de administrador retirado.');
+    }
+
+    public function grantCapability(Request $request, User $user, string $capability): RedirectResponse
+    {
+        $this->authorizeSuperadmin($request);
+        abort_unless(in_array($capability, ['client', 'provider'], true), 404);
+
+        if ($user->hasRole($capability)) {
+            return back()->with('status', 'La capacidad ya estaba asignada.');
+        }
+
+        DB::transaction(function () use ($request, $user, $capability): void {
+            $user->assignRole(Role::findOrCreate($capability));
+
+            if ($capability === 'provider') {
+                Vendor::firstOrCreate(
+                    ['user_id' => $user->id],
+                    [
+                        'display_name' => $user->name,
+                        'slug' => Str::slug($user->name).'-'.$user->id,
+                        'phone' => $user->phone,
+                        'email' => $user->email,
+                        'status' => 'pending',
+                    ],
+                );
+            }
+            $this->audit($request, 'capability.granted', $user, ['capability' => $capability]);
+        });
+
+        return back()->with('status', 'Capacidad comercial asignada correctamente.');
+    }
+
+    public function revokeCapability(Request $request, User $user, string $capability): RedirectResponse
+    {
+        $this->authorizeSuperadmin($request);
+        abort_unless(in_array($capability, ['client', 'provider'], true), 404);
+        abort_unless($user->hasRole($capability), 422, 'La cuenta no tiene esta capacidad.');
+
+        $hasOtherCapability = $user->hasRole($capability === 'client' ? 'provider' : 'client');
+        $hasStaffAuthority = $user->hasAnyRole(['admin', 'superadmin']);
+        abort_unless($hasOtherCapability || $hasStaffAuthority, 422, 'La cuenta debe conservar otra capacidad o autoridad administrativa.');
+
+        DB::transaction(function () use ($request, $user, $capability): void {
+            $user->removeRole($capability);
+
+            if ($capability === 'provider') {
+                $user->vendor?->update(['status' => 'suspended', 'verified_at' => null]);
+            }
+            $this->audit($request, 'capability.revoked', $user, ['capability' => $capability]);
+        });
+
+        return back()->with('status', 'Capacidad comercial retirada; los datos históricos se conservaron.');
     }
 
     private function changeVendorStatus(Request $request, Vendor $vendor, string $status, array $metadata = []): void

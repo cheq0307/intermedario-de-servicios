@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Domain\Marketplace\Enums\AccountType;
+use App\Contracts\MarketplacePaymentGateway;
 use App\Domain\Marketplace\Enums\JobRequestStatus;
 use App\Domain\Marketplace\Enums\OrderStatus;
+use App\Domain\Marketplace\Enums\PaymentStatus;
 use App\Domain\Marketplace\Enums\ProposalStatus;
 use App\Domain\Marketplace\Services\CommissionCalculator;
 use App\Models\Conversation;
@@ -27,7 +28,7 @@ class JobProposalController extends Controller
     public function index(Request $request, JobRequest $jobRequest): View
     {
         $isOwner = $jobRequest->client_id === $request->user()->id;
-        $isProvider = $request->user()->account_type === AccountType::Provider;
+        $isProvider = $request->user()->canActAsProvider();
         abort_unless($isOwner || $isProvider, 403);
 
         $jobRequest->load('client:id,name,avatar_path');
@@ -43,7 +44,7 @@ class JobProposalController extends Controller
 
     public function store(Request $request, JobRequest $jobRequest): RedirectResponse
     {
-        abort_unless($request->user()->account_type === AccountType::Provider, 403);
+        abort_unless($request->user()->canActAsProvider(), 403);
         abort_unless($request->user()->vendor?->status === 'active', 422, 'Tu perfil comercial debe estar aprobado antes de enviar propuestas.');
         abort_if($jobRequest->client_id === $request->user()->id, 403);
         abort_unless(in_array($jobRequest->status, [JobRequestStatus::Published, JobRequestStatus::InConversation], true), 422);
@@ -83,7 +84,7 @@ class JobProposalController extends Controller
         return redirect()->route('job-proposals.index', $jobRequest)->with('status', 'Tu propuesta fue enviada correctamente.');
     }
 
-    public function accept(Request $request, JobRequest $jobRequest, JobProposal $proposal): RedirectResponse
+    public function accept(Request $request, JobRequest $jobRequest, JobProposal $proposal, MarketplacePaymentGateway $gateway): RedirectResponse
     {
         $this->assertOwnerAndProposal($request, $jobRequest, $proposal);
 
@@ -91,7 +92,7 @@ class JobProposalController extends Controller
             ->where('status', ProposalStatus::Pending->value)
             ->pluck('provider_id');
 
-        $order = DB::transaction(function () use ($request, $jobRequest, $proposal): Order {
+        $order = DB::transaction(function () use ($request, $jobRequest, $proposal, $gateway): Order {
             $lockedRequest = JobRequest::query()->lockForUpdate()->findOrFail($jobRequest->id);
             $lockedProposal = JobProposal::query()->with('provider.vendor')->lockForUpdate()->findOrFail($proposal->id);
 
@@ -111,7 +112,7 @@ class JobProposalController extends Controller
                 'vendor_id' => $vendor->id,
                 'job_request_id' => $lockedRequest->id,
                 'job_proposal_id' => $lockedProposal->id,
-                'status' => OrderStatus::Accepted,
+                'status' => OrderStatus::AwaitingPayment,
                 'fulfillment_type' => 'service',
                 'subtotal_amount' => $lockedProposal->amount,
                 'commission_amount' => $commissionAmount,
@@ -130,6 +131,17 @@ class JobProposalController extends Controller
                     'proposal_message' => $lockedProposal->message,
                     'estimated_days' => $lockedProposal->estimated_days,
                 ],
+            ]);
+            $gatewayData = $gateway->createPayment($order);
+            $order->payments()->create([
+                'provider' => $gatewayData['provider'],
+                'provider_reference' => $gatewayData['reference'],
+                'status' => PaymentStatus::Pending,
+                'gross_amount' => $lockedProposal->amount,
+                'commission_amount' => $commissionAmount,
+                'vendor_net_amount' => $lockedProposal->amount - $commissionAmount,
+                'currency' => $lockedProposal->currency,
+                'provider_payload' => $gatewayData['payload'],
             ]);
 
             $lockedProposal->update(['status' => ProposalStatus::Accepted, 'responded_at' => now()]);

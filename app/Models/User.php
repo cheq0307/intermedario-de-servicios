@@ -45,6 +45,30 @@ class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
+    public function canActAsClient(): bool
+    {
+        return $this->hasRole('client');
+    }
+
+    public function canActAsProvider(): bool
+    {
+        return $this->hasRole('provider');
+    }
+
+    public function supportsMarketplaceMode(string $mode): bool
+    {
+        return match ($mode) {
+            'client' => $this->canActAsClient(),
+            'provider' => $this->canActAsProvider(),
+            default => false,
+        };
+    }
+
+    public function defaultMarketplaceMode(): ?string
+    {
+        return $this->canActAsClient() ? 'client' : ($this->canActAsProvider() ? 'provider' : null);
+    }
+
     public function conversations(): BelongsToMany
     {
         return $this->belongsToMany(Conversation::class, 'conversation_participants')

@@ -2,7 +2,7 @@
 
 ## Modelo de capacidades de cuenta
 
-Estado: pendiente para una iteración posterior a la estabilización de preproducción.
+Estado: implementado el 8 de agosto de 2026; pendiente de validación manual en staging.
 
 La cuenta de usuario no debe quedar limitada a escoger permanentemente entre
 `client` y `provider`. El diseño futuro debe separar dos dimensiones:
@@ -36,9 +36,13 @@ Combinaciones que deben soportarse explícitamente:
 
 ### Trabajo técnico previsto
 
-- Sustituir el selector exclusivo de tipo de cuenta por capacidades combinables.
-- Añadir activación y desactivación segura de la capacidad de proveedor.
-- Adaptar registro, perfil, navegación, publicación, búsqueda y panel admin.
-- Definir cuentas internas de staff que no necesiten el rol `client`.
-- Agregar pruebas de autorización para todas las combinaciones anteriores.
+- Roles `client` y `provider` combinables en una sola identidad.
+- Activación personal de capacidades y cambio de contexto desde la misma sesión.
+- Activar proveedor crea un perfil comercial pendiente de aprobación.
+- `admin` y `superadmin` son permisos internos independientes de las capacidades comerciales.
+- El superadministrador puede otorgar o retirar capacidades sin borrar historial comercial.
+- Las cuentas administrativas pueden existir sin `client` ni `provider`.
+- Registro, perfil, navegación, publicación, compra y panel administrativo autorizan por capacidad.
+- Migración de compatibilidad conserva el campo histórico `account_type`, pero este ya no es la fuente de autorización.
+- Pruebas automatizadas cubren cuentas simples, duales, administrativas y cambios de contexto.
 

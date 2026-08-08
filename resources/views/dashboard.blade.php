@@ -10,7 +10,7 @@
 <body class="min-h-screen bg-[#FAF8F4] text-[#17313A] antialiased selection:bg-[#F97316]/25">
     @php
         $currentUser = auth()->user();
-        $isProvider = $currentUser->account_type->value === 'provider';
+        $isProvider = $activeMode === 'provider';
         $typeLabels = [
             'portfolio' => 'Trabajo realizado',
             'business_update' => 'Novedad',
@@ -56,7 +56,7 @@
                 @foreach ([
                     ['Inicio', '#inicio', true],
                     ['Explorar', route('explore'), false],
-                    ['Publicar', '#crear-publicacion', false],
+                    ['Publicar', $activeMode ? '#crear-publicacion' : route('admin.index'), false],
                     ['Mensajes', route('conversations.index'), false],
                     ['Notificaciones', route('notifications.index'), false],
                     ['Mis trabajos', route('orders.index'), false],
@@ -79,6 +79,21 @@
         </aside>
 
         <div id="inicio" class="min-w-0 space-y-5">
+            @if($currentUser->canActAsClient() && $currentUser->canActAsProvider())
+                <section class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#123B4A]/10 bg-white px-5 py-4 shadow-sm">
+                    <div><p class="text-xs font-black uppercase tracking-[.14em] text-[#F97316]">Usando Plaza Local como</p><p class="mt-1 text-sm font-bold text-[#6B7D83]">Cambia de contexto sin cerrar sesión.</p></div>
+                    <div class="flex rounded-full bg-[#E8F1EE] p-1">
+                        @foreach(['client' => 'Cliente', 'provider' => 'Proveedor'] as $mode => $label)
+                            <form method="POST" action="{{ route('capabilities.switch', $mode) }}">@csrf
+                                <button class="rounded-full px-4 py-2 text-xs font-black transition {{ $activeMode === $mode ? 'bg-[#123B4A] text-white shadow-sm' : 'text-[#536A72]' }}" type="submit" @disabled($activeMode === $mode)>{{ $label }}</button>
+                            </form>
+                        @endforeach
+                    </div>
+                </section>
+            @elseif($activeMode === null)
+                <section class="rounded-2xl border border-[#F97316]/20 bg-[#FFF1E8] px-5 py-4 text-sm font-bold text-[#A94708]">Esta cuenta es personal administrativo y no tiene capacidades comerciales. Puedes operar desde Administración.</section>
+            @endif
+
             @if (session('status'))
                 <div class="rounded-2xl border border-[#22A06B]/20 bg-[#E9F7F0] px-5 py-4 text-sm font-black text-[#14734A]" role="status">
                     {{ session('status') }}
@@ -105,16 +120,17 @@
                     <div>
                         <p class="text-xs font-black uppercase tracking-[.2em] text-[#F9B36B]">Hola, {{ explode(' ', trim($currentUser->name))[0] }}</p>
                         <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-                            {{ $isProvider ? 'Haz visible lo que sabes hacer.' : '¿Qué necesitas resolver hoy?' }}
+                            {{ $activeMode === null ? 'Administra la operación local.' : ($isProvider ? 'Haz visible lo que sabes hacer.' : '¿Qué necesitas resolver hoy?') }}
                         </h1>
                         <p class="mt-3 max-w-xl leading-7 text-white/65">
-                            {{ $isProvider ? 'Comparte productos, servicios, promociones y trabajos reales con personas cercanas.' : 'Publica lo que necesitas para que proveedores de tu comunidad puedan encontrarte.' }}
+                            {{ $activeMode === null ? 'Revisa proveedores, usuarios, disputas y excepciones relevantes.' : ($isProvider ? 'Comparte productos, servicios, promociones y trabajos reales con personas cercanas.' : 'Publica lo que necesitas para que proveedores de tu comunidad puedan encontrarte.') }}
                         </p>
                     </div>
-                    <a class="shrink-0 rounded-full bg-[#F97316] px-6 py-3 text-center font-black text-white shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:bg-[#E8660C]" href="#crear-publicacion">Publicar ahora</a>
+                    <a class="shrink-0 rounded-full bg-[#F97316] px-6 py-3 text-center font-black text-white shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:bg-[#E8660C]" href="{{ $activeMode ? '#crear-publicacion' : route('admin.index') }}">{{ $activeMode ? 'Publicar ahora' : 'Abrir administración' }}</a>
                 </div>
             </section>
 
+            @if($activeMode)
             <section id="crear-publicacion" class="scroll-mt-24 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-5 shadow-sm sm:p-6">
                 <div class="flex items-center gap-3">
                     <span class="grid size-11 place-items-center rounded-full bg-[#DCEAE6] font-black text-[#123B4A]">{{ mb_strtoupper(mb_substr($currentUser->name, 0, 1)) }}</span>
@@ -221,6 +237,7 @@
                 </form>
             </section>
 
+            @endif
             <section id="actividad" class="scroll-mt-24 space-y-4">
                 <div class="flex items-end justify-between gap-4 px-1 pt-2">
                     <div>
@@ -365,9 +382,9 @@
                 </section>
 
                 <section id="proximamente" class="rounded-[1.75rem] bg-[#F5D48D] p-5">
-                    <p class="text-xs font-black uppercase tracking-[.16em] text-[#8B5117]">Siguiente etapa</p>
-                    <h2 class="mt-2 text-lg font-black">Perfiles y conversaciones</h2>
-                    <p class="mt-2 text-sm font-semibold leading-6 text-[#6D522D]">Los botones visibles se activarán conforme construyamos cada flujo con datos reales.</p>
+                    <p class="text-xs font-black uppercase tracking-[.16em] text-[#8B5117]">Compra protegida</p>
+                    <h2 class="mt-2 text-lg font-black">Acuerdos dentro de Plaza Local</h2>
+                    <p class="mt-2 text-sm font-semibold leading-6 text-[#6D522D]">Las propuestas, pagos de prueba, entregas y disputas quedan registradas para proteger a ambas partes.</p>
                 </section>
             </div>
         </aside>
@@ -377,7 +394,7 @@
         <div class="mx-auto grid max-w-lg grid-cols-5">
             @foreach ([
                 ['Inicio', '#inicio'],
-                ['Publicar', '#crear-publicacion'],
+                ['Publicar', $activeMode ? '#crear-publicacion' : route('admin.index')],
                 ['Trabajos', route('orders.index')],
                 ['Mensajes', route('conversations.index')],
                 ['Perfil', route('profile.show', $currentUser)],

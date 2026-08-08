@@ -41,7 +41,8 @@ class JobProposalTest extends TestCase
         $this->assertSame('assigned', $jobRequest->fresh()->status->value);
         $this->assertDatabaseCount('conversations', 1);
         $this->assertDatabaseHas('messages', ['type' => 'system', 'sender_id' => $client->id]);
-        $this->assertDatabaseHas('orders', ['job_proposal_id' => $accepted->id, 'total_amount' => 85000, 'commission_amount' => 6800]);
+        $this->assertDatabaseHas('orders', ['job_proposal_id' => $accepted->id, 'status' => 'awaiting_payment', 'total_amount' => 85000, 'commission_amount' => 6800]);
+        $this->assertDatabaseHas('payments', ['provider' => 'fake', 'status' => 'pending', 'gross_amount' => 85000, 'commission_amount' => 6800, 'vendor_net_amount' => 78200]);
         $this->assertDatabaseHas('order_items', ['name_snapshot' => $jobRequest->title, 'line_total_amount' => 85000]);
         $this->actingAs($provider)
             ->get(route('job-proposals.index', $jobRequest))

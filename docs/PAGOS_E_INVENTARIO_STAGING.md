@@ -9,6 +9,11 @@
 - Pago simulado, preparación, entrega y confirmación del comprador.
 - Cancelación antes del pago y devolución inmediata de existencias.
 - Liberación automática de reservas vencidas.
+- Al aceptar una propuesta de servicio se crea una orden pendiente de pago.
+- El proveedor no puede iniciar el trabajo antes de registrarse el pago simulado.
+- La confirmación del cliente libera el pago simulado menos la comisión congelada.
+- Cancelar antes de iniciar anula el pago pendiente.
+- Una resolución administrativa puede liberar o devolver un pago simulado retenido.
 
 ## Configuración temporal de staging
 
@@ -35,7 +40,7 @@ php artisan schedule:run
 
 `queue:work` debe mantenerse activo con Supervisor o systemd. `schedule:run` debe ejecutarse mediante cron cada minuto; esa tarea libera las reservas de inventario abandonadas.
 
-## Prueba manual mínima
+## Prueba manual mínima de productos
 
 1. Aprobar un proveedor desde Administración.
 2. Publicar un producto de precio fijo con existencias.
@@ -46,4 +51,15 @@ php artisan schedule:run
 7. Confirmar la entrega y calificar como cliente.
 8. Crear otro pedido, cancelarlo antes del pago y comprobar que las existencias regresen.
 
+
+## Prueba manual mínima de servicios
+
+1. Publicar una solicitud como cliente y enviar una propuesta como proveedor aprobado.
+2. Aceptar la propuesta y comprobar que la orden quede pendiente de pago.
+3. Intentar iniciar como proveedor y comprobar que el sistema lo impida.
+4. Simular el pago como cliente y comprobar el estado pagado.
+5. Iniciar y entregar como proveedor; confirmar como cliente.
+6. Comprobar que el pago simulado quede liberado y que se habiliten las reseñas.
+7. Repetir el flujo, abrir una disputa y resolverla con devolución como administrador.
+8. Verificar que el pago simulado quede reembolsado.
 El simulador prueba la lógica interna, pero no acredita que SMTP, webhooks, reembolsos o depósitos bancarios reales funcionen. Esos componentes requieren pruebas de extremo a extremo con cuentas sandbox del proveedor seleccionado.

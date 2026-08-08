@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Marketplace\Enums\JobRequestStatus;
 use App\Domain\Marketplace\Enums\OrderStatus;
+use App\Domain\Marketplace\Enums\PaymentStatus;
 use App\Models\Conversation;
 use App\Models\Order;
 use App\Notifications\MarketplaceActivity;
@@ -39,9 +40,32 @@ class ServiceOrderController extends Controller
         return view('orders.show', compact('order', 'conversation'));
     }
 
+    public function simulatePayment(Request $request, Order $order): RedirectResponse
+    {
+        $allowed = app()->environment(['local', 'testing']) || (app()->environment('staging') && config('marketplace.allow_fake_payments'));
+        abort_unless($allowed, 404);
+
+        DB::transaction(function () use ($request, $order): void {
+            $lockedOrder = Order::with(['vendor', 'jobRequest', 'payments'])->lockForUpdate()->findOrFail($order->id);
+            abort_unless($lockedOrder->buyer_id === $request->user()->id, 403);
+            abort_unless($lockedOrder->fulfillment_type === 'service', 422);
+            abort_unless($lockedOrder->status === OrderStatus::AwaitingPayment, 422);
+
+            $payment = $lockedOrder->payments->firstOrFail();
+            abort_unless($payment->provider === 'fake' && $payment->status === PaymentStatus::Pending, 422);
+
+            $payment->update(['status' => PaymentStatus::Paid, 'method' => 'simulated', 'paid_at' => now()]);
+            $lockedOrder->update(['status' => OrderStatus::Paid]);
+            $this->recordSystemMessage($lockedOrder, 'El pago del servicio fue confirmado.', $request->user()->id);
+        });
+        $this->notifyCounterpart($order, $request->user()->id, 'Pago confirmado', 'El cliente confirmó el pago acordado; ya puedes iniciar el trabajo.', 'payment_paid');
+
+        return back()->with('status', 'Pago simulado correctamente. El importe queda representado como retenido hasta completar la orden.');
+    }
+
     public function start(Request $request, Order $order): RedirectResponse
     {
-        $this->transition($request, $order, OrderStatus::Accepted, OrderStatus::InProgress, 'provider', [
+        $this->transition($request, $order, OrderStatus::Paid, OrderStatus::InProgress, 'provider', [
             'started_at' => now(),
         ], 'El proveedor inició el trabajo.');
         $this->notifyCounterpart($order, $request->user()->id, 'Trabajo iniciado', 'El proveedor marcó la contratación como iniciada.', 'order_started');
@@ -70,6 +94,10 @@ class ServiceOrderController extends Controller
                 'status' => OrderStatus::Completed,
                 'completed_at' => now(),
             ]);
+            $lockedOrder->payments()
+                ->where('provider', 'fake')
+                ->where('status', PaymentStatus::Paid->value)
+                ->update(['status' => PaymentStatus::Released->value, 'released_at' => now()]);
             $lockedOrder->jobRequest?->update(['status' => JobRequestStatus::Completed]);
             $this->recordSystemMessage($lockedOrder, 'El cliente confirmó la entrega. Trabajo completado.', $request->user()->id);
         });
@@ -86,13 +114,16 @@ class ServiceOrderController extends Controller
 
         DB::transaction(function () use ($request, $order, $validated): void {
             $lockedOrder = $this->lockedOrderFor($request, $order, 'participant');
-            abort_unless($lockedOrder->status === OrderStatus::Accepted, 422);
+            abort_unless(in_array($lockedOrder->status, [OrderStatus::Accepted, OrderStatus::AwaitingPayment], true), 422);
 
             $lockedOrder->update([
                 'status' => OrderStatus::Cancelled,
                 'cancelled_at' => now(),
                 'cancellation_reason' => $validated['reason'],
             ]);
+            $lockedOrder->payments()
+                ->where('status', PaymentStatus::Pending->value)
+                ->update(['status' => PaymentStatus::Cancelled->value]);
             $lockedOrder->jobRequest?->update(['status' => JobRequestStatus::Cancelled]);
             $this->recordSystemMessage($lockedOrder, 'La contratación fue cancelada antes de iniciar. Motivo: '.$validated['reason'], $request->user()->id);
         });

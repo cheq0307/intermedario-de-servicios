@@ -86,7 +86,7 @@ class ProductOrderTest extends TestCase
     {
         [$buyer, $provider, $listing] = $this->scenario(stock: 1);
 
-        $this->actingAs($provider)->post(route('products.orders.store', $listing), ['quantity' => 1])->assertStatus(422);
+        $this->actingAs($provider)->post(route('products.orders.store', $listing), ['quantity' => 1])->assertForbidden();
         $this->actingAs($buyer)->post(route('products.orders.store', $listing), ['quantity' => 2])->assertStatus(422);
 
         $listing->vendor->update(['status' => 'suspended']);

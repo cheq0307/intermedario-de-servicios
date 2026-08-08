@@ -4,37 +4,39 @@
 
 Estas métricas miden cosas distintas y no deben mezclarse:
 
-- Flujo de contratación de servicios sin pagos reales: **90%**.
-- MVP completo, incluyendo productos, búsqueda, notificaciones y administración: **65%**.
-- Preparación para preproducción controlada: **55%**.
-- Preparación para producción con dinero real: **35%**.
+- Flujo de contratación de servicios con pagos simulados: **95%**.
+- MVP completo, incluyendo productos, búsqueda, notificaciones y administración: **85%**.
+- Preparación para preproducción controlada: **85%**.
+- Preparación para producción con dinero real: **40%**.
 
 ## Flujo funcional disponible
 
-- Registro diferenciado de clientes y proveedores.
+- Una identidad puede operar como cliente, proveedor, ambas o solamente personal administrativo.
 - Verificación de correo y recuperación de contraseña a nivel de aplicación.
 - Perfiles comerciales y reputación pública.
 - Feed local de productos, servicios y solicitudes.
 - Propuestas privadas con precio y plazo.
 - Conversaciones privadas.
-- Contratación y seguimiento: aceptada, en progreso, entregada y completada.
+- Contratación y seguimiento: espera de pago, pago, inicio, entrega y confirmación.
+- Pagos simulados con comisión congelada, liberación al completar y devolución administrativa.
 - Cancelación previa al inicio con motivo.
 - Disputas después de iniciar, con expediente y resolución administrativa.
 - Reseñas bilaterales únicamente después de una orden completada.
 - Cálculo y congelamiento de comisión por orden.
 
-## Pendientes obligatorios antes de staging
+## Estado de la infraestructura de staging
 
-- Configurar SMTP real y probar entrega, rebotes y spam.
-- Crear una base de datos y credenciales exclusivas de staging.
-- Configurar `APP_ENV=staging`, `APP_DEBUG=false` y una `APP_KEY` propia.
-- HTTPS, dominio temporal y cookies seguras.
-- Cola persistente para correos y tareas; proceso worker supervisado.
-- Programar `php artisan schedule:run` mediante cron.
-- Backups automáticos de base de datos y prueba de restauración.
-- Logs rotativos y alertas de errores.
-- Crear la cuenta administradora mediante consola.
-- Ejecutar pruebas de aceptación con cuentas y operaciones ficticias.
+- Completado: SMTP de Gmail y entrega básica verificada.
+- Completado: base de datos y credenciales exclusivas de staging.
+- Completado: entorno staging sin depuración y con clave propia.
+- Completado: HTTPS temporal mediante ngrok y cookies seguras.
+- Completado: worker de colas persistente mediante systemd.
+- Completado: scheduler ejecutado por cron cada minuto.
+- Completado: backups automáticos de base y archivos con validación de integridad.
+- Completado: cuenta superadministradora y cuenta administradora delegada.
+- Pendiente: restaurar un backup completo en una instancia separada.
+- Pendiente: alertas externas y revisión de rotación/retención de logs.
+- Pendiente: ejecutar y firmar la matriz de aceptación con las cuentas piloto.
 
 ## Bloqueadores para producción con dinero real
 
@@ -68,11 +70,14 @@ La aplicación debe apuntar a una base de datos vacía de staging. No debe reuti
 2. Registrar y verificar dos proveedores.
 3. Publicar una solicitud y recibir dos propuestas.
 4. Aceptar una propuesta y comprobar que la otra se rechaza.
-5. Iniciar, entregar y confirmar un trabajo.
+5. Simular el pago; comprobar que antes no se pueda iniciar, y después iniciar, entregar y confirmar.
 6. Publicar reseñas desde ambas cuentas.
 7. Abrir otra orden, iniciar y abrir una disputa.
 8. Responder como ambas partes y resolver como administrador.
 9. Verificar que un tercero no pueda acceder a orden, chat o disputa.
 10. Restaurar un backup en una instancia separada.
 
+11. Activar cliente y proveedor en una sola cuenta y cambiar de contexto.
+12. Probar una cuenta exclusivamente administrativa sin formulario comercial.
+13. Resolver disputas con liberación y devolución de pagos simulados.
 Los pagos reales deben permanecer desactivados durante esta etapa.

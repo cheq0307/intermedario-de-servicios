@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DisputeController;
 use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\JobProposalController;
+use App\Http\Controllers\MarketplaceCapabilityController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\PostManagementController;
@@ -27,12 +28,14 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+    Route::post('/mi-cuenta/modo/{mode}', [MarketplaceCapabilityController::class, 'switchMode'])->name('capabilities.switch');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/explorar', ExploreController::class)->name('explore');
     Route::get('/perfiles/{user}', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/mi-perfil/editar', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/mi-perfil', [ProfileController::class, 'update'])->name('profile.update');
     Route::middleware('verified')->group(function () {
+        Route::post('/mi-cuenta/capacidades/{capability}', [MarketplaceCapabilityController::class, 'activate'])->name('capabilities.activate');
         Route::post('/publicaciones', [PostController::class, 'store'])->name('posts.store');
         Route::get('/publicaciones/{post}/editar', [PostManagementController::class, 'edit'])->name('posts.edit');
         Route::put('/publicaciones/{post}', [PostManagementController::class, 'update'])->name('posts.update');
@@ -56,6 +59,7 @@ Route::middleware('auth')->group(function () {
         Route::patch('/solicitudes/{jobRequest}/propuestas/{proposal}/retirar', [JobProposalController::class, 'withdraw'])->name('job-proposals.withdraw');
         Route::get('/trabajos', [ServiceOrderController::class, 'index'])->name('orders.index');
         Route::get('/trabajos/{order}', [ServiceOrderController::class, 'show'])->name('orders.show');
+        Route::post('/trabajos/{order}/simular-pago', [ServiceOrderController::class, 'simulatePayment'])->name('orders.simulate-payment');
         Route::patch('/trabajos/{order}/iniciar', [ServiceOrderController::class, 'start'])->name('orders.start');
         Route::patch('/trabajos/{order}/entregar', [ServiceOrderController::class, 'deliver'])->name('orders.deliver');
         Route::patch('/trabajos/{order}/completar', [ServiceOrderController::class, 'complete'])->name('orders.complete');
@@ -71,5 +75,7 @@ Route::middleware('auth')->group(function () {
         Route::patch('/administracion/proveedores/{vendor}/suspender', [AdminController::class, 'suspendVendor'])->name('admin.vendors.suspend');
         Route::post('/administracion/usuarios/{user}/administrador', [AdminController::class, 'grantAdmin'])->name('admin.users.grant');
         Route::delete('/administracion/usuarios/{user}/administrador', [AdminController::class, 'revokeAdmin'])->name('admin.users.revoke');
+        Route::post('/administracion/usuarios/{user}/capacidades/{capability}', [AdminController::class, 'grantCapability'])->name('admin.users.capabilities.grant');
+        Route::delete('/administracion/usuarios/{user}/capacidades/{capability}', [AdminController::class, 'revokeCapability'])->name('admin.users.capabilities.revoke');
     });
 });

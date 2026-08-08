@@ -74,6 +74,41 @@ class DisputeAndReviewTest extends TestCase
         $this->assertSame($admin->id, $dispute->fresh()->resolved_by);
     }
 
+    public function test_admin_resolution_updates_held_fake_payments(): void
+    {
+        [$client, , $order] = $this->scenario('delivered');
+        $this->actingAs($client)->post(route('disputes.store', $order), [
+            'reason' => 'poor_service',
+            'description' => 'El servicio necesita revisiÃ³n antes de liberar el pago retenido al proveedor.',
+        ]);
+        $dispute = Dispute::latest('id')->firstOrFail();
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::findOrCreate('admin'));
+        $this->actingAs($admin)->patch(route('disputes.resolve', $dispute), [
+            'outcome' => 'complete',
+            'resolution' => 'La evidencia confirma la entrega y corresponde liberar el pago retenido.',
+        ])->assertRedirect();
+        $this->assertDatabaseHas('payments', [
+            'order_id' => $order->id,
+            'status' => 'released',
+        ]);
+
+        [$secondClient, , $secondOrder] = $this->scenario('in_progress');
+        $this->actingAs($secondClient)->post(route('disputes.store', $secondOrder), [
+            'reason' => 'no_show',
+            'description' => 'El proveedor no se presentÃ³ y corresponde revisar la devoluciÃ³n del pago.',
+        ]);
+        $secondDispute = Dispute::latest('id')->firstOrFail();
+        $this->actingAs($admin)->patch(route('disputes.resolve', $secondDispute), [
+            'outcome' => 'cancel',
+            'resolution' => 'La evidencia confirma la ausencia y corresponde devolver el pago al cliente.',
+        ])->assertRedirect();
+        $this->assertDatabaseHas('payments', [
+            'order_id' => $secondOrder->id,
+            'status' => 'refunded',
+        ]);
+    }
+
     public function test_only_participants_can_review_completed_orders_once(): void
     {
         [$client, $provider, $order] = $this->scenario('completed');
@@ -136,6 +171,19 @@ class DisputeAndReviewTest extends TestCase
             'started_at' => now(),
             'delivered_at' => in_array($status, ['delivered', 'completed'], true) ? now() : null,
             'completed_at' => $status === 'completed' ? now() : null,
+        ]);
+
+        $order->payments()->create([
+            'provider' => 'fake',
+            'provider_reference' => 'fake_'.Str::uuid(),
+            'status' => $status === 'completed' ? 'released' : 'paid',
+            'gross_amount' => 100000,
+            'commission_amount' => 8000,
+            'vendor_net_amount' => 92000,
+            'currency' => 'MXN',
+            'paid_at' => now(),
+            'released_at' => $status === 'completed' ? now() : null,
+            'provider_payload' => [],
         ]);
 
         return [$client, $provider, $order];

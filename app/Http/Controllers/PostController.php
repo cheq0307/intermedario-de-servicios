@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Domain\Marketplace\Enums\AccountType;
 use App\Domain\Marketplace\Enums\JobRequestStatus;
 use App\Models\JobRequest;
 use App\Models\Listing;
@@ -19,20 +18,22 @@ class PostController extends Controller
 {
     public function store(Request $request): RedirectResponse
     {
-        $isProvider = $request->user()->account_type === AccountType::Provider;
-        if ($isProvider) {
-            abort_unless($request->user()->vendor?->status === 'active', 422, 'Tu perfil comercial debe ser aprobado antes de publicar ofertas.');
-        }
-
-        $allowedTypes = $isProvider
-            ? ['portfolio', 'business_update', 'product', 'service', 'promotion']
-            : ['job_request'];
+        $providerTypes = ['portfolio', 'business_update', 'product', 'service', 'promotion'];
+        $allowedTypes = array_merge(
+            $request->user()->canActAsClient() ? ['job_request'] : [],
+            $request->user()->canActAsProvider() ? $providerTypes : [],
+        );
 
         $postData = $request->validate([
             'submission_token' => ['required', 'uuid'],
             'type' => ['required', 'string', Rule::in($allowedTypes)],
             'body' => ['required', 'string', 'min:10', 'max:1500'],
         ]);
+
+        $isProvider = in_array($postData['type'], $providerTypes, true);
+        if ($isProvider) {
+            abort_unless($request->user()->vendor?->status === 'active', 422, 'Tu perfil comercial debe ser aprobado antes de publicar ofertas.');
+        }
 
         return Cache::lock('publication:'.$postData['submission_token'], 10)
             ->block(5, function () use ($request, $postData, $isProvider): RedirectResponse {

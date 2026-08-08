@@ -155,7 +155,15 @@ class PostPublishingTest extends TestCase
     {
         $provider = User::factory()->create(['account_type' => 'provider']);
         Vendor::create(['user_id' => $provider->id, 'display_name' => $provider->name, 'slug' => 'pendiente-'.$provider->id, 'status' => 'pending']);
-        $this->actingAs($provider)->post(route('posts.store'), [])->assertStatus(422);
+        $response = $this->actingAs($provider)->post(route('posts.store'), [
+            'submission_token' => (string) Str::uuid(),
+            'type' => 'service',
+            'body' => 'Servicio profesional todavía pendiente de aprobación.',
+            'title' => 'Servicio pendiente',
+            'price_type' => 'quote',
+        ]);
+
+        $response->assertStatus(422);
     }
 
     private function approvedProvider(): User

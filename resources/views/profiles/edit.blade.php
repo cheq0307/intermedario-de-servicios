@@ -7,12 +7,45 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-[#FAF8F4] text-[#17313A] antialiased">
-    @php($isProvider = $user->account_type->value === 'provider')
+    @php($isProvider = $user->canActAsProvider())
     <header class="border-b border-[#123B4A]/10 bg-white"><div class="mx-auto flex max-w-4xl items-center justify-between px-5 py-4"><a class="font-black" href="{{ route('dashboard') }}">Plaza Local</a><a class="rounded-full border border-[#123B4A]/10 px-4 py-2 text-sm font-black" href="{{ route('profile.show', $user) }}">Cancelar</a></div></header>
     <main class="mx-auto max-w-4xl px-5 py-9">
         <p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Tu presencia en la comunidad</p>
         <h1 class="mt-2 text-4xl font-black tracking-tight">Completa tu perfil</h1>
         <p class="mt-3 text-[#6B7D83]">La información pública ayuda a generar confianza. Tu correo, teléfono y ubicación exacta permanecen privados.</p>
+        @if(session('status'))
+            <div class="mt-6 rounded-2xl bg-[#E9F7F0] px-5 py-4 text-sm font-black text-[#14734A]">{{ session('status') }}</div>
+        @endif
+
+        <section class="mt-8 rounded-[2rem] border border-[#123B4A]/10 bg-white p-6 shadow-sm sm:p-8">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Una cuenta, varios usos</p>
+                    <h2 class="mt-2 text-xl font-black">Capacidades de tu cuenta</h2>
+                    <p class="mt-2 text-sm font-semibold text-[#6B7D83]">Puedes comprar y ofrecer servicios con la misma sesión. Los permisos administrativos son independientes.</p>
+                </div>
+                @if($user->hasAnyRole(['admin', 'superadmin']))<span class="rounded-full bg-[#FFF1E8] px-4 py-2 text-xs font-black text-[#D85B0B]">{{ $user->hasRole('superadmin') ? 'Superadministrador' : 'Administrador' }}</span>@endif
+            </div>
+            <div class="mt-6 grid gap-4 sm:grid-cols-2">
+                <article class="rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] p-5">
+                    <div class="flex items-start justify-between gap-3">
+                        <div><h3 class="font-black">Cliente</h3><p class="mt-1 text-sm font-semibold text-[#6B7D83]">Comprar productos y publicar solicitudes.</p></div>
+                        @if($user->canActAsClient())<span class="rounded-full bg-[#E9F7F0] px-3 py-1 text-xs font-black text-[#14734A]">Activa</span>@else<form method="POST" action="{{ route('capabilities.activate', 'client') }}">@csrf<button class="rounded-full bg-[#123B4A] px-4 py-2 text-xs font-black text-white">Activar</button></form>@endif
+                    </div>
+                </article>
+                <article class="rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] p-5">
+                    <div class="flex items-start justify-between gap-3">
+                        <div><h3 class="font-black">Proveedor</h3><p class="mt-1 text-sm font-semibold text-[#6B7D83]">Vender productos, ofrecer servicios y enviar propuestas.</p></div>
+                        @if($user->canActAsProvider())
+                            <span class="rounded-full bg-[#E9F7F0] px-3 py-1 text-xs font-black text-[#14734A]">Activa</span>
+                        @else
+                            <form method="POST" action="{{ route('capabilities.activate', 'provider') }}">@csrf<button class="rounded-full bg-[#F97316] px-4 py-2 text-xs font-black text-white">Activar</button></form>
+                        @endif
+                    </div>
+                    @if($user->canActAsProvider())<p class="mt-3 text-xs font-bold text-[#79551E]">Perfil comercial: {{ $user->vendor?->status === 'active' ? 'aprobado' : ($user->vendor?->status === 'suspended' ? 'suspendido' : 'pendiente') }}</p>@endif
+                </article>
+            </div>
+        </section>
 
         <form class="mt-8 space-y-6" method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">
             @csrf

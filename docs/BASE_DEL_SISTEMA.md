@@ -22,7 +22,13 @@ La plataforma debe registrar el origen y avance de cada operación para que la c
 - Responde solicitudes, presenta cotizaciones y acepta pedidos.
 - Recibe pagos mediante el proveedor externo integrado y la comisión configurada por la plataforma.
 
-Una cuenta tendrá un tipo principal durante el MVP. La arquitectura permitirá que posteriormente una misma persona pueda comprar y vender sin duplicar identidad.
+Una sola identidad puede combinar las capacidades de cliente y proveedor sin duplicar correo, historial ni reputación. Si posee ambas, cambia el contexto visible desde la misma sesión.
+
+Los permisos `admin` y `superadmin` son independientes. Por lo tanto, se soportan cuentas de personal sin actividad comercial y también administradores que, por decisión explícita, compran o venden.
+
+El campo histórico `account_type` se conserva temporalmente para compatibilidad de datos, pero las autorizaciones se basan en roles/capacidades.
+
+Activar la capacidad de proveedor crea un perfil comercial pendiente; no permite operar como proveedor hasta su aprobación administrativa.
 
 ## Superficies principales
 
@@ -69,7 +75,7 @@ Salidas excepcionales: `failed`, `cancelled`, `refund_pending` y `refunded`.
 ## Alcance del MVP
 
 - Registro con correo y contraseña.
-- Selección de tipo de cuenta: cliente o proveedor.
+- Selección inicial de cliente o proveedor y activación posterior de ambas capacidades.
 - Perfil básico y verificación manual de proveedores.
 - Productos, servicios y solicitudes de trabajo.
 - Búsqueda por categoría y ubicación.

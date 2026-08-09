@@ -1,7 +1,7 @@
 <x-layouts.auth title="Iniciar sesión - Plaza Local">
     <div>
         <p class="text-xs font-black uppercase tracking-[.2em] text-[#d2693c]">Bienvenido de vuelta</p>
-        <h1 class="mt-3 text-4xl font-black tracking-tight">Inicia sesión</h1>
+        <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Inicia sesión</h1>
         <p class="mt-3 text-[#6f827b]">Accede a tus mensajes, pedidos y publicaciones.</p>
     </div>
 

@@ -1,7 +1,7 @@
 <x-layouts.auth title="Crear cuenta - Plaza Local">
     <div>
         <p class="text-xs font-black uppercase tracking-[.2em] text-[#d2693c]">Comienza en tu comunidad</p>
-        <h1 class="mt-3 text-4xl font-black tracking-tight">Crea tu cuenta</h1>
+        <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Crea tu cuenta</h1>
         <p class="mt-3 text-[#6f827b]">Elige cómo quieres comenzar. Podrás ampliar tu perfil después.</p>
     </div>
 

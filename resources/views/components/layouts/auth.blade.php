@@ -23,9 +23,9 @@
             <p class="relative text-sm font-semibold text-white/45">Productos, servicios y personas de confianza.</p>
         </section>
 
-        <section class="flex items-center justify-center px-5 py-10 sm:px-10">
+        <section class="flex items-start justify-center px-5 py-8 sm:px-10 sm:py-10 lg:items-center">
             <div class="w-full max-w-md">
-                <a href="{{ route('home') }}" class="mb-10 flex items-center gap-3 lg:hidden">
+                <a href="{{ route('home') }}" class="mb-8 flex items-center gap-3 sm:mb-10 lg:hidden">
                     <span class="grid size-10 place-items-center rounded-xl bg-[#1f6b4f] font-black text-white">P</span>
                     <span class="text-lg font-black">Plaza Local</span>
                 </a>

@@ -24,6 +24,21 @@ class PasswordRecoveryTest extends TestCase
         Notification::assertSentTo($user, ResetPassword::class);
     }
 
+    public function test_repeated_reset_request_shows_a_clear_spanish_message(): void
+    {
+        app()->setLocale('es');
+        Notification::fake();
+        $user = User::factory()->create();
+
+        $this->post('/forgot-password', ['email' => $user->email])
+            ->assertSessionHasNoErrors();
+
+        $this->post('/forgot-password', ['email' => $user->email])
+            ->assertSessionHasErrors([
+                'email' => 'Espera un momento antes de solicitar otro enlace de recuperación.',
+            ]);
+    }
+
     public function test_password_can_be_reset_from_a_valid_email_link(): void
     {
         Notification::fake();

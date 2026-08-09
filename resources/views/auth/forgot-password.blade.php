@@ -1,7 +1,7 @@
 <x-layouts.auth title="Recuperar contrase&ntilde;a - Plaza Local">
     <div>
         <p class="text-xs font-black uppercase tracking-[.2em] text-[#d2693c]">Recupera tu acceso</p>
-        <h1 class="mt-3 text-4xl font-black tracking-tight">Olvid&eacute; mi contrase&ntilde;a</h1>
+        <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Olvid&eacute; mi contrase&ntilde;a</h1>
         <p class="mt-3 leading-7 text-[#6f827b]">Escribe el correo de tu cuenta. Te enviaremos un enlace seguro para establecer una contrase&ntilde;a nueva.</p>
     </div>
 

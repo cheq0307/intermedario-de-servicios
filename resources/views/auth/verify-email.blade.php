@@ -1,7 +1,7 @@
 <x-layouts.auth title="Verifica tu correo - Plaza Local">
     <div>
         <p class="text-xs font-black uppercase tracking-[.2em] text-[#d2693c]">Confirma que eres tú</p>
-        <h1 class="mt-3 text-4xl font-black tracking-tight">Revisa tu correo</h1>
+        <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Revisa tu correo</h1>
         <p class="mt-3 leading-7 text-[#6f827b]">Enviamos un enlace de verificación a <strong>{{ auth()->user()->email }}</strong>. Ábrelo para confirmar que el correo te pertenece.</p>
     </div>
 

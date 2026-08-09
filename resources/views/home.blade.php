@@ -18,7 +18,7 @@
                 </span>
             </a>
 
-            <nav class="hidden items-center gap-8 text-sm font-bold md:flex" aria-label="Navegación principal">
+            <nav class="hidden items-center gap-8 text-sm font-bold lg:flex" aria-label="Navegación principal">
                 <a class="transition hover:text-[#d2693c]" href="#categorias">Categorías</a>
                 <a class="transition hover:text-[#d2693c]" href="#como-funciona">Cómo funciona</a>
                 <a class="transition hover:text-[#d2693c]" href="#proveedores">Para negocios</a>
@@ -38,14 +38,14 @@
                 <div class="absolute -right-20 top-0 size-96 rounded-full bg-[#70aa8e]/20 blur-3xl"></div>
             </div>
 
-            <div class="relative mx-auto grid min-w-0 max-w-7xl items-center gap-12 px-4 py-14 sm:px-5 sm:py-16 lg:grid-cols-[1.08fr_.92fr] lg:px-8 lg:py-24">
+            <div class="relative mx-auto grid min-w-0 max-w-7xl items-center gap-10 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[1.08fr_.92fr] lg:gap-12 lg:px-8 lg:py-24">
                 <div class="min-w-0 max-w-full">
-                    <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-[#1f6b4f]/15 bg-white/80 px-4 py-2 text-xs font-extrabold text-[#1f6b4f] shadow-sm">
+                    <div class="mb-6 inline-flex max-w-full items-center gap-2 rounded-full border border-[#1f6b4f]/15 bg-white/80 px-3 py-2 text-[11px] font-extrabold leading-4 text-[#1f6b4f] shadow-sm sm:px-4 sm:text-xs">
                         <span class="size-2 rounded-full bg-[#d2693c]"></span>
                         Compra y contrata dentro de tu comunidad
                     </div>
 
-                    <h1 class="max-w-full break-words text-[clamp(2.5rem,11vw,4.5rem)] font-black leading-[1.02] tracking-[-.05em]">
+                    <h1 class="max-w-full break-words text-[clamp(2.4rem,11vw,4.5rem)] font-black leading-[1.02] tracking-[-.05em]">
                         Todo lo que necesitas,
                         <span class="text-[#d2693c]">cerca de ti.</span>
                     </h1>
@@ -53,13 +53,13 @@
                         Descubre comida, productos, comercios y personas de confianza que ofrecen sus servicios en tu propia comunidad.
                     </p>
 
-                    <form class="mt-8 flex w-full max-w-2xl flex-col gap-3 overflow-hidden rounded-[1.75rem] bg-white p-3 shadow-[0_24px_70px_rgba(23,53,43,.13)] sm:flex-row" role="search">
+                    <form class="mt-8 flex w-full max-w-2xl flex-col gap-3 overflow-hidden rounded-[1.75rem] bg-white p-3 shadow-[0_24px_70px_rgba(23,53,43,.13)] lg:flex-row" role="search">
                         <label class="flex min-w-0 flex-1 items-center gap-3 px-3" for="busqueda">
                             <span class="text-xl" aria-hidden="true">⌕</span>
                             <span class="sr-only">Buscar</span>
                             <input id="busqueda" class="w-full border-0 bg-transparent py-3 text-base font-semibold text-[#17352b] outline-none placeholder:text-[#8b9c96]" type="search" placeholder="¿Qué estás buscando?">
                         </label>
-                        <button class="w-full rounded-2xl bg-[#d2693c] px-7 py-3.5 font-extrabold text-white transition hover:bg-[#b9552d] sm:w-auto" type="submit">Buscar cerca</button>
+                        <button class="w-full rounded-2xl bg-[#d2693c] px-7 py-3.5 font-extrabold text-white transition hover:bg-[#b9552d] lg:w-auto" type="submit">Buscar cerca</button>
                     </form>
 
                     <div class="mt-6 flex flex-wrap items-center gap-2 text-sm">
@@ -70,8 +70,8 @@
                     </div>
                 </div>
 
-                <div class="relative mx-auto min-w-0 w-full max-w-full sm:max-w-xl">
-                    <div class="absolute -left-5 top-10 z-10 hidden rotate-[-7deg] rounded-2xl bg-[#f2c66d] px-4 py-3 text-sm font-black text-[#17352b] shadow-xl sm:block">A 5 minutos de ti</div>
+                <div class="relative mx-auto min-w-0 w-full max-w-2xl lg:max-w-xl">
+                    <div class="absolute -left-5 top-10 z-10 hidden rotate-[-7deg] rounded-2xl bg-[#f2c66d] px-4 py-3 text-sm font-black text-[#17352b] shadow-xl lg:block">A 5 minutos de ti</div>
                     <div class="max-w-full overflow-hidden rounded-[2.25rem] bg-[#17352b] p-3 shadow-[0_35px_90px_rgba(23,53,43,.25)] sm:p-4">
                         <div class="min-w-0 max-w-full overflow-hidden rounded-[1.65rem] bg-[#eef1e8] p-4 sm:p-6">
                             <div class="flex min-w-0 items-center justify-between gap-3">
@@ -79,7 +79,7 @@
                                     <p class="text-xs font-black uppercase tracking-[.18em] text-[#d2693c]">Abierto ahora</p>
                                     <h2 class="mt-1 break-words text-xl font-black leading-tight sm:text-2xl">Lo más cerca de ti</h2>
                                 </div>
-                                <span class="hidden shrink-0 rounded-full bg-white px-3 py-2 text-xs font-extrabold shadow-sm sm:inline-flex">Tu comunidad</span>
+                                <span class="hidden shrink-0 rounded-full bg-white px-3 py-2 text-xs font-extrabold shadow-sm lg:inline-flex">Tu comunidad</span>
                             </div>
 
                             <div class="mt-6 space-y-3">
@@ -100,13 +100,13 @@
                             </div>
                         </div>
                     </div>
-                    <div class="absolute -bottom-6 right-5 hidden rounded-2xl bg-white px-4 py-3 text-sm font-black shadow-xl sm:block">Compra local ♡</div>
+                    <div class="absolute -bottom-6 right-5 hidden rounded-2xl bg-white px-4 py-3 text-sm font-black shadow-xl lg:block">Compra local ♡</div>
                 </div>
             </div>
         </section>
 
         <section id="categorias" class="mx-auto min-w-0 max-w-7xl scroll-mt-28 px-4 py-16 sm:px-5 lg:px-8">
-            <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+            <div class="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
                 <div>
                     <p class="text-xs font-black uppercase tracking-[.2em] text-[#d2693c]">Explora tu comunidad</p>
                     <h2 class="mt-2 break-words text-3xl font-black tracking-tight sm:text-4xl">¿Qué necesitas hoy?</h2>
@@ -114,7 +114,7 @@
                 <a class="text-sm font-black text-[#1f6b4f] hover:text-[#d2693c]" href="#">Ver todas las categorías →</a>
             </div>
 
-            <div class="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <div class="mt-8 grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 @foreach ([
                     ['🌮', 'Comida', 'Antojitos y más'],
                     ['🛠️', 'Oficios', 'Ayuda experta'],

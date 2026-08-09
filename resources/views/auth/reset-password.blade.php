@@ -1,7 +1,7 @@
 <x-layouts.auth title="Nueva contrase&ntilde;a - Plaza Local">
     <div>
         <p class="text-xs font-black uppercase tracking-[.2em] text-[#d2693c]">Enlace verificado</p>
-        <h1 class="mt-3 text-4xl font-black tracking-tight">Crea una contrase&ntilde;a nueva</h1>
+        <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Crea una contrase&ntilde;a nueva</h1>
         <p class="mt-3 leading-7 text-[#6f827b]">La contrase&ntilde;a cambia, pero tu autenticaci&oacute;n en dos pasos continuar&aacute; protegiendo la cuenta.</p>
     </div>
 

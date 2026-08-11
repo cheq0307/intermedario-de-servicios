@@ -56,7 +56,7 @@ class RegisteredUserController extends Controller
                     'slug' => Str::slug($user->name).'-'.$user->id,
                     'phone' => $user->phone,
                     'email' => $user->email,
-                    'status' => 'pending',
+                    'status' => 'draft',
                 ]);
             }
 

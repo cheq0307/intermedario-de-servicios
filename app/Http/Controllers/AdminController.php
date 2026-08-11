@@ -11,7 +11,6 @@ use App\Notifications\MarketplaceActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Role;
 
@@ -22,13 +21,17 @@ class AdminController extends Controller
         $this->authorizeAdmin($request);
         $metrics = [
             'users' => User::count(),
-            'pending_vendors' => Vendor::where('status', 'pending')->count(),
+            'pending_vendors' => Vendor::where('status', 'pending')->where('user_id', '!=', $request->user()->id)->count(),
             'open_disputes' => Dispute::where('status', 'open')->count(),
             'active_orders' => Order::whereIn('status', ['accepted', 'awaiting_payment', 'paid', 'in_progress', 'ready', 'delivered', 'disputed'])->count(),
         ];
-        $pendingVendors = Vendor::with('user:id,name,email,email_verified_at')->where('status', 'pending')->latest()->get();
-        $vendors = Vendor::with('user:id,name,email,email_verified_at')->where('status', '!=', 'pending')->latest()->limit(30)->get();
-        $users = User::with(['roles:id,name', 'vendor:id,user_id,status'])->whereKeyNot($request->user()->id)->latest()->limit(30)->get();
+        $pendingVendors = Vendor::with('user:id,name,email,email_verified_at')
+            ->where('status', 'pending')->where('user_id', '!=', $request->user()->id)
+            ->latest('submitted_at')->get();
+        $vendors = Vendor::with('user:id,name,email,email_verified_at')
+            ->whereIn('status', ['active', 'suspended'])->where('user_id', '!=', $request->user()->id)
+            ->latest()->limit(30)->get();
+        $users = User::with('roles:id,name')->whereKeyNot($request->user()->id)->latest()->limit(30)->get();
         $auditLogs = AuditLog::with('user:id,name')->latest('created_at')->limit(30)->get();
         $isSuperadmin = $request->user()->hasRole('superadmin');
 
@@ -39,19 +42,31 @@ class AdminController extends Controller
     {
         $this->authorizeAdmin($request);
         abort_if($vendor->user_id === $request->user()->id, 403, 'Un administrador no puede aprobar su propio perfil comercial.');
+        abort_unless(
+            ($vendor->status === 'pending' && $vendor->submitted_at) || $vendor->status === 'suspended',
+            422,
+            'Este perfil no fue enviado a revisión.',
+        );
         $vendor->loadMissing('user');
         abort_unless($vendor->user?->hasVerifiedEmail(), 422, 'El proveedor debe verificar su correo antes de ser aprobado.');
         abort_if($vendor->missingReviewRequirements() !== [], 422, 'El proveedor todavía debe completar: '.implode(', ', $vendor->missingReviewRequirements()).'.');
         $this->changeVendorStatus($request, $vendor, 'active');
-        $vendor->user->notify(new MarketplaceActivity(
-            'Tu perfil de proveedor fue aprobado',
-            'Ya puedes publicar ofertas y enviar propuestas en Plaza Local.',
-            'profile.show',
-            ['user' => $vendor->user_id],
-            'vendor_approved',
-        ));
+        $vendor->user->notify(new MarketplaceActivity('Tu perfil de proveedor fue aprobado', 'Ya puedes publicar ofertas y enviar propuestas en Plaza Local.', 'profile.show', ['user' => $vendor->user_id], 'vendor_approved'));
 
         return back()->with('status', 'Proveedor aprobado y notificado.');
+    }
+
+    public function rejectVendor(Request $request, Vendor $vendor): RedirectResponse
+    {
+        $this->authorizeAdmin($request);
+        abort_if($vendor->user_id === $request->user()->id, 403);
+        abort_unless($vendor->status === 'pending' && $vendor->submitted_at, 422, 'Este perfil no fue enviado a revisión.');
+        $validated = $request->validate(['reason' => ['required', 'string', 'min:10', 'max:1000']]);
+        $this->changeVendorStatus($request, $vendor, 'rejected', ['reason' => $validated['reason']]);
+        $vendor->loadMissing('user');
+        $vendor->user?->notify(new MarketplaceActivity('Tu solicitud de proveedor necesita cambios', 'Motivo: '.$validated['reason'], 'profile.edit', [], 'vendor_rejected'));
+
+        return back()->with('status', 'Solicitud devuelta al usuario con el motivo indicado.');
     }
 
     public function suspendVendor(Request $request, Vendor $vendor): RedirectResponse
@@ -60,13 +75,7 @@ class AdminController extends Controller
         $validated = $request->validate(['reason' => ['required', 'string', 'min:10', 'max:1000']]);
         $this->changeVendorStatus($request, $vendor, 'suspended', ['reason' => $validated['reason']]);
         $vendor->loadMissing('user');
-        $vendor->user?->notify(new MarketplaceActivity(
-            'Tu perfil de proveedor fue suspendido',
-            'Motivo: '.$validated['reason'],
-            'profile.show',
-            ['user' => $vendor->user_id],
-            'vendor_suspended',
-        ));
+        $vendor->user?->notify(new MarketplaceActivity('Tu perfil de proveedor fue suspendido', 'Motivo: '.$validated['reason'], 'profile.show', ['user' => $vendor->user_id], 'vendor_suspended'));
 
         return back()->with('status', 'Proveedor suspendido y notificado.');
     }
@@ -91,63 +100,15 @@ class AdminController extends Controller
         return back()->with('status', 'Permiso de administrador retirado.');
     }
 
-    public function grantCapability(Request $request, User $user, string $capability): RedirectResponse
-    {
-        $this->authorizeSuperadmin($request);
-        abort_unless(in_array($capability, ['client', 'provider'], true), 404);
-        abort_if($user->hasRole('superadmin'), 422, 'La cuenta superadministradora es exclusivamente administrativa.');
-
-        if ($user->hasRole($capability)) {
-            return back()->with('status', 'La capacidad ya estaba asignada.');
-        }
-
-        DB::transaction(function () use ($request, $user, $capability): void {
-            $user->assignRole(Role::findOrCreate($capability));
-
-            if ($capability === 'provider') {
-                Vendor::firstOrCreate(
-                    ['user_id' => $user->id],
-                    [
-                        'display_name' => $user->name,
-                        'slug' => Str::slug($user->name).'-'.$user->id,
-                        'phone' => $user->phone,
-                        'email' => $user->email,
-                        'status' => 'pending',
-                    ],
-                );
-            }
-            $this->audit($request, 'capability.granted', $user, ['capability' => $capability]);
-        });
-
-        return back()->with('status', 'Capacidad comercial asignada correctamente.');
-    }
-
-    public function revokeCapability(Request $request, User $user, string $capability): RedirectResponse
-    {
-        $this->authorizeSuperadmin($request);
-        abort_unless(in_array($capability, ['client', 'provider'], true), 404);
-        abort_unless($user->hasRole($capability), 422, 'La cuenta no tiene esta capacidad.');
-
-        $hasOtherCapability = $user->hasRole($capability === 'client' ? 'provider' : 'client');
-        $hasStaffAuthority = $user->hasAnyRole(['admin', 'superadmin']);
-        abort_unless($hasOtherCapability || $hasStaffAuthority, 422, 'La cuenta debe conservar otra capacidad o autoridad administrativa.');
-
-        DB::transaction(function () use ($request, $user, $capability): void {
-            $user->removeRole($capability);
-
-            if ($capability === 'provider') {
-                $user->vendor?->update(['status' => 'suspended', 'verified_at' => null]);
-            }
-            $this->audit($request, 'capability.revoked', $user, ['capability' => $capability]);
-        });
-
-        return back()->with('status', 'Capacidad comercial retirada; los datos históricos se conservaron.');
-    }
-
     private function changeVendorStatus(Request $request, Vendor $vendor, string $status, array $metadata = []): void
     {
         DB::transaction(function () use ($request, $vendor, $status, $metadata): void {
-            $vendor->update(['status' => $status, 'verified_at' => $status === 'active' ? now() : null]);
+            $vendor->update([
+                'status' => $status,
+                'verified_at' => $status === 'active' ? now() : null,
+                'reviewed_at' => now(),
+                'rejection_reason' => $status === 'rejected' ? ($metadata['reason'] ?? null) : null,
+            ]);
             $this->audit($request, 'vendor.'.$status, $vendor, $metadata);
         });
     }

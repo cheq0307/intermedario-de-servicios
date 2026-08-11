@@ -70,7 +70,7 @@ class AuthenticationTest extends TestCase
             'user_id' => auth()->id(),
             'display_name' => 'Carpintería Ramírez',
             'email' => 'carpinteria@example.test',
-            'status' => 'pending',
+            'status' => 'draft',
         ]);
     }
 

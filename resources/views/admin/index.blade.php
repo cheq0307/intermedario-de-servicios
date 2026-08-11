@@ -47,7 +47,7 @@
                         <div class="flex items-start justify-between gap-3"><div><h3 class="font-black">{{ $vendor->display_name }}</h3><p class="mt-1 text-xs font-bold text-[#6B7D83]">{{ $vendor->user->email }}</p></div><span class="rounded-full px-3 py-1 text-xs font-black {{ $ready ? 'bg-[#E9F7F0] text-[#14734A]' : 'bg-[#FFF4D6] text-[#79551E]' }}">{{ $ready ? 'Lista para revisar' : 'Incompleta' }}</span></div>
                         <div class="mt-4 text-sm font-semibold leading-6 text-[#536A72]"><p>Correo: <strong>{{ $vendor->user->hasVerifiedEmail() ? 'verificado' : 'sin verificar' }}</strong></p><p>Especialidad: <strong>{{ $vendor->specialty ?: 'pendiente' }}</strong></p><p>Zona: <strong>{{ $vendor->service_area ?: 'pendiente' }}</strong></p></div>
                         @if(!$ready)<p class="mt-3 rounded-xl bg-[#FFF4D6] px-3 py-2 text-xs font-bold text-[#79551E]">Falta: {{ collect($missing)->values()->join(', ') }}{{ !$vendor->user->hasVerifiedEmail() ? ($missing ? ', ' : '').'verificar correo' : '' }}.</p>@endif
-                        <div class="mt-4 flex flex-wrap gap-2"><a class="rounded-full border border-[#123B4A]/15 bg-white px-4 py-2 text-xs font-black" href="{{ route('profile.show', $vendor->user) }}">Ver perfil</a>@if($ready)<form method="POST" action="{{ route('admin.vendors.approve', $vendor) }}">@csrf @method('PATCH')<button class="rounded-full bg-[#14734A] px-4 py-2 text-xs font-black text-white" type="submit">Aprobar proveedor</button></form>@else<span class="rounded-full bg-[#E5E9E7] px-4 py-2 text-xs font-black text-[#70817B]">Esperando datos</span>@endif</div>
+                        <div class="mt-4 flex flex-wrap gap-2"><a class="rounded-full border border-[#123B4A]/15 bg-white px-4 py-2 text-xs font-black" href="{{ route('profile.show', $vendor->user) }}">Ver perfil</a>@if($ready)<form method="POST" action="{{ route('admin.vendors.approve', $vendor) }}">@csrf @method('PATCH')<button class="rounded-full bg-[#14734A] px-4 py-2 text-xs font-black text-white" type="submit">Aprobar proveedor</button></form><form class="flex min-w-[240px] flex-1 gap-2" method="POST" action="{{ route('admin.vendors.reject', $vendor) }}">@csrf @method('PATCH')<input class="min-w-0 flex-1 rounded-full border border-red-200 bg-white px-3 py-2 text-xs" name="reason" minlength="10" maxlength="1000" required placeholder="Motivo de devolución"><button class="rounded-full border border-red-200 px-4 py-2 text-xs font-black text-red-700" type="submit">Solicitar cambios</button></form>@else<span class="rounded-full bg-[#E5E9E7] px-4 py-2 text-xs font-black text-[#70817B]">Esperando datos</span>@endif</div>
                     </article>
                 @empty
                     <div class="rounded-2xl border border-dashed border-[#123B4A]/20 p-8 text-center font-bold text-[#6B7D83] lg:col-span-2">No hay proveedores pendientes por revisar.</div>
@@ -59,32 +59,6 @@
             <section class="rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6"><h2 class="text-xl font-black">Proveedores activos o suspendidos</h2><div class="mt-5 space-y-4">@forelse($vendors as $vendor)<article class="rounded-2xl bg-[#FAF8F4] p-4"><div class="flex flex-wrap justify-between gap-3"><div><strong>{{ $vendor->display_name }}</strong><p class="text-xs font-bold text-[#6B7D83]">{{ $vendor->user->email }} · {{ $vendor->status === 'active' ? 'activo' : 'suspendido' }}</p></div>@if($vendor->status === 'suspended' && $vendor->isReadyForReview())<form method="POST" action="{{ route('admin.vendors.approve', $vendor) }}">@csrf @method('PATCH')<button class="rounded-full bg-[#14734A] px-4 py-2 text-xs font-black text-white">Reactivar</button></form>@endif</div>@if($vendor->status === 'active')<form class="mt-3 flex gap-2" method="POST" action="{{ route('admin.vendors.suspend', $vendor) }}">@csrf @method('PATCH')<input class="min-w-0 flex-1 rounded-xl border border-[#123B4A]/10 bg-white px-3 py-2 text-xs" name="reason" minlength="10" required placeholder="Motivo de suspensión"><button class="rounded-full border border-red-200 px-4 py-2 text-xs font-black text-red-700">Suspender</button></form>@endif</article>@empty<p class="text-sm font-bold text-[#6B7D83]">Aún no hay proveedores procesados.</p>@endforelse</div></section>
             <section class="rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6"><h2 class="text-xl font-black">Usuarios y autoridad</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Solo el superadministrador puede delegar o retirar administradores.</p><div class="mt-5 space-y-3">@foreach($users as $user)<article class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#FAF8F4] p-4"><div><strong>{{ $user->name }}</strong><p class="text-xs font-bold text-[#6B7D83]">{{ $user->email }} · {{ $user->roles->pluck('name')->join(', ') }}</p></div>@if($isSuperadmin && !$user->hasRole('superadmin'))<div>@if($user->hasRole('admin'))<form method="POST" action="{{ route('admin.users.revoke', $user) }}">@csrf @method('DELETE')<button class="rounded-full border border-red-200 px-4 py-2 text-xs font-black text-red-700">Retirar admin</button></form>@else<form method="POST" action="{{ route('admin.users.grant', $user) }}">@csrf<button class="rounded-full bg-[#123B4A] px-4 py-2 text-xs font-black text-white">Hacer admin</button></form>@endif</div>@endif</article>@endforeach</div></section>
         </div>
-
-        @if($isSuperadmin)
-            <section class="mt-6 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6">
-    <h2 class="text-xl font-black">Capacidades comerciales</h2>
-    <p class="mt-2 text-sm font-semibold text-[#6B7D83]">Asignar “Proveedor” solo habilita el perfil comercial. La aprobación se realiza aparte en la bandeja “Proveedores pendientes”, después de verificar correo y datos.</p>
-    <div class="mt-5 grid gap-3 md:grid-cols-2">
-        @foreach($users->reject->hasRole('superadmin') as $user)
-            <article class="rounded-2xl bg-[#FAF8F4] p-4">
-                <strong>{{ $user->name }}</strong><p class="mt-1 text-xs font-bold text-[#6B7D83]">{{ $user->email }}</p>
-                @if($user->hasRole('provider'))
-                    <p class="mt-3 text-xs font-black text-[#79551E]">Perfil proveedor: {{ match($user->vendor?->status) { 'active' => 'aprobado', 'suspended' => 'suspendido', default => 'pendiente de revisión' } }}</p>
-                @endif
-                <div class="mt-4 flex flex-wrap gap-2">
-                    @foreach(['client'=>'Cliente','provider'=>'Proveedor'] as $capability=>$label)
-                        @if($user->hasRole($capability))
-                            <form method="POST" action="{{ route('admin.users.capabilities.revoke', [$user, $capability]) }}">@csrf @method('DELETE')<button class="rounded-full border border-red-200 px-3 py-2 text-xs font-black text-red-700">Retirar {{ $label }}</button></form>
-                        @else
-                            <form method="POST" action="{{ route('admin.users.capabilities.grant', [$user, $capability]) }}">@csrf<button class="rounded-full bg-[#123B4A] px-3 py-2 text-xs font-black text-white">Agregar {{ $label }}</button></form>
-                        @endif
-                    @endforeach
-                </div>
-            </article>
-        @endforeach
-    </div>
-</section>
-        @endif
 
         <section class="mt-6 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6"><h2 class="text-xl font-black">Auditoría reciente</h2><div class="mt-4 overflow-x-auto"><table class="w-full min-w-[650px] text-left text-sm"><thead><tr class="text-[#6B7D83]"><th class="p-3">Fecha</th><th class="p-3">Administrador</th><th class="p-3">Acción</th><th class="p-3">Objetivo</th></tr></thead><tbody>@foreach($auditLogs as $log)<tr class="border-t border-[#123B4A]/10"><td class="p-3">{{ $log->created_at->format('d/m/Y H:i') }}</td><td class="p-3">{{ $log->user?->name ?? 'Sistema' }}</td><td class="p-3 font-black">{{ $log->action }}</td><td class="p-3">{{ class_basename($log->subject_type) }} #{{ $log->subject_id }}</td></tr>@endforeach</tbody></table></div></section>
     </main>

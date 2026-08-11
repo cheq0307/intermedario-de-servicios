@@ -43,6 +43,7 @@ class AdminAuthorizationTest extends TestCase
             'service_area' => 'Centro',
             'business_hours' => ['days' => ['monday'], 'opens_at' => '09:00', 'closes_at' => '18:00'],
             'status' => 'pending',
+            'submitted_at' => now(),
         ]);
         $target = User::factory()->create();
 
@@ -67,6 +68,7 @@ class AdminAuthorizationTest extends TestCase
             'display_name' => 'Perfil incompleto',
             'slug' => 'perfil-incompleto',
             'status' => 'pending',
+            'submitted_at' => now(),
         ]);
 
         $this->actingAs($admin)
@@ -91,6 +93,7 @@ class AdminAuthorizationTest extends TestCase
             'service_area' => 'Centro',
             'business_hours' => ['days' => ['monday'], 'opens_at' => '09:00', 'closes_at' => '18:00'],
             'status' => 'pending',
+            'submitted_at' => now(),
         ]);
 
         $this->actingAs($admin)
@@ -117,18 +120,6 @@ class AdminAuthorizationTest extends TestCase
             ->assertSee(route('admin.index'), false);
     }
 
-    public function test_superadmin_cannot_receive_commercial_capabilities(): void
-    {
-        $superadmin = User::factory()->create();
-        $superadmin->syncRoles([Role::findOrCreate('superadmin')]);
-
-        $this->actingAs($superadmin)
-            ->post(route('admin.users.capabilities.grant', [$superadmin, 'provider']))
-            ->assertStatus(422);
-
-        $this->assertFalse($superadmin->fresh()->canActAsProvider());
-    }
-
     public function test_administrator_cannot_approve_own_vendor_profile(): void
     {
         $admin = User::factory()->create(['account_type' => 'provider']);
@@ -142,6 +133,7 @@ class AdminAuthorizationTest extends TestCase
             'service_area' => 'Centro',
             'business_hours' => ['days' => ['monday'], 'opens_at' => '09:00', 'closes_at' => '18:00'],
             'status' => 'pending',
+            'submitted_at' => now(),
         ]);
 
         $this->actingAs($admin)
@@ -163,7 +155,31 @@ class AdminAuthorizationTest extends TestCase
             ->assertSee('Otra persona')
             ->assertDontSee('Cuenta propietaria')
             ->assertSee('Explorar plaza')
-            ->assertSee('Asignar “Proveedor” solo habilita el perfil comercial.');
+            ->assertDontSee('Capacidades comerciales');
+    }
+
+    public function test_administrator_can_reject_a_submitted_provider_application_with_a_reason(): void
+    {
+        Notification::fake();
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::findOrCreate('admin'));
+        $provider = User::factory()->create(['account_type' => 'provider']);
+        $vendor = Vendor::create([
+            'user_id' => $provider->id,
+            'display_name' => 'Solicitud revisable',
+            'slug' => 'solicitud-revisable',
+            'description' => 'Servicios profesionales.',
+            'specialty' => 'Electricidad',
+            'service_area' => 'Centro',
+            'business_hours' => ['days' => ['monday'], 'opens_at' => '09:00', 'closes_at' => '18:00'],
+            'status' => 'pending',
+            'submitted_at' => now(),
+        ]);
+
+        $this->actingAs($admin)->patch(route('admin.vendors.reject', $vendor), ['reason' => 'Necesitamos una descripción más precisa.'])->assertRedirect();
+
+        $this->assertDatabaseHas('vendors', ['id' => $vendor->id, 'status' => 'rejected', 'rejection_reason' => 'Necesitamos una descripción más precisa.']);
+        Notification::assertSentTo($provider, MarketplaceActivity::class);
     }
 
     public function test_regular_user_cannot_access_administration(): void

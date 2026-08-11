@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use App\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -26,7 +25,7 @@ class MarketplaceCapabilityTest extends TestCase
         $this->assertDatabaseCount('users', 1);
         $this->assertDatabaseHas('vendors', [
             'user_id' => $client->id,
-            'status' => 'pending',
+            'status' => 'draft',
         ]);
     }
 
@@ -66,59 +65,14 @@ class MarketplaceCapabilityTest extends TestCase
         $this->assertDatabaseMissing('vendors', ['user_id' => $client->id]);
     }
 
-    public function test_superadmin_can_leave_an_administrator_without_commercial_capabilities(): void
+    public function test_superadmin_cannot_activate_commercial_capabilities(): void
     {
         $superadmin = User::factory()->create();
-        $superadmin->assignRole(Role::findOrCreate('superadmin'));
-        $staff = User::factory()->create(['account_type' => 'client']);
-        $staff->assignRole(Role::findOrCreate('admin'));
+        $superadmin->syncRoles([Role::findOrCreate('superadmin')]);
 
-        $this->actingAs($superadmin)
-            ->delete(route('admin.users.capabilities.revoke', [$staff, 'client']))
-            ->assertRedirect();
+        $this->actingAs($superadmin)->post(route('capabilities.activate', 'provider'))->assertForbidden();
 
-        $staff->refresh();
-        $this->assertTrue($staff->hasRole('admin'));
-        $this->assertFalse($staff->canActAsClient());
-        $this->assertFalse($staff->canActAsProvider());
-    }
-
-    public function test_superadmin_cannot_leave_a_regular_user_without_any_capability(): void
-    {
-        $superadmin = User::factory()->create();
-        $superadmin->assignRole(Role::findOrCreate('superadmin'));
-        $client = User::factory()->create(['account_type' => 'client']);
-
-        $this->actingAs($superadmin)
-            ->delete(route('admin.users.capabilities.revoke', [$client, 'client']))
-            ->assertStatus(422);
-
-        $this->assertTrue($client->fresh()->canActAsClient());
-    }
-
-    public function test_revoking_provider_suspends_profile_but_preserves_it(): void
-    {
-        $superadmin = User::factory()->create();
-        $superadmin->assignRole(Role::findOrCreate('superadmin'));
-        $provider = User::factory()->create(['account_type' => 'provider']);
-        $provider->assignRole(Role::findOrCreate('client'));
-        $vendor = Vendor::create([
-            'user_id' => $provider->id,
-            'display_name' => 'Negocio conservado',
-            'slug' => 'negocio-conservado',
-            'status' => 'active',
-            'verified_at' => now(),
-        ]);
-
-        $this->actingAs($superadmin)
-            ->delete(route('admin.users.capabilities.revoke', [$provider, 'provider']))
-            ->assertRedirect();
-
-        $this->assertFalse($provider->fresh()->canActAsProvider());
-        $this->assertDatabaseHas('vendors', [
-            'id' => $vendor->id,
-            'status' => 'suspended',
-        ]);
+        $this->assertFalse($superadmin->fresh()->canActAsProvider());
     }
 
     public function test_dual_account_dashboard_switches_the_publication_form(): void

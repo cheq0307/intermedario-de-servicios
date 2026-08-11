@@ -12,6 +12,9 @@
         $businessHours = $user->vendor?->business_hours ?? [];
         $selectedBusinessDays = old('business_days', $businessHours['days'] ?? ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
         $dayLabels = ['monday' => 'Lun', 'tuesday' => 'Mar', 'wednesday' => 'Mié', 'thursday' => 'Jue', 'friday' => 'Vie', 'saturday' => 'Sáb', 'sunday' => 'Dom'];
+        $vendorStatus = $user->vendor?->status;
+        $vendorStatusLabels = ['draft' => 'Perfil en borrador', 'pending' => 'Solicitud enviada', 'active' => 'Proveedor aprobado', 'rejected' => 'Necesita cambios', 'suspended' => 'Perfil suspendido'];
+        $missingReviewRequirements = $user->vendor?->missingReviewRequirements() ?? [];
     @endphp
     <header class="border-b border-[#123B4A]/10 bg-white"><div class="mx-auto flex max-w-4xl items-center justify-between px-5 py-4"><a class="font-black" href="{{ route('dashboard') }}">Plaza Local</a><a class="rounded-full border border-[#123B4A]/10 px-4 py-2 text-sm font-black" href="{{ route('profile.show', $user) }}">Cancelar</a></div></header>
     <main class="mx-auto max-w-4xl px-5 py-9">
@@ -40,7 +43,7 @@
                 <article class="rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] p-5">
                     <div class="flex items-start justify-between gap-3">
                         <div><h3 class="font-black">Cliente</h3><p class="mt-1 text-sm font-semibold text-[#6B7D83]">Comprar productos y publicar solicitudes.</p></div>
-                        @if($user->canActAsClient())<span class="rounded-full bg-[#E9F7F0] px-3 py-1 text-xs font-black text-[#14734A]">Activa</span>@else<form method="POST" action="{{ route('capabilities.activate', 'client') }}">@csrf<button class="rounded-full bg-[#123B4A] px-4 py-2 text-xs font-black text-white">Activar</button></form>@endif
+                        @if($user->canActAsClient())<span class="rounded-full bg-[#E9F7F0] px-3 py-1 text-xs font-black text-[#14734A]">Activa</span>@else<form method="POST" action="{{ route('capabilities.activate', 'client') }}">@csrf<button class="rounded-full bg-[#123B4A] px-4 py-2 text-xs font-black text-white">Activar cliente</button></form>@endif
                     </div>
                 </article>
                 <article class="rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] p-5">
@@ -49,10 +52,13 @@
                         @if($user->canActAsProvider())
                             <span class="rounded-full bg-[#E9F7F0] px-3 py-1 text-xs font-black text-[#14734A]">Activa</span>
                         @else
-                            <form method="POST" action="{{ route('capabilities.activate', 'provider') }}">@csrf<button class="rounded-full bg-[#F97316] px-4 py-2 text-xs font-black text-white">Activar</button></form>
+                            <form method="POST" action="{{ route('capabilities.activate', 'provider') }}">@csrf<button class="rounded-full bg-[#F97316] px-4 py-2 text-xs font-black text-white">Quiero ser proveedor</button></form>
                         @endif
                     </div>
-                    @if($user->canActAsProvider())<p class="mt-3 text-xs font-bold text-[#79551E]">Perfil comercial: {{ $user->vendor?->status === 'active' ? 'aprobado' : ($user->vendor?->status === 'suspended' ? 'suspendido' : 'pendiente') }}</p>@endif
+                    @if($user->canActAsProvider())
+                        <p class="mt-3 text-xs font-bold text-[#79551E]">{{ $vendorStatusLabels[$vendorStatus] ?? 'Perfil en borrador' }}</p>
+                        @if($vendorStatus === 'rejected' && $user->vendor?->rejection_reason)<p class="mt-2 rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-700">Cambios solicitados: {{ $user->vendor->rejection_reason }}</p>@endif
+                    @endif
                 </article>
             </div>
         </section>
@@ -99,6 +105,29 @@
 
             <div class="flex justify-end"><button class="rounded-full bg-[#F97316] px-7 py-3.5 font-black text-white shadow-lg shadow-[#F97316]/15" type="submit">Guardar perfil</button></div>
         </form>
+        @if($isProvider)
+            <section class="mt-8 rounded-[2rem] border border-[#F97316]/20 bg-white p-6 shadow-sm sm:p-8">
+                <p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Verificación de proveedor</p>
+                @if($vendorStatus === 'active')
+                    <h2 class="mt-2 text-xl font-black">Tu perfil está aprobado</h2>
+                    <p class="mt-2 text-sm font-semibold text-[#6B7D83]">Ya puedes publicar ofertas, enviar propuestas y configurar tus depósitos.</p>
+                @elseif($vendorStatus === 'pending')
+                    <h2 class="mt-2 text-xl font-black">Solicitud en revisión</h2>
+                    <p class="mt-2 text-sm font-semibold text-[#6B7D83]">La enviaste {{ $user->vendor->submitted_at?->format('d/m/Y H:i') }}. Si editas los datos comerciales, volverá a borrador y tendrás que enviarla nuevamente.</p>
+                @elseif($vendorStatus === 'suspended')
+                    <h2 class="mt-2 text-xl font-black">Perfil suspendido</h2>
+                    <p class="mt-2 text-sm font-semibold text-[#6B7D83]">Contacta a soporte para conocer el motivo y solicitar una revisión administrativa.</p>
+                @else
+                    <h2 class="mt-2 text-xl font-black">Envía tu perfil cuando esté listo</h2>
+                    <p class="mt-2 text-sm font-semibold text-[#6B7D83]">Guardar el perfil no lo envía automáticamente. Tú decides cuándo solicitar la revisión.</p>
+                    @if($missingReviewRequirements !== [] || ! $user->hasVerifiedEmail())
+                        <p class="mt-4 rounded-2xl bg-[#FFF4D6] p-4 text-sm font-bold text-[#79551E]">Antes de enviarlo falta: {{ collect($missingReviewRequirements)->values()->join(', ') }}{{ ! $user->hasVerifiedEmail() ? ($missingReviewRequirements ? ', ' : '').'verificar correo' : '' }}.</p>
+                    @else
+                        <form class="mt-5" method="POST" action="{{ route('provider-applications.submit') }}">@csrf<button class="rounded-full bg-[#14734A] px-6 py-3 font-black text-white" type="submit">Enviar solicitud de verificación</button></form>
+                    @endif
+                @endif
+            </section>
+        @endif
     </main>
 </body>
 </html>

@@ -41,6 +41,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/mi-perfil', [ProfileController::class, 'update'])->name('profile.update');
     Route::middleware('verified')->group(function () {
         Route::post('/mi-cuenta/capacidades/{capability}', [MarketplaceCapabilityController::class, 'activate'])->name('capabilities.activate');
+        Route::post('/mi-perfil/solicitar-verificacion', [MarketplaceCapabilityController::class, 'submitProviderApplication'])->name('provider-applications.submit');
         Route::post('/publicaciones', [PostController::class, 'store'])->name('posts.store');
         Route::post('/stripe/conectar', [StripeConnectController::class, 'onboard'])->name('stripe.connect');
         Route::get('/stripe/conectar/actualizar', [StripeConnectController::class, 'refresh'])->name('stripe.connect.refresh');
@@ -84,10 +85,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/trabajos/{order}/calificaciones', [ReviewController::class, 'store'])->name('reviews.store');
         Route::get('/administracion', [AdminController::class, 'index'])->name('admin.index');
         Route::patch('/administracion/proveedores/{vendor}/aprobar', [AdminController::class, 'approveVendor'])->name('admin.vendors.approve');
+        Route::patch('/administracion/proveedores/{vendor}/rechazar', [AdminController::class, 'rejectVendor'])->name('admin.vendors.reject');
         Route::patch('/administracion/proveedores/{vendor}/suspender', [AdminController::class, 'suspendVendor'])->name('admin.vendors.suspend');
         Route::post('/administracion/usuarios/{user}/administrador', [AdminController::class, 'grantAdmin'])->name('admin.users.grant');
         Route::delete('/administracion/usuarios/{user}/administrador', [AdminController::class, 'revokeAdmin'])->name('admin.users.revoke');
-        Route::post('/administracion/usuarios/{user}/capacidades/{capability}', [AdminController::class, 'grantCapability'])->name('admin.users.capabilities.grant');
-        Route::delete('/administracion/usuarios/{user}/capacidades/{capability}', [AdminController::class, 'revokeCapability'])->name('admin.users.capabilities.revoke');
     });
 });

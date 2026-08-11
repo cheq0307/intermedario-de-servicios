@@ -27,6 +27,9 @@ class Vendor extends Model
         'phone',
         'email',
         'status',
+        'submitted_at',
+        'reviewed_at',
+        'rejection_reason',
         'verified_at',
         'latitude',
         'longitude',
@@ -42,6 +45,8 @@ class Vendor extends Model
     protected function casts(): array
     {
         return [
+            'submitted_at' => 'datetime',
+            'reviewed_at' => 'datetime',
             'verified_at' => 'datetime',
             'business_hours' => 'array',
             'stripe_details_submitted' => 'boolean',

@@ -64,14 +64,24 @@ class ProfileController extends Controller
                     'timezone' => config('marketplace.business_timezone'),
                 ];
 
-                $user->vendor()->updateOrCreate(
+                $vendor = $user->vendor()->updateOrCreate(
                     ['user_id' => $user->id],
                     array_merge($vendorData, [
                         'slug' => $user->vendor?->slug ?? Str::slug($validated['display_name']).'-'.$user->id,
                         'phone' => $user->phone,
                         'email' => $user->email,
+                        'status' => $user->vendor?->status ?? 'draft',
                     ]),
                 );
+
+                if ($vendor->status === 'pending') {
+                    $vendor->update([
+                        'status' => 'draft',
+                        'submitted_at' => null,
+                        'reviewed_at' => null,
+                        'rejection_reason' => null,
+                    ]);
+                }
             }
         });
 

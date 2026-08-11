@@ -124,7 +124,14 @@
 
             @if($isProvider && $currentUser->vendor?->status !== 'active')
                 <div class="rounded-2xl border border-[#F5D48D] bg-[#FFF8E6] px-5 py-4 text-sm font-bold leading-6 text-[#79551E]" role="status">
-                    Tu perfil comercial está {{ $currentUser->vendor?->status === 'suspended' ? 'suspendido' : 'pendiente de aprobación' }}. Puedes completar tu perfil, pero publicar ofertas y enviar propuestas permanecerá bloqueado hasta la aprobación administrativa.
+                    @switch($currentUser->vendor?->status)
+                        @case('draft') Tu perfil está en borrador. Complétalo y envía la solicitud de verificación desde “Editar perfil”. @break
+                        @case('pending') Tu solicitud de proveedor está en revisión. Publicar ofertas y enviar propuestas permanecerá bloqueado hasta que sea aprobada. @break
+                        @case('rejected') Tu solicitud necesita cambios: {{ $currentUser->vendor?->rejection_reason }} @break
+                        @case('suspended') Tu perfil comercial está suspendido. Contacta a soporte para solicitar una revisión. @break
+                        @default Completa y envía tu perfil comercial para solicitar la verificación. @break
+                    @endswitch
+                    <a class="ml-1 underline" href="{{ route('profile.edit') }}">Editar perfil</a>
                 </div>
             @endif
 

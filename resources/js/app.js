@@ -121,15 +121,16 @@ document.querySelectorAll('[data-share-form]').forEach((form) => form.addEventLi
     }
 }));
 
-document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-password-toggle]');
+    if (!(button instanceof HTMLButtonElement)) return;
+
     const input = document.getElementById(button.dataset.passwordToggle);
     if (!(input instanceof HTMLInputElement)) return;
 
-    button.addEventListener('click', () => {
-        const revealing = input.type === 'password';
-        input.type = revealing ? 'text' : 'password';
-        button.textContent = revealing ? 'Ocultar' : 'Ver';
-        button.setAttribute('aria-label', revealing ? 'Ocultar contraseña' : 'Mostrar contraseña');
-        button.setAttribute('aria-pressed', revealing ? 'true' : 'false');
-    });
+    const revealing = input.type === 'password';
+    input.type = revealing ? 'text' : 'password';
+    button.querySelector('[data-password-toggle-label]').textContent = revealing ? 'Ocultar' : 'Mostrar';
+    button.setAttribute('aria-label', revealing ? 'Ocultar contraseña' : 'Mostrar contraseña');
+    button.setAttribute('aria-pressed', revealing ? 'true' : 'false');
 });

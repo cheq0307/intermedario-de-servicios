@@ -13,7 +13,7 @@
     <div class="relative mt-2">
         <input
             id="{{ $id }}"
-            class="w-full rounded-2xl border border-[#17352b]/15 bg-white px-4 py-3.5 pr-20 outline-none transition focus:border-[#1f6b4f] focus:ring-4 focus:ring-[#1f6b4f]/10"
+            class="w-full rounded-2xl border border-[#17352b]/15 bg-white px-4 py-3.5 pr-28 outline-none transition focus:border-[#1f6b4f] focus:ring-4 focus:ring-[#1f6b4f]/10"
             type="password"
             name="{{ $name }}"
             required
@@ -24,13 +24,19 @@
             @if($requirements === 'confirmation') data-password-confirmation @endif
         >
         <button
-            class="absolute inset-y-0 right-0 rounded-r-2xl px-4 text-sm font-black text-[#1f6b4f] transition hover:bg-[#e6f1eb] focus:outline-none focus:ring-4 focus:ring-inset focus:ring-[#1f6b4f]/15"
+            class="absolute right-2 top-1/2 inline-flex min-h-10 -translate-y-1/2 appearance-none items-center gap-2 rounded-xl border-0 bg-[#E9F3EE] px-3 text-sm font-black text-[#176344] shadow-none transition hover:bg-[#DDECE4] focus:outline-none focus:ring-2 focus:ring-[#1f6b4f]/25"
             type="button"
             data-password-toggle="{{ $id }}"
             aria-label="Mostrar {{ mb_strtolower($label) }}"
             aria-controls="{{ $id }}"
             aria-pressed="false"
-        >Ver</button>
+        >
+            <svg class="size-4 shrink-0" data-password-eye aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
+                <circle cx="12" cy="12" r="2.5" />
+            </svg>
+            <span data-password-toggle-label>Mostrar</span>
+        </button>
     </div>
     @error($name) <span class="mt-2 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
 </div>

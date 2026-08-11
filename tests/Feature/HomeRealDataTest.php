@@ -6,11 +6,50 @@ use App\Models\Listing;
 use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class HomeRealDataTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_guest_home_shows_authentication_actions(): void
+    {
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('Ingresar')
+            ->assertSee('Crear cuenta')
+            ->assertSee(route('login'), false)
+            ->assertSee(route('register'), false);
+    }
+
+    public function test_authenticated_commercial_user_home_shows_account_and_logout_actions(): void
+    {
+        $client = User::factory()->create(['account_type' => 'client']);
+
+        $this->actingAs($client)
+            ->get(route('home'))
+            ->assertOk()
+            ->assertSee('Ir a mi cuenta')
+            ->assertSee('Cerrar sesión')
+            ->assertSee(route('dashboard'), false)
+            ->assertDontSee('Crear cuenta')
+            ->assertDontSee('Ingresar');
+    }
+
+    public function test_superadmin_home_returns_to_administration_instead_of_commercial_dashboard(): void
+    {
+        $superadmin = User::factory()->create();
+        $superadmin->syncRoles([Role::findOrCreate('superadmin')]);
+
+        $this->actingAs($superadmin)
+            ->get(route('home'))
+            ->assertOk()
+            ->assertSee('Administración')
+            ->assertSee(route('admin.index'), false)
+            ->assertDontSee('Ir a mi cuenta')
+            ->assertDontSee('Crear cuenta');
+    }
 
     public function test_home_uses_approved_real_listings_and_search_is_public(): void
     {

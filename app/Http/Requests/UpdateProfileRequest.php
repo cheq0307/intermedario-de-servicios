@@ -30,6 +30,10 @@ class UpdateProfileRequest extends FormRequest
                 'service_area' => ['nullable', 'string', 'max:160'],
                 'years_experience' => ['nullable', 'integer', 'min:0', 'max:80'],
                 'availability_status' => ['required', Rule::in(['available', 'busy', 'unavailable'])],
+                'business_days' => ['required', 'array', 'min:1'],
+                'business_days.*' => ['required', 'distinct', Rule::in(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'])],
+                'business_opens_at' => ['required', 'date_format:H:i'],
+                'business_closes_at' => ['required', 'date_format:H:i', 'after:business_opens_at'],
                 'certifications' => ['nullable', 'string', 'max:1000'],
                 'tools' => ['nullable', 'string', 'max:1000'],
             ]);

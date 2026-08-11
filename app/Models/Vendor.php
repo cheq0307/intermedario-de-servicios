@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -46,6 +48,37 @@ class Vendor extends Model
             'stripe_charges_enabled' => 'boolean',
             'stripe_payouts_enabled' => 'boolean',
         ];
+    }
+
+    public function businessHoursConfigured(): bool
+    {
+        $hours = $this->business_hours;
+
+        return is_array($hours)
+            && is_array($hours['days'] ?? null)
+            && ! empty($hours['days'])
+            && isset($hours['opens_at'], $hours['closes_at']);
+    }
+
+    public function isWithinBusinessHours(?CarbonInterface $moment = null): ?bool
+    {
+        if (! $this->businessHoursConfigured()) {
+            return null;
+        }
+
+        $hours = $this->business_hours;
+        $timezone = $hours['timezone'] ?? config('marketplace.business_timezone');
+        $current = $moment
+            ? CarbonImmutable::instance($moment)->setTimezone($timezone)
+            : CarbonImmutable::now($timezone);
+
+        if (! in_array(strtolower($current->englishDayOfWeek), $hours['days'], true)) {
+            return false;
+        }
+
+        $time = $current->format('H:i');
+
+        return $time >= $hours['opens_at'] && $time < $hours['closes_at'];
     }
 
     public function user(): BelongsTo

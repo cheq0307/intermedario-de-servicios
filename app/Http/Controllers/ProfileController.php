@@ -57,6 +57,12 @@ class ProfileController extends Controller
                     'certifications',
                     'tools',
                 ])->all();
+                $vendorData['business_hours'] = [
+                    'days' => array_values($validated['business_days']),
+                    'opens_at' => $validated['business_opens_at'],
+                    'closes_at' => $validated['business_closes_at'],
+                    'timezone' => config('marketplace.business_timezone'),
+                ];
 
                 $user->vendor()->updateOrCreate(
                     ['user_id' => $user->id],

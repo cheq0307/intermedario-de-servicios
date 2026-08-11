@@ -5,6 +5,8 @@ return [
 
     'service_radius_km' => (int) env('MARKETPLACE_RADIUS_KM', 8),
 
+    'business_timezone' => env('MARKETPLACE_BUSINESS_TIMEZONE', 'America/Mexico_City'),
+
     'default_commission_basis_points' => (int) env('MARKETPLACE_COMMISSION_BPS', 800),
 
     'account_types' => [

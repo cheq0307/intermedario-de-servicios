@@ -120,3 +120,32 @@ document.querySelectorAll('[data-share-form]').forEach((form) => form.addEventLi
         if (error.name !== 'AbortError') form.submit();
     }
 }));
+
+document.querySelectorAll('input[type="password"]').forEach((input) => {
+    if (input.dataset.visibilityReady === 'true') return;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'relative mt-2';
+    input.before(wrapper);
+    wrapper.append(input);
+    input.classList.remove('mt-2');
+    input.classList.add('pr-20');
+    input.dataset.visibilityReady = 'true';
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'absolute inset-y-0 right-0 px-4 text-sm font-black text-[#1f6b4f]';
+    button.textContent = 'Ver';
+    button.setAttribute('aria-label', 'Mostrar contraseña');
+    button.setAttribute('aria-pressed', 'false');
+
+    button.addEventListener('click', () => {
+        const revealing = input.type === 'password';
+        input.type = revealing ? 'text' : 'password';
+        button.textContent = revealing ? 'Ocultar' : 'Ver';
+        button.setAttribute('aria-label', revealing ? 'Ocultar contraseña' : 'Mostrar contraseña');
+        button.setAttribute('aria-pressed', revealing ? 'true' : 'false');
+    });
+
+    wrapper.append(button);
+});

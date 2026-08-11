@@ -33,7 +33,8 @@ class EmailVerificationTest extends TestCase
 
         $this->get('/dashboard')
             ->assertOk()
-            ->assertSee('Verifica tu correo');
+            ->assertSee('Verifica tu correo')
+            ->assertSee('Reenviar correo');
     }
 
     public function test_user_can_verify_email_from_signed_link(): void

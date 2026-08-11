@@ -11,9 +11,14 @@
         $isOwner = auth()->id() === $user->id;
         $isProvider = $user->canActAsProvider();
         $vendor = $user->vendor;
+        $roleLabels = ['client' => 'Cliente', 'provider' => 'Proveedor', 'admin' => 'Administrador', 'superadmin' => 'Superadministrador'];
+        $profileRoles = $user->getRoleNames()->map(fn ($role) => $roleLabels[$role] ?? null)->filter();
+        $dayLabels = ['monday' => 'Lun', 'tuesday' => 'Mar', 'wednesday' => 'Mié', 'thursday' => 'Jue', 'friday' => 'Vie', 'saturday' => 'Sáb', 'sunday' => 'Dom'];
+        $businessHours = $vendor?->business_hours ?? [];
+        $withinBusinessHours = $vendor?->isWithinBusinessHours();
         $availability = [
-            'available' => ['Disponible', '#14734A', '#E9F7F0'],
-            'busy' => ['Ocupado', '#9A5A0A', '#FFF4D6'],
+            'available' => ['Disponible para nueva chamba', '#14734A', '#E9F7F0'],
+            'busy' => ['Realizando una chamba', '#9A5A0A', '#FFF4D6'],
             'unavailable' => ['No disponible', '#8A3A3A', '#FCE8E8'],
         ][$vendor?->availability_status ?? 'available'];
     @endphp
@@ -50,11 +55,15 @@
                                 <h1 class="text-3xl font-black tracking-tight">{{ $isProvider ? ($vendor?->display_name ?? $user->name) : $user->name }}</h1>
                                 @if ($vendor?->verified_at)<span class="rounded-full bg-[#E9F7F0] px-3 py-1 text-xs font-black text-[#14734A]">Verificado</span>@endif
                             </div>
-                            <p class="mt-1 font-bold text-[#6B7D83]">{{ $isProvider ? ($vendor?->specialty ?: 'Proveedor local') : 'Cliente de la comunidad' }} @if($user->city) · {{ $user->city }} @endif</p>
+                            @if($profileRoles->isNotEmpty())<div class="mt-2 flex flex-wrap gap-2">@foreach($profileRoles as $role)<span class="rounded-full border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-1 text-xs font-black text-[#536A72]">{{ $role }}</span>@endforeach</div>@endif
+                            <p class="mt-2 font-bold text-[#6B7D83]">{{ $isProvider ? ($vendor?->specialty ?: 'Proveedor local') : 'Cliente de la comunidad' }} @if($user->city) · {{ $user->city }} @endif</p>
                         </div>
                     </div>
                     @if ($isProvider)
-                        <span class="w-fit rounded-full px-4 py-2 text-sm font-black" style="color: {{ $availability[1] }}; background: {{ $availability[2] }}"><span class="mr-2 inline-block size-2 rounded-full" style="background: {{ $availability[1] }}"></span>{{ $availability[0] }}</span>
+                        <div class="flex flex-wrap gap-2 sm:justify-end">
+                            <span class="w-fit rounded-full px-4 py-2 text-sm font-black" style="color: {{ $availability[1] }}; background: {{ $availability[2] }}"><span class="mr-2 inline-block size-2 rounded-full" style="background: {{ $availability[1] }}"></span>{{ $availability[0] }}</span>
+                            @if($withinBusinessHours === true)<span class="w-fit rounded-full bg-[#E9F7F0] px-4 py-2 text-sm font-black text-[#14734A]">En horario laboral</span>@elseif($withinBusinessHours === false)<span class="w-fit rounded-full bg-[#F1F3F3] px-4 py-2 text-sm font-black text-[#536A72]">Fuera de horario</span>@else<span class="w-fit rounded-full bg-[#FFF4D6] px-4 py-2 text-sm font-black text-[#79551E]">Horario no configurado</span>@endif
+                        </div>
                     @endif
                 </div>
 
@@ -64,6 +73,7 @@
                         @if ($isProvider)
                             <div class="mt-5 flex flex-wrap gap-2 text-sm font-bold text-[#536A72]">
                                 @if ($vendor?->service_area)<span class="rounded-full bg-[#FAF8F4] px-4 py-2">Zona: {{ $vendor->service_area }}</span>@endif
+                                @if ($vendor?->businessHoursConfigured())<span class="rounded-full bg-[#FAF8F4] px-4 py-2">Horario: {{ collect($businessHours['days'])->map(fn ($day) => $dayLabels[$day] ?? $day)->join(', ') }} · {{ $businessHours['opens_at'] }}–{{ $businessHours['closes_at'] }}</span>@endif
                                 @if ($vendor?->years_experience !== null)<span class="rounded-full bg-[#FAF8F4] px-4 py-2">{{ $vendor->years_experience }} años de experiencia</span>@endif
                             </div>
                         @endif

@@ -7,7 +7,12 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-[#FAF8F4] text-[#17313A] antialiased">
-    @php($isProvider = $user->canActAsProvider())
+    @php
+        $isProvider = $user->canActAsProvider();
+        $businessHours = $user->vendor?->business_hours ?? [];
+        $selectedBusinessDays = old('business_days', $businessHours['days'] ?? ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
+        $dayLabels = ['monday' => 'Lun', 'tuesday' => 'Mar', 'wednesday' => 'Mié', 'thursday' => 'Jue', 'friday' => 'Vie', 'saturday' => 'Sáb', 'sunday' => 'Dom'];
+    @endphp
     <header class="border-b border-[#123B4A]/10 bg-white"><div class="mx-auto flex max-w-4xl items-center justify-between px-5 py-4"><a class="font-black" href="{{ route('dashboard') }}">Plaza Local</a><a class="rounded-full border border-[#123B4A]/10 px-4 py-2 text-sm font-black" href="{{ route('profile.show', $user) }}">Cancelar</a></div></header>
     <main class="mx-auto max-w-4xl px-5 py-9">
         <p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Tu presencia en la comunidad</p>
@@ -16,7 +21,12 @@
         @if(session('status'))
             <div class="mt-6 rounded-2xl bg-[#E9F7F0] px-5 py-4 text-sm font-black text-[#14734A]">{{ session('status') }}</div>
         @endif
-
+        @if(! $user->hasVerifiedEmail())
+            <section class="mt-6 flex flex-col gap-4 rounded-2xl border border-[#F97316]/20 bg-[#FFF1E8] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div><p class="font-black text-[#A94708]">Tu correo sigue pendiente de verificación</p><p class="mt-1 text-sm font-semibold text-[#8A6A55]">Confirma {{ $user->email }} para publicar, comprar y enviar propuestas.</p></div>
+                <form method="POST" action="{{ route('verification.send') }}">@csrf<button class="shrink-0 rounded-full bg-[#F97316] px-5 py-2.5 text-sm font-black text-white" type="submit">Reenviar enlace</button></form>
+            </section>
+        @endif
         <section class="mt-8 rounded-[2rem] border border-[#123B4A]/10 bg-white p-6 shadow-sm sm:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -69,7 +79,10 @@
                         <label class="block"><span class="text-sm font-black">Especialidad principal</span><input class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" name="specialty" value="{{ old('specialty', $user->vendor?->specialty) }}" placeholder="Ej. Plomería residencial"></label>
                         <label class="block"><span class="text-sm font-black">Zona de servicio</span><input class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" name="service_area" value="{{ old('service_area', $user->vendor?->service_area) }}" placeholder="Ej. Centro y colonias cercanas"></label>
                         <label class="block"><span class="text-sm font-black">Años de experiencia</span><input class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" type="number" name="years_experience" value="{{ old('years_experience', $user->vendor?->years_experience) }}" min="0" max="80"></label>
-                        <label class="block"><span class="text-sm font-black">Disponibilidad</span><select class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" name="availability_status" required><option value="available" @selected(old('availability_status', $user->vendor?->availability_status) === 'available')>Disponible</option><option value="busy" @selected(old('availability_status', $user->vendor?->availability_status) === 'busy')>Ocupado</option><option value="unavailable" @selected(old('availability_status', $user->vendor?->availability_status) === 'unavailable')>No disponible</option></select></label>
+                        <label class="block"><span class="text-sm font-black">Estado de trabajo</span><select class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" name="availability_status" required><option value="available" @selected(old('availability_status', $user->vendor?->availability_status) === 'available')>Disponible para una nueva chamba</option><option value="busy" @selected(old('availability_status', $user->vendor?->availability_status) === 'busy')>Realizando una chamba</option><option value="unavailable" @selected(old('availability_status', $user->vendor?->availability_status) === 'unavailable')>No disponible temporalmente</option></select><span class="mt-1 block text-xs font-bold text-[#8A999E]">Indica tu carga actual; es independiente de tu horario.</span></label>
+                        <fieldset class="sm:col-span-2"><legend class="text-sm font-black">Días de atención</legend><div class="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-7">@foreach($dayLabels as $day => $label)<label class="cursor-pointer"><input class="peer sr-only" type="checkbox" name="business_days[]" value="{{ $day }}" @checked(in_array($day, $selectedBusinessDays, true))><span class="grid min-h-11 place-items-center rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-2 text-sm font-black transition peer-checked:border-[#14734A] peer-checked:bg-[#E9F7F0] peer-checked:text-[#14734A]">{{ $label }}</span></label>@endforeach</div>@error('business_days')<span class="mt-2 block text-sm font-bold text-red-600">{{ $message }}</span>@enderror</fieldset>
+                        <label class="block"><span class="text-sm font-black">Inicio del horario</span><input class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" type="time" name="business_opens_at" value="{{ old('business_opens_at', $businessHours['opens_at'] ?? '09:00') }}" required>@error('business_opens_at')<span class="mt-1 block text-sm font-bold text-red-600">{{ $message }}</span>@enderror</label>
+                        <label class="block"><span class="text-sm font-black">Fin del horario</span><input class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" type="time" name="business_closes_at" value="{{ old('business_closes_at', $businessHours['closes_at'] ?? '18:00') }}" required>@error('business_closes_at')<span class="mt-1 block text-sm font-bold text-red-600">{{ $message }}</span>@enderror</label>
                         <label class="block sm:col-span-2"><span class="text-sm font-black">Descripción del negocio o servicio</span><textarea class="mt-2 min-h-32 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" name="description" maxlength="1200">{{ old('description', $user->vendor?->description) }}</textarea></label>
                         <label class="block"><span class="text-sm font-black">Certificaciones o preparación</span><textarea class="mt-2 min-h-28 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" name="certifications" maxlength="1000">{{ old('certifications', $user->vendor?->certifications) }}</textarea></label>
                         <label class="block"><span class="text-sm font-black">Herramientas y capacidades</span><textarea class="mt-2 min-h-28 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" name="tools" maxlength="1000">{{ old('tools', $user->vendor?->tools) }}</textarea></label>

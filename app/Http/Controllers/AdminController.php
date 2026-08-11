@@ -28,7 +28,7 @@ class AdminController extends Controller
         ];
         $pendingVendors = Vendor::with('user:id,name,email,email_verified_at')->where('status', 'pending')->latest()->get();
         $vendors = Vendor::with('user:id,name,email,email_verified_at')->where('status', '!=', 'pending')->latest()->limit(30)->get();
-        $users = User::with('roles:id,name')->latest()->limit(30)->get();
+        $users = User::with(['roles:id,name', 'vendor:id,user_id,status'])->whereKeyNot($request->user()->id)->latest()->limit(30)->get();
         $auditLogs = AuditLog::with('user:id,name')->latest('created_at')->limit(30)->get();
         $isSuperadmin = $request->user()->hasRole('superadmin');
 
@@ -38,6 +38,7 @@ class AdminController extends Controller
     public function approveVendor(Request $request, Vendor $vendor): RedirectResponse
     {
         $this->authorizeAdmin($request);
+        abort_if($vendor->user_id === $request->user()->id, 403, 'Un administrador no puede aprobar su propio perfil comercial.');
         $vendor->loadMissing('user');
         abort_unless($vendor->user?->hasVerifiedEmail(), 422, 'El proveedor debe verificar su correo antes de ser aprobado.');
         abort_if($vendor->missingReviewRequirements() !== [], 422, 'El proveedor todavía debe completar: '.implode(', ', $vendor->missingReviewRequirements()).'.');
@@ -94,6 +95,7 @@ class AdminController extends Controller
     {
         $this->authorizeSuperadmin($request);
         abort_unless(in_array($capability, ['client', 'provider'], true), 404);
+        abort_if($user->hasRole('superadmin'), 422, 'La cuenta superadministradora es exclusivamente administrativa.');
 
         if ($user->hasRole($capability)) {
             return back()->with('status', 'La capacidad ya estaba asignada.');

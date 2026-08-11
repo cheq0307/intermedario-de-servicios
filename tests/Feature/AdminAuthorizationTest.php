@@ -117,6 +117,55 @@ class AdminAuthorizationTest extends TestCase
             ->assertSee(route('admin.index'), false);
     }
 
+    public function test_superadmin_cannot_receive_commercial_capabilities(): void
+    {
+        $superadmin = User::factory()->create();
+        $superadmin->syncRoles([Role::findOrCreate('superadmin')]);
+
+        $this->actingAs($superadmin)
+            ->post(route('admin.users.capabilities.grant', [$superadmin, 'provider']))
+            ->assertStatus(422);
+
+        $this->assertFalse($superadmin->fresh()->canActAsProvider());
+    }
+
+    public function test_administrator_cannot_approve_own_vendor_profile(): void
+    {
+        $admin = User::factory()->create(['account_type' => 'provider']);
+        $admin->assignRole(Role::findOrCreate('admin'));
+        $vendor = Vendor::create([
+            'user_id' => $admin->id,
+            'display_name' => 'Negocio del admin',
+            'slug' => 'negocio-admin',
+            'description' => 'Perfil completo.',
+            'specialty' => 'Oficio',
+            'service_area' => 'Centro',
+            'business_hours' => ['days' => ['monday'], 'opens_at' => '09:00', 'closes_at' => '18:00'],
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($admin)
+            ->patch(route('admin.vendors.approve', $vendor))
+            ->assertForbidden();
+
+        $this->assertSame('pending', $vendor->fresh()->status);
+    }
+
+    public function test_admin_workspace_excludes_current_operator_from_third_person_management(): void
+    {
+        $superadmin = User::factory()->create(['name' => 'Cuenta propietaria']);
+        $superadmin->syncRoles([Role::findOrCreate('superadmin')]);
+        User::factory()->create(['name' => 'Otra persona']);
+
+        $this->actingAs($superadmin)
+            ->get(route('admin.index'))
+            ->assertOk()
+            ->assertSee('Otra persona')
+            ->assertDontSee('Cuenta propietaria')
+            ->assertSee('Explorar plaza')
+            ->assertSee('Asignar “Proveedor” solo habilita el perfil comercial.');
+    }
+
     public function test_regular_user_cannot_access_administration(): void
     {
         $client = User::factory()->create();

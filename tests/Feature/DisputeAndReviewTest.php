@@ -137,6 +137,27 @@ class DisputeAndReviewTest extends TestCase
         $this->assertTrue($user->fresh()->hasRole('admin'));
     }
 
+    public function test_superadmin_command_removes_commercial_capabilities_and_suspends_vendor_profile(): void
+    {
+        $user = User::factory()->create(['email' => 'owner@plazalocal.test', 'account_type' => 'provider']);
+        $user->assignRole(Role::findOrCreate('client'));
+        $vendor = Vendor::create([
+            'user_id' => $user->id,
+            'display_name' => 'Perfil anterior',
+            'slug' => 'perfil-anterior',
+            'status' => 'active',
+            'verified_at' => now(),
+        ]);
+
+        $this->artisan('plaza:grant-admin', ['email' => $user->email, '--superadmin' => true])
+            ->assertSuccessful();
+
+        $user->refresh();
+        $this->assertSame(['superadmin'], $user->getRoleNames()->all());
+        $this->assertSame('suspended', $vendor->fresh()->status);
+        $this->assertNull($vendor->fresh()->verified_at);
+    }
+
     private function scenario(string $status): array
     {
         $client = User::factory()->create(['account_type' => 'client']);

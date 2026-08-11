@@ -9,11 +9,11 @@
 <body class="min-h-screen bg-[#F4F7F6] text-[#17313A] antialiased">
     <header class="sticky top-0 z-40 border-b border-[#123B4A]/10 bg-white/95 backdrop-blur-xl">
         <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-            <a class="flex items-center gap-3 font-black" href="{{ route('dashboard') }}"><span class="grid size-10 place-items-center rounded-2xl bg-[#123B4A] text-white">P</span><span>Plaza Local</span></a>
+            <a class="flex items-center gap-3 font-black" href="{{ route('admin.index') }}"><span class="grid size-10 place-items-center rounded-2xl bg-[#123B4A] text-white">P</span><span>Plaza Local</span></a>
             <div class="flex items-center gap-2">
                 <span class="hidden rounded-full bg-[#FFF1E8] px-4 py-2 text-xs font-black text-[#D85B0B] sm:inline-flex">{{ $isSuperadmin ? 'Superadministrador' : 'Administrador' }}</span>
                 <a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('disputes.admin-index') }}">Disputas</a>
-                <a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('home') }}">Ver plaza</a>
+                <a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('explore') }}">Explorar plaza</a>
             </div>
         </div>
     </header>
@@ -24,7 +24,11 @@
 
         <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div><p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Espacio administrativo</p><h1 class="mt-2 text-3xl font-black">Control de Plaza Local</h1><p class="mt-2 max-w-2xl text-sm font-semibold leading-6 text-[#6B7D83]">Administra excepciones, confianza y seguridad sin mezclar estas tareas con tu actividad como cliente o proveedor.</p></div>
-            <a class="rounded-full bg-[#123B4A] px-5 py-3 text-center text-sm font-black text-white" href="{{ route('dashboard') }}">Ir a mi cuenta comercial</a>
+                        @if(auth()->user()->canActAsClient() || auth()->user()->canActAsProvider())
+                <a class="rounded-full bg-[#123B4A] px-5 py-3 text-center text-sm font-black text-white" href="{{ route('dashboard') }}">Ir a mi cuenta comercial</a>
+            @else
+                <a class="rounded-full bg-[#123B4A] px-5 py-3 text-center text-sm font-black text-white" href="{{ route('explore') }}">Explorar la plaza</a>
+            @endif
         </div>
 
         <section class="mt-7 grid gap-4 grid-cols-2 lg:grid-cols-4">
@@ -57,7 +61,29 @@
         </div>
 
         @if($isSuperadmin)
-            <section class="mt-6 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6"><h2 class="text-xl font-black">Capacidades comerciales</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Cliente y proveedor pueden coexistir. La autoridad administrativa nunca las activa automáticamente.</p><div class="mt-5 grid gap-3 md:grid-cols-2">@foreach($users as $user)<article class="rounded-2xl bg-[#FAF8F4] p-4"><strong>{{ $user->name }}</strong><p class="mt-1 text-xs font-bold text-[#6B7D83]">{{ $user->email }}</p><div class="mt-4 flex flex-wrap gap-2">@foreach(['client'=>'Cliente','provider'=>'Proveedor'] as $capability=>$label)@if($user->hasRole($capability))<form method="POST" action="{{ route('admin.users.capabilities.revoke', [$user, $capability]) }}">@csrf @method('DELETE')<button class="rounded-full border border-red-200 px-3 py-2 text-xs font-black text-red-700">Retirar {{ $label }}</button></form>@else<form method="POST" action="{{ route('admin.users.capabilities.grant', [$user, $capability]) }}">@csrf<button class="rounded-full bg-[#123B4A] px-3 py-2 text-xs font-black text-white">Agregar {{ $label }}</button></form>@endif @endforeach</div></article>@endforeach</div></section>
+            <section class="mt-6 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6">
+    <h2 class="text-xl font-black">Capacidades comerciales</h2>
+    <p class="mt-2 text-sm font-semibold text-[#6B7D83]">Asignar “Proveedor” solo habilita el perfil comercial. La aprobación se realiza aparte en la bandeja “Proveedores pendientes”, después de verificar correo y datos.</p>
+    <div class="mt-5 grid gap-3 md:grid-cols-2">
+        @foreach($users->reject->hasRole('superadmin') as $user)
+            <article class="rounded-2xl bg-[#FAF8F4] p-4">
+                <strong>{{ $user->name }}</strong><p class="mt-1 text-xs font-bold text-[#6B7D83]">{{ $user->email }}</p>
+                @if($user->hasRole('provider'))
+                    <p class="mt-3 text-xs font-black text-[#79551E]">Perfil proveedor: {{ match($user->vendor?->status) { 'active' => 'aprobado', 'suspended' => 'suspendido', default => 'pendiente de revisión' } }}</p>
+                @endif
+                <div class="mt-4 flex flex-wrap gap-2">
+                    @foreach(['client'=>'Cliente','provider'=>'Proveedor'] as $capability=>$label)
+                        @if($user->hasRole($capability))
+                            <form method="POST" action="{{ route('admin.users.capabilities.revoke', [$user, $capability]) }}">@csrf @method('DELETE')<button class="rounded-full border border-red-200 px-3 py-2 text-xs font-black text-red-700">Retirar {{ $label }}</button></form>
+                        @else
+                            <form method="POST" action="{{ route('admin.users.capabilities.grant', [$user, $capability]) }}">@csrf<button class="rounded-full bg-[#123B4A] px-3 py-2 text-xs font-black text-white">Agregar {{ $label }}</button></form>
+                        @endif
+                    @endforeach
+                </div>
+            </article>
+        @endforeach
+    </div>
+</section>
         @endif
 
         <section class="mt-6 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6"><h2 class="text-xl font-black">Auditoría reciente</h2><div class="mt-4 overflow-x-auto"><table class="w-full min-w-[650px] text-left text-sm"><thead><tr class="text-[#6B7D83]"><th class="p-3">Fecha</th><th class="p-3">Administrador</th><th class="p-3">Acción</th><th class="p-3">Objetivo</th></tr></thead><tbody>@foreach($auditLogs as $log)<tr class="border-t border-[#123B4A]/10"><td class="p-3">{{ $log->created_at->format('d/m/Y H:i') }}</td><td class="p-3">{{ $log->user?->name ?? 'Sistema' }}</td><td class="p-3 font-black">{{ $log->action }}</td><td class="p-3">{{ class_basename($log->subject_type) }} #{{ $log->subject_id }}</td></tr>@endforeach</tbody></table></div></section>

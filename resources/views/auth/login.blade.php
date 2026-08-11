@@ -17,10 +17,7 @@
             @error('email') <span class="mt-2 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
         </label>
 
-        <label class="block">
-            <span class="text-sm font-black">Contraseña</span>
-            <input class="mt-2 w-full rounded-2xl border border-[#17352b]/15 bg-white px-4 py-3.5 outline-none transition focus:border-[#1f6b4f] focus:ring-4 focus:ring-[#1f6b4f]/10" type="password" name="password" required autocomplete="current-password">
-        </label>
+        <x-password-input id="login-password" label="Contraseña" autocomplete="current-password" />
 
         <div class="text-right">
             <a class="text-sm font-black text-[#1f6b4f] hover:underline" href="{{ route('password.request') }}">Olvid&eacute; mi contrase&ntilde;a</a>

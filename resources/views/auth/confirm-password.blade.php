@@ -7,11 +7,7 @@
 
     <form class="mt-8 space-y-5" method="POST" action="{{ route('password.confirm.store') }}">
         @csrf
-        <label class="block">
-            <span class="text-sm font-black">Contraseña actual</span>
-            <input class="mt-2 w-full rounded-2xl border border-[#17352b]/15 bg-white px-4 py-3.5 outline-none focus:border-[#1f6b4f] focus:ring-4 focus:ring-[#1f6b4f]/10" type="password" name="password" required autofocus autocomplete="current-password">
-            @error('password') <span class="mt-2 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
-        </label>
+        <x-password-input id="confirm-current-password" label="Contraseña actual" autocomplete="current-password" :autofocus="true" />
         <button class="w-full rounded-2xl bg-[#17352b] px-5 py-4 font-black text-white" type="submit">Confirmar y continuar</button>
     </form>
 </x-layouts.auth>

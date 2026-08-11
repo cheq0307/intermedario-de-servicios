@@ -37,6 +37,17 @@ class EmailVerificationTest extends TestCase
             ->assertSee('Reenviar correo');
     }
 
+    public function test_unverified_user_can_open_verification_notice_and_resend(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $this->actingAs($user)
+            ->get(route('verification.notice'))
+            ->assertOk()
+            ->assertSee('Volver a enviar el correo')
+            ->assertSee(route('verification.send'), false);
+    }
+
     public function test_user_can_verify_email_from_signed_link(): void
     {
         $user = User::factory()->unverified()->create(['account_type' => 'client']);

@@ -10,6 +10,29 @@ class AuthenticationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_password_screens_render_explicit_visibility_controls(): void
+    {
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertSee('data-password-toggle="login-password"', false);
+
+        $this->get(route('register'))
+            ->assertOk()
+            ->assertSee('data-password-toggle="register-password"', false)
+            ->assertSee('data-password-toggle="register-password-confirmation"', false);
+
+        $this->get(route('password.reset', ['token' => 'token-de-prueba', 'email' => 'persona@example.test']))
+            ->assertOk()
+            ->assertSee('data-password-toggle="reset-password"', false)
+            ->assertSee('data-password-toggle="reset-password-confirmation"', false);
+
+        $user = User::factory()->create();
+        $this->actingAs($user)
+            ->get(route('password.confirm'))
+            ->assertOk()
+            ->assertSee('data-password-toggle="confirm-current-password"', false);
+    }
+
     public function test_client_can_register_and_reach_dashboard(): void
     {
         $response = $this->post('/register', [

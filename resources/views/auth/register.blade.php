@@ -42,17 +42,9 @@
                 <input class="mt-2 w-full rounded-2xl border border-[#17352b]/15 bg-white px-4 py-3.5 outline-none focus:border-[#1f6b4f] focus:ring-4 focus:ring-[#1f6b4f]/10" type="email" name="email" value="{{ old('email') }}" required autocomplete="email">
                 @error('email') <span class="mt-2 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
             </label>
-            <label class="block">
-                <span class="text-sm font-black">Contraseña</span>
-                <input class="mt-2 w-full rounded-2xl border border-[#17352b]/15 bg-white px-4 py-3.5 outline-none focus:border-[#1f6b4f] focus:ring-4 focus:ring-[#1f6b4f]/10" type="password" name="password" minlength="8" required autocomplete="new-password" data-password>
-            </label>
-            <label class="block">
-                <span class="text-sm font-black">Confirmar</span>
-                <input class="mt-2 w-full rounded-2xl border border-[#17352b]/15 bg-white px-4 py-3.5 outline-none focus:border-[#1f6b4f] focus:ring-4 focus:ring-[#1f6b4f]/10" type="password" name="password_confirmation" minlength="8" required autocomplete="new-password" data-password-confirmation>
-            </label>
+            <x-password-input id="register-password" label="Contraseña" autocomplete="new-password" minlength="8" requirements="primary" />
+            <x-password-input id="register-password-confirmation" label="Confirmar contraseña" name="password_confirmation" autocomplete="new-password" minlength="8" requirements="confirmation" />
         </div>
-        @error('password') <span class="block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
-
         <ul class="grid gap-1.5 text-xs font-bold text-[#75857f] sm:grid-cols-2" aria-live="polite" data-password-requirements>
             <li class="flex items-center gap-2" data-password-rule="length"><span aria-hidden="true">&bull;</span> Al menos 8 caracteres</li>
             <li class="flex items-center gap-2" data-password-rule="letter"><span aria-hidden="true">&bull;</span> Incluye una letra</li>

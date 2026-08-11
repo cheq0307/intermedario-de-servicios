@@ -19,6 +19,13 @@
             'promotion' => 'Promoción',
             'job_request' => 'Busco ayuda',
         ];
+        $feedLabels = [
+            'for_you' => 'Para ti',
+            'offers' => 'Ofertas',
+            'requests' => 'Solicitudes',
+            'community' => 'Comunidad',
+            'all' => 'Todo',
+        ];
     @endphp
 
     <header class="sticky top-0 z-40 border-b border-[#123B4A]/10 bg-[#FAF8F4]/90 backdrop-blur-xl">
@@ -250,10 +257,20 @@
                 <div class="flex items-end justify-between gap-4 px-1 pt-2">
                     <div>
                         <p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Actividad local</p>
-                        <h2 class="mt-1 text-2xl font-black">Lo nuevo cerca de ti</h2>
+                        <h2 class="mt-1 text-2xl font-black">{{ $feed === 'for_you' ? 'Seleccionado para ti' : $feedLabels[$feed] }}</h2>
                     </div>
                     <span class="rounded-full bg-[#E8F1EE] px-3 py-1.5 text-xs font-black text-[#14734A]">Comunidad activa</span>
                 </div>
+
+                <nav class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="Filtros de actividad">
+                    @foreach($feedLabels as $feedKey => $feedLabel)
+                        <a class="shrink-0 rounded-full border px-4 py-2 text-xs font-black transition {{ $feed === $feedKey ? 'border-[#123B4A] bg-[#123B4A] text-white' : 'border-[#123B4A]/10 bg-white text-[#536A72] hover:border-[#F97316]/40 hover:text-[#D85B0B]' }}" href="{{ route('dashboard', ['feed' => $feedKey]).'#actividad' }}" @if($feed === $feedKey) aria-current="page" @endif>{{ $feedLabel }}</a>
+                    @endforeach
+                </nav>
+
+                @if($feed === 'for_you')
+                    <p class="px-1 text-xs font-semibold leading-5 text-[#6B7D83]">{{ $activeMode === 'provider' ? 'Mostramos solicitudes de clientes y tus propias publicaciones.' : ($activeMode === 'client' ? 'Mostramos ofertas de proveedores y tus propias publicaciones.' : 'Mostramos la actividad general de la comunidad.') }}</p>
+                @endif
 
                 @forelse ($posts as $post)
                     <article id="post-{{ $post->id }}" class="scroll-mt-24 overflow-hidden rounded-[1.75rem] border border-[#123B4A]/10 bg-white shadow-sm">
@@ -384,7 +401,7 @@
                     <div class="rounded-[1.75rem] border border-dashed border-[#123B4A]/20 bg-white/60 px-6 py-12 text-center">
                         <span class="mx-auto grid size-14 place-items-center rounded-2xl bg-[#FFF1E8] text-2xl font-black text-[#F97316]">+</span>
                         <h3 class="mt-4 text-lg font-black">Sé la primera publicación</h3>
-                        <p class="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#6B7D83]">La actividad real aparecerá aquí conforme clientes y proveedores compartan lo que ofrecen o necesitan.</p>
+                        <p class="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#6B7D83]">No hay publicaciones en esta sección todavía. Puedes explorar otra pestaña o crear la primera.</p>
                     </div>
                 @endforelse
 

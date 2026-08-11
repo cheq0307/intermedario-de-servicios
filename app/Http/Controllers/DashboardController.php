@@ -3,18 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Models\Post;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request): View|RedirectResponse
     {
         $user = $request->user();
         $activeMode = $request->session()->get('marketplace_mode');
         if (! is_string($activeMode) || ! $user->supportsMarketplaceMode($activeMode)) {
             $activeMode = $user->defaultMarketplaceMode();
             $request->session()->put('marketplace_mode', $activeMode);
+        }
+
+        if ($activeMode === null && $user->hasAnyRole(['admin', 'superadmin'])) {
+            return redirect()->route('admin.index');
         }
 
         $feed = (string) $request->query('feed', 'all');

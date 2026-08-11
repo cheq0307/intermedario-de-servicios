@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Models\Vendor;
+use App\Notifications\MarketplaceActivity;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -32,7 +34,16 @@ class AdminAuthorizationTest extends TestCase
         $admin = User::factory()->create();
         $admin->assignRole(Role::findOrCreate('admin'));
         $provider = User::factory()->create(['account_type' => 'provider']);
-        $vendor = Vendor::create(['user_id' => $provider->id, 'display_name' => 'Negocio pendiente', 'slug' => 'negocio-pendiente', 'status' => 'pending']);
+        $vendor = Vendor::create([
+            'user_id' => $provider->id,
+            'display_name' => 'Negocio pendiente',
+            'slug' => 'negocio-pendiente',
+            'description' => 'Servicios profesionales para la comunidad.',
+            'specialty' => 'Reparaciones',
+            'service_area' => 'Centro',
+            'business_hours' => ['days' => ['monday'], 'opens_at' => '09:00', 'closes_at' => '18:00'],
+            'status' => 'pending',
+        ]);
         $target = User::factory()->create();
 
         $this->actingAs($admin)->get(route('admin.index'))->assertOk()->assertSee('Negocio pendiente');
@@ -44,6 +55,66 @@ class AdminAuthorizationTest extends TestCase
         $this->actingAs($admin)->patch(route('admin.vendors.suspend', $vendor), ['reason' => 'Documentación comercial inconsistente.'])->assertRedirect();
         $this->assertSame('suspended', $vendor->fresh()->status);
         $this->assertSame(2, AuditLog::where('user_id', $admin->id)->count());
+    }
+
+    public function test_incomplete_or_unverified_provider_cannot_be_approved(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::findOrCreate('admin'));
+        $provider = User::factory()->unverified()->create(['account_type' => 'provider']);
+        $vendor = Vendor::create([
+            'user_id' => $provider->id,
+            'display_name' => 'Perfil incompleto',
+            'slug' => 'perfil-incompleto',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($admin)
+            ->patch(route('admin.vendors.approve', $vendor))
+            ->assertStatus(422);
+
+        $this->assertSame('pending', $vendor->fresh()->status);
+    }
+
+    public function test_approval_notifies_provider_and_admin_dashboard_shows_pending_queue(): void
+    {
+        Notification::fake();
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::findOrCreate('admin'));
+        $provider = User::factory()->create(['account_type' => 'provider']);
+        $vendor = Vendor::create([
+            'user_id' => $provider->id,
+            'display_name' => 'Servicios listos',
+            'slug' => 'servicios-listos',
+            'description' => 'Trabajo profesional.',
+            'specialty' => 'Electricidad',
+            'service_area' => 'Centro',
+            'business_hours' => ['days' => ['monday'], 'opens_at' => '09:00', 'closes_at' => '18:00'],
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.index'))
+            ->assertOk()
+            ->assertSee('Proveedores pendientes')
+            ->assertSee('Servicios listos')
+            ->assertSee('Aprobar proveedor');
+
+        $this->patch(route('admin.vendors.approve', $vendor))->assertRedirect();
+
+        Notification::assertSentTo($provider, MarketplaceActivity::class);
+    }
+
+    public function test_commercial_administrator_sees_responsive_administration_shortcut(): void
+    {
+        $admin = User::factory()->create(['account_type' => 'client']);
+        $admin->assignRole(Role::findOrCreate('admin'));
+
+        $this->actingAs($admin)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Abrir administración')
+            ->assertSee(route('admin.index'), false);
     }
 
     public function test_regular_user_cannot_access_administration(): void

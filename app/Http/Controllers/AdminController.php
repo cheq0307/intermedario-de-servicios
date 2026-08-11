@@ -7,6 +7,7 @@ use App\Models\Dispute;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\Vendor;
+use App\Notifications\MarketplaceActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,20 +26,31 @@ class AdminController extends Controller
             'open_disputes' => Dispute::where('status', 'open')->count(),
             'active_orders' => Order::whereIn('status', ['accepted', 'awaiting_payment', 'paid', 'in_progress', 'ready', 'delivered', 'disputed'])->count(),
         ];
-        $vendors = Vendor::with('user:id,name,email')->orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END")->latest()->limit(30)->get();
+        $pendingVendors = Vendor::with('user:id,name,email,email_verified_at')->where('status', 'pending')->latest()->get();
+        $vendors = Vendor::with('user:id,name,email,email_verified_at')->where('status', '!=', 'pending')->latest()->limit(30)->get();
         $users = User::with('roles:id,name')->latest()->limit(30)->get();
         $auditLogs = AuditLog::with('user:id,name')->latest('created_at')->limit(30)->get();
         $isSuperadmin = $request->user()->hasRole('superadmin');
 
-        return view('admin.index', compact('metrics', 'vendors', 'users', 'auditLogs', 'isSuperadmin'));
+        return view('admin.index', compact('metrics', 'pendingVendors', 'vendors', 'users', 'auditLogs', 'isSuperadmin'));
     }
 
     public function approveVendor(Request $request, Vendor $vendor): RedirectResponse
     {
         $this->authorizeAdmin($request);
+        $vendor->loadMissing('user');
+        abort_unless($vendor->user?->hasVerifiedEmail(), 422, 'El proveedor debe verificar su correo antes de ser aprobado.');
+        abort_if($vendor->missingReviewRequirements() !== [], 422, 'El proveedor todavía debe completar: '.implode(', ', $vendor->missingReviewRequirements()).'.');
         $this->changeVendorStatus($request, $vendor, 'active');
+        $vendor->user->notify(new MarketplaceActivity(
+            'Tu perfil de proveedor fue aprobado',
+            'Ya puedes publicar ofertas y enviar propuestas en Plaza Local.',
+            'profile.show',
+            ['user' => $vendor->user_id],
+            'vendor_approved',
+        ));
 
-        return back()->with('status', 'Proveedor aprobado.');
+        return back()->with('status', 'Proveedor aprobado y notificado.');
     }
 
     public function suspendVendor(Request $request, Vendor $vendor): RedirectResponse
@@ -46,8 +58,16 @@ class AdminController extends Controller
         $this->authorizeAdmin($request);
         $validated = $request->validate(['reason' => ['required', 'string', 'min:10', 'max:1000']]);
         $this->changeVendorStatus($request, $vendor, 'suspended', ['reason' => $validated['reason']]);
+        $vendor->loadMissing('user');
+        $vendor->user?->notify(new MarketplaceActivity(
+            'Tu perfil de proveedor fue suspendido',
+            'Motivo: '.$validated['reason'],
+            'profile.show',
+            ['user' => $vendor->user_id],
+            'vendor_suspended',
+        ));
 
-        return back()->with('status', 'Proveedor suspendido.');
+        return back()->with('status', 'Proveedor suspendido y notificado.');
     }
 
     public function grantAdmin(Request $request, User $user): RedirectResponse

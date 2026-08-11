@@ -148,9 +148,6 @@ class MarketplaceCapabilityTest extends TestCase
 
         $this->actingAs($staff)
             ->get(route('dashboard'))
-            ->assertOk()
-            ->assertSee('Esta cuenta es personal administrativo')
-            ->assertSee('Administra la operación local.')
-            ->assertDontSee('Crea una publicación');
+            ->assertRedirect(route('admin.index'));
     }
 }

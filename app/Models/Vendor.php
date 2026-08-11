@@ -50,6 +50,33 @@ class Vendor extends Model
         ];
     }
 
+    /** @return array<string, string> */
+    public function missingReviewRequirements(): array
+    {
+        $requirements = [
+            'display_name' => 'nombre comercial',
+            'description' => 'descripción profesional',
+            'specialty' => 'especialidad',
+            'service_area' => 'zona de servicio',
+        ];
+
+        $missing = collect($requirements)
+            ->filter(fn (string $label, string $field): bool => blank($this->{$field}))
+            ->all();
+
+        if (! $this->businessHoursConfigured()) {
+            $missing['business_hours'] = 'horario de atención';
+        }
+
+        return $missing;
+    }
+
+    public function isReadyForReview(): bool
+    {
+        return $this->user?->hasVerifiedEmail() === true
+            && $this->missingReviewRequirements() === [];
+    }
+
     public function businessHoursConfigured(): bool
     {
         $hours = $this->business_hours;

@@ -20,11 +20,11 @@
             'job_request' => 'Busco ayuda',
         ];
         $feedLabels = [
+            'all' => 'Todo',
             'for_you' => 'Para ti',
             'offers' => 'Ofertas',
             'requests' => 'Solicitudes',
             'community' => 'Comunidad',
-            'all' => 'Todo',
         ];
     @endphp
 

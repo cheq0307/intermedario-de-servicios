@@ -22,7 +22,7 @@ class FeedPersonalizationTest extends TestCase
         $this->createPost($client, 'job_request', 'Mi propia solicitud permanece visible.');
 
         $this->actingAs($client)
-            ->get(route('dashboard'))
+            ->get(route('dashboard', ['feed' => 'for_you']))
             ->assertOk()
             ->assertSee('Servicio profesional visible para clientes.')
             ->assertSee('Mi propia solicitud permanece visible.')
@@ -41,12 +41,29 @@ class FeedPersonalizationTest extends TestCase
         $this->createPost($provider, 'promotion', 'Mi promoción permanece visible para administrarla.');
 
         $this->actingAs($provider)
-            ->get(route('dashboard'))
+            ->get(route('dashboard', ['feed' => 'for_you']))
             ->assertOk()
             ->assertSee('Cliente busca una reparación de plomería.')
             ->assertSee('Mi promoción permanece visible para administrarla.')
             ->assertDontSee('Oferta de otro proveedor oculta por defecto.')
             ->assertSee('Mostramos solicitudes de clientes y tus propias publicaciones.');
+    }
+
+    public function test_default_feed_shows_all_publication_types_for_now(): void
+    {
+        $viewer = User::factory()->create(['account_type' => 'client']);
+        $client = User::factory()->create(['account_type' => 'client']);
+        $provider = User::factory()->create(['account_type' => 'provider']);
+
+        $this->createPost($provider, 'service', 'Oferta visible en el feed general.');
+        $this->createPost($client, 'job_request', 'Solicitud visible en el feed general.');
+
+        $this->actingAs($viewer)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Todo')
+            ->assertSee('Oferta visible en el feed general.')
+            ->assertSee('Solicitud visible en el feed general.');
     }
 
     public function test_feed_tabs_allow_explicit_discovery_without_changing_capabilities(): void

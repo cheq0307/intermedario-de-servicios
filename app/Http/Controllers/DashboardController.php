@@ -17,9 +17,9 @@ class DashboardController extends Controller
             $request->session()->put('marketplace_mode', $activeMode);
         }
 
-        $feed = (string) $request->query('feed', 'for_you');
+        $feed = (string) $request->query('feed', 'all');
         if (! in_array($feed, ['for_you', 'offers', 'requests', 'community', 'all'], true)) {
-            $feed = 'for_you';
+            $feed = 'all';
         }
 
         $providerPostTypes = ['portfolio', 'business_update', 'product', 'service', 'promotion'];

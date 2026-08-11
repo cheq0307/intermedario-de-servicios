@@ -8,7 +8,12 @@ set -euo pipefail
 case "$RESTORE_TEST_DATABASE" in plaza_local_restore_test_*) ;; *) echo "Nombre de base inseguro" >&2; exit 2;; esac
 test -f "$BACKUP_DATABASE"
 
-mariadb --defaults-extra-file="$BACKUP_DEFAULTS_FILE" -e "CREATE DATABASE IF NOT EXISTS \`$RESTORE_TEST_DATABASE\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+exists=$(mariadb --defaults-extra-file="$BACKUP_DEFAULTS_FILE" --batch --skip-column-names information_schema -e "SELECT COUNT(*) FROM SCHEMATA WHERE SCHEMA_NAME = '$RESTORE_TEST_DATABASE'")
+if [ "$exists" != "1" ]; then
+  echo "La base aislada no existe o el usuario no puede verla. Creala y otorga acceso solo sobre ella antes de continuar." >&2
+  exit 3
+fi
+
 gzip -dc "$BACKUP_DATABASE" | mariadb --defaults-extra-file="$BACKUP_DEFAULTS_FILE" "$RESTORE_TEST_DATABASE"
 
 for table in users orders payments migrations; do

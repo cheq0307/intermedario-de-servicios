@@ -80,7 +80,9 @@ class JobProposalTest extends TestCase
 
         $this->actingAs($incompleteProvider)
             ->post(route('job-proposals.store', $jobRequest), $this->payload('850'))
-            ->assertStatus(422);
+            ->assertRedirect()
+            ->assertSessionHasErrors(['proposal' => 'Tu perfil comercial debe estar aprobado antes de enviar propuestas.']);
+        $this->actingAs($incompleteProvider)->get(route('job-proposals.index', $jobRequest))->assertOk()->assertSee('pendiente de aprobación');
     }
 
     private function scenario(): array

@@ -23,7 +23,9 @@
         @if ($isProvider && $jobRequest->client_id !== auth()->id())
             <section class="mt-6 rounded-[2rem] border border-[#123B4A]/10 bg-white p-6 shadow-sm sm:p-8">
                 <h2 class="text-2xl font-black">{{ $ownProposal ? 'Tu propuesta' : 'Enviar propuesta' }}</h2>
-                @if (in_array($jobRequest->status->value, ['published', 'in_conversation'], true) && (! $ownProposal || $ownProposal->status->value === 'pending'))
+                @if(auth()->user()->vendor?->status !== 'active')
+                    <div class="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-bold leading-6 text-amber-900">Tu perfil comercial está {{ auth()->user()->vendor?->status === 'suspended' ? 'suspendido' : 'pendiente de aprobación' }}. Un administrador debe aprobarlo antes de que puedas enviar propuestas.</div>
+                @elseif (in_array($jobRequest->status->value, ['published', 'in_conversation'], true) && (! $ownProposal || $ownProposal->status->value === 'pending'))
                     <form class="mt-5 grid gap-5 sm:grid-cols-2" method="POST" action="{{ route('job-proposals.store', $jobRequest) }}">@csrf
                         <label><span class="text-sm font-black">Precio total en MXN</span><input class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" type="number" name="amount" value="{{ old('amount', $ownProposal ? $ownProposal->amount / 100 : '') }}" min="1" step="0.01" required>@error('amount')<span class="text-sm font-bold text-red-600">{{ $message }}</span>@enderror</label>
                         <label><span class="text-sm font-black">Días estimados</span><input class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" type="number" name="estimated_days" value="{{ old('estimated_days', $ownProposal?->estimated_days) }}" min="1" max="365" required></label>

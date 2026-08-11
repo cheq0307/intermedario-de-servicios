@@ -140,7 +140,7 @@
                     </div>
                 </div>
 
-                <form class="mt-5 space-y-4" method="POST" action="{{ route('posts.store') }}" data-publication-form>
+                <form class="mt-5 space-y-4" method="POST" action="{{ route('posts.store') }}" enctype="multipart/form-data" data-publication-form>
                     @csrf
                     <input type="hidden" name="submission_token" value="{{ old('submission_token', (string) \Illuminate\Support\Str::uuid()) }}">
                     <div class="flex gap-3 overflow-x-auto pb-1">
@@ -229,6 +229,14 @@
 
                     <textarea class="min-h-28 w-full resize-y rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3 text-sm font-semibold leading-6 outline-none transition placeholder:text-[#8A999E] focus:border-[#F97316]/50 focus:ring-4 focus:ring-[#F97316]/10" name="body" maxlength="1500" required placeholder="{{ $isProvider ? 'Describe lo que ofreces, disponibilidad, entrega y zona de atención…' : 'Explica los detalles necesarios para que los proveedores puedan responderte…' }}">{{ old('body') }}</textarea>
                     @error('body') <p class="text-sm font-bold text-red-600">{{ $message }}</p> @enderror
+                    <label class="block rounded-2xl border border-dashed border-[#123B4A]/20 bg-[#FAF8F4] p-4">
+                        <span class="text-sm font-black">Fotos o videos</span>
+                        <span class="mt-1 block text-xs font-semibold text-[#6B7D83]">Hasta 6 archivos. Maximo 50 MB por archivo.</span>
+                        <input class="mt-3 block w-full text-sm" type="file" name="media[]" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm" multiple data-media-input>
+                    </label>
+                    <div class="grid grid-cols-2 gap-2 sm:grid-cols-3" data-media-preview hidden></div>
+                    @error('media') <p class="text-sm font-bold text-red-600">{{ $message }}</p> @enderror
+                    @error('media.*') <p class="text-sm font-bold text-red-600">{{ $message }}</p> @enderror
 
                     <div class="flex items-center justify-between gap-4">
                         <p class="text-xs font-semibold text-[#8A999E]">La ubicación exacta nunca se mostrará públicamente.</p>
@@ -248,7 +256,7 @@
                 </div>
 
                 @forelse ($posts as $post)
-                    <article class="overflow-hidden rounded-[1.75rem] border border-[#123B4A]/10 bg-white shadow-sm">
+                    <article id="post-{{ $post->id }}" class="scroll-mt-24 overflow-hidden rounded-[1.75rem] border border-[#123B4A]/10 bg-white shadow-sm">
                         <div class="p-5 sm:p-6">
                             <div class="flex items-start justify-between gap-4">
                                 <div class="flex min-w-0 items-center gap-3">
@@ -268,6 +276,17 @@
                             </div>
 
                             <p class="mt-5 whitespace-pre-line text-[15px] font-medium leading-7 text-[#314B54]">{{ $post->body }}</p>
+                            @if($post->media->isNotEmpty())
+                                <div class="mt-5 grid gap-2 {{ $post->media->count() > 1 ? 'grid-cols-2' : 'grid-cols-1' }}">
+                                    @foreach($post->media as $media)
+                                        @if($media->type === 'video')
+                                            <video class="max-h-[32rem] w-full rounded-2xl bg-black object-contain {{ $post->media->count() === 3 && $loop->first ? 'col-span-2' : '' }}" controls preload="metadata"><source src="{{ $media->url }}"></video>
+                                        @else
+                                            <img class="max-h-[32rem] w-full rounded-2xl object-cover {{ $post->media->count() === 3 && $loop->first ? 'col-span-2' : '' }}" src="{{ $media->url }}" alt="{{ $media->alt_text ?: 'Imagen de la publicacion' }}" loading="lazy">
+                                        @endif
+                                    @endforeach
+                                </div>
+                            @endif
 
                             @if ($post->listing)
                                 <div class="mt-5 rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] p-4">
@@ -324,6 +343,9 @@
                                 </div>
                             @endif
                         </div>
+                        <div class="flex flex-wrap gap-4 border-t border-[#123B4A]/8 px-5 py-3 text-xs font-bold text-[#6B7D83]">
+                            <span>{{ $post->reactions_count }} Me gusta</span><span>{{ $post->comments_count }} comentarios</span><span>{{ $post->shares_count }} compartidos</span>
+                        </div>
                         <div class="grid grid-cols-3 border-t border-[#123B4A]/8 px-3 py-2 text-xs font-black text-[#6B7D83]">
                             @if ($post->user_id === $currentUser->id)
                                 <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-[#FAF8F4] hover:text-[#F97316]" href="{{ route('posts.edit', $post) }}">Editar</a>
@@ -346,10 +368,17 @@
                                         {{ $post->listing?->price_type?->value === 'quote' ? 'Solicitar cotización' : 'Me interesa' }}
                                     </button>
                                 @endif
-                                <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button">Comentar</button>
                             @endif
-                            <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button">Compartir</button>
+                            <form method="POST" action="{{ route('posts.reactions.toggle', $post) }}">@csrf<button class="w-full rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316] {{ $post->reacted_by_user ? 'text-[#F97316]' : '' }}" type="submit">{{ $post->reacted_by_user ? 'Te gusta' : 'Me gusta' }}</button></form>
+                            <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button" data-comment-toggle="comment-{{ $post->id }}">Comentar</button>
+                            <form method="POST" action="{{ route('posts.shares.store', $post) }}" data-share-form data-share-url="{{ route('dashboard').'#post-'.$post->id }}" data-share-title="{{ $post->user->name }} en Plaza Local">@csrf<input type="hidden" name="channel" value="native"><button class="w-full rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="submit">Compartir</button></form>
                         </div>
+                        <section id="comment-{{ $post->id }}" class="border-t border-[#123B4A]/8 bg-[#FAF8F4]/60 p-4" data-comment-panel>
+                            @foreach($post->comments->take(5) as $comment)
+                                <div class="mb-3 flex items-start justify-between gap-3 rounded-2xl bg-white px-4 py-3"><div><strong class="text-sm">{{ $comment->user->name }}</strong><p class="mt-1 text-sm leading-6 text-[#536A72]">{{ $comment->body }}</p></div>@if($comment->user_id === $currentUser->id || $post->user_id === $currentUser->id || $currentUser->hasAnyRole(['admin','superadmin']))<form method="POST" action="{{ route('posts.comments.destroy', $comment) }}">@csrf @method('DELETE')<button class="text-xs font-black text-red-600" type="submit">Eliminar</button></form>@endif</div>
+                            @endforeach
+                            @if($post->comments_enabled)<form class="flex gap-2" method="POST" action="{{ route('posts.comments.store', $post) }}">@csrf<input class="min-w-0 flex-1 rounded-full border border-[#123B4A]/10 bg-white px-4 py-2.5 text-sm outline-none" name="body" maxlength="1000" required placeholder="Escribe un comentario"><button class="rounded-full bg-[#123B4A] px-4 py-2 text-xs font-black text-white" type="submit">Publicar</button></form>@endif
+                        </section>
                     </article>
                 @empty
                     <div class="rounded-[1.75rem] border border-dashed border-[#123B4A]/20 bg-white/60 px-6 py-12 text-center">

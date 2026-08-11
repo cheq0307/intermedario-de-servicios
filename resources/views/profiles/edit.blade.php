@@ -75,6 +75,13 @@
                         <label class="block"><span class="text-sm font-black">Herramientas y capacidades</span><textarea class="mt-2 min-h-28 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" name="tools" maxlength="1000">{{ old('tools', $user->vendor?->tools) }}</textarea></label>
                     </div>
                 </section>
+                @if($user->vendor?->status === 'active')
+                    <section class="rounded-[2rem] border border-[#123B4A]/10 bg-white p-6 shadow-sm sm:p-8">
+                        <h2 class="text-xl font-black">Cobros y depositos</h2>
+                        <p class="mt-2 text-sm leading-6 text-[#6B7D83]">Stripe recopila y verifica identidad y cuenta bancaria. Plaza Local no almacena esos datos sensibles.</p>
+                        @if($user->vendor->stripe_payouts_enabled)<p class="mt-4 rounded-2xl bg-[#E9F7F0] p-4 text-sm font-black text-[#14734A]">Cuenta verificada y habilitada para recibir depositos.</p>@else<form class="mt-4" method="POST" action="{{ route('stripe.connect') }}">@csrf<button class="rounded-full bg-[#635BFF] px-5 py-3 text-sm font-black text-white" type="submit">{{ $user->vendor->stripe_account_id ? 'Continuar verificacion con Stripe' : 'Configurar cobros con Stripe' }}</button></form>@endif
+                    </section>
+                @endif
             @endif
 
             <div class="flex justify-end"><button class="rounded-full bg-[#F97316] px-7 py-3.5 font-black text-white shadow-lg shadow-[#F97316]/15" type="submit">Guardar perfil</button></div>

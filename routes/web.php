@@ -7,18 +7,24 @@ use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DisputeController;
 use App\Http\Controllers\ExploreController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\JobProposalController;
 use App\Http\Controllers\MarketplaceCapabilityController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\PostEngagementController;
 use App\Http\Controllers\PostManagementController;
 use App\Http\Controllers\ProductOrderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ServiceOrderController;
+use App\Http\Controllers\StripeConnectController;
+use App\Http\Controllers\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'home')->name('home');
+Route::get('/', HomeController::class)->name('home');
+Route::get('/explorar', ExploreController::class)->name('explore');
+Route::post('/webhooks/stripe', StripeWebhookController::class)->name('stripe.webhook');
 
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
@@ -30,15 +36,21 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     Route::post('/mi-cuenta/modo/{mode}', [MarketplaceCapabilityController::class, 'switchMode'])->name('capabilities.switch');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
-    Route::get('/explorar', ExploreController::class)->name('explore');
     Route::get('/perfiles/{user}', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/mi-perfil/editar', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/mi-perfil', [ProfileController::class, 'update'])->name('profile.update');
     Route::middleware('verified')->group(function () {
         Route::post('/mi-cuenta/capacidades/{capability}', [MarketplaceCapabilityController::class, 'activate'])->name('capabilities.activate');
         Route::post('/publicaciones', [PostController::class, 'store'])->name('posts.store');
+        Route::post('/stripe/conectar', [StripeConnectController::class, 'onboard'])->name('stripe.connect');
+        Route::get('/stripe/conectar/actualizar', [StripeConnectController::class, 'refresh'])->name('stripe.connect.refresh');
+        Route::get('/stripe/conectar/resultado', [StripeConnectController::class, 'returned'])->name('stripe.connect.return');
         Route::get('/publicaciones/{post}/editar', [PostManagementController::class, 'edit'])->name('posts.edit');
         Route::put('/publicaciones/{post}', [PostManagementController::class, 'update'])->name('posts.update');
+        Route::post('/publicaciones/{post}/reaccion', [PostEngagementController::class, 'toggleReaction'])->name('posts.reactions.toggle');
+        Route::post('/publicaciones/{post}/comentarios', [PostEngagementController::class, 'comment'])->name('posts.comments.store');
+        Route::delete('/comentarios/{comment}', [PostEngagementController::class, 'deleteComment'])->name('posts.comments.destroy');
+        Route::post('/publicaciones/{post}/compartir', [PostEngagementController::class, 'share'])->name('posts.shares.store');
         Route::get('/productos/{listing}/comprar', [ProductOrderController::class, 'checkout'])->name('products.checkout');
         Route::post('/productos/{listing}/pedidos', [ProductOrderController::class, 'store'])->name('products.orders.store');
         Route::post('/pedidos/{order}/simular-pago', [ProductOrderController::class, 'simulatePayment'])->name('products.orders.simulate-payment');

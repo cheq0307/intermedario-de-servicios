@@ -28,6 +28,8 @@ class PostController extends Controller
             'submission_token' => ['required', 'uuid'],
             'type' => ['required', 'string', Rule::in($allowedTypes)],
             'body' => ['required', 'string', 'min:10', 'max:1500'],
+            'media' => ['nullable', 'array', 'max:6'],
+            'media.*' => ['file', 'mimetypes:image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm', 'max:51200'],
         ]);
 
         $isProvider = in_array($postData['type'], $providerTypes, true);
@@ -44,16 +46,18 @@ class PostController extends Controller
                 }
 
                 if (! $isProvider) {
-                    $this->publishJobRequest($request, $postData);
+                    $post = $this->publishJobRequest($request, $postData);
                 } elseif (in_array($postData['type'], ['product', 'service'], true)) {
-                    $this->publishListing($request, $postData);
+                    $post = $this->publishListing($request, $postData);
                 } else {
-                    Post::create([
+                    $post = Post::create([
                         ...$postData,
                         'user_id' => $request->user()->id,
                         'published_at' => now(),
                     ]);
                 }
+
+                $this->storeMedia($request, $post);
 
                 return redirect()
                     ->route('dashboard')
@@ -61,7 +65,7 @@ class PostController extends Controller
             });
     }
 
-    private function publishJobRequest(Request $request, array $postData): void
+    private function publishJobRequest(Request $request, array $postData): Post
     {
         $details = $request->validate([
             'title' => ['required', 'string', 'min:5', 'max:120'],
@@ -71,7 +75,7 @@ class PostController extends Controller
             'location_label' => ['nullable', 'string', 'max:120'],
         ]);
 
-        DB::transaction(function () use ($request, $postData, $details): void {
+        return DB::transaction(function () use ($request, $postData, $details): Post {
             $jobRequest = JobRequest::create([
                 'public_id' => (string) Str::uuid(),
                 'client_id' => $request->user()->id,
@@ -85,7 +89,7 @@ class PostController extends Controller
                 'published_at' => now(),
             ]);
 
-            Post::create([
+            return Post::create([
                 ...$postData,
                 'user_id' => $request->user()->id,
                 'job_request_id' => $jobRequest->id,
@@ -94,7 +98,7 @@ class PostController extends Controller
         });
     }
 
-    private function publishListing(Request $request, array $postData): void
+    private function publishListing(Request $request, array $postData): Post
     {
         $details = $request->validate([
             'title' => ['required', 'string', 'min:3', 'max:120'],
@@ -109,7 +113,7 @@ class PostController extends Controller
             'stock' => ['nullable', 'integer', 'min:0', 'max:4294967295'],
         ]);
 
-        DB::transaction(function () use ($request, $postData, $details): void {
+        return DB::transaction(function () use ($request, $postData, $details): Post {
             $vendor = Vendor::firstOrCreate(
                 ['user_id' => $request->user()->id],
                 [
@@ -133,7 +137,7 @@ class PostController extends Controller
                 'is_active' => true,
             ]);
 
-            Post::create([
+            return Post::create([
                 ...$postData,
                 'user_id' => $request->user()->id,
                 'vendor_id' => $vendor->id,
@@ -155,6 +159,23 @@ class PostController extends Controller
         }
 
         return $slug;
+    }
+
+    private function storeMedia(Request $request, Post $post): void
+    {
+        foreach ($request->file('media', []) as $position => $file) {
+            $type = str_starts_with((string) $file->getMimeType(), 'video/') ? 'video' : 'image';
+            $path = $file->store('post-media/'.now()->format('Y/m'), 'public');
+            if (! $path) {
+                throw new \RuntimeException('No fue posible guardar uno de los archivos.');
+            }
+            $post->media()->create([
+                'type' => $type,
+                'path' => $path,
+                'position' => $position,
+                'alt_text' => $type === 'image' ? 'Imagen de la publicacion de '.$request->user()->name : null,
+            ]);
+        }
     }
 
     private function toMinorUnits(mixed $amount): ?int

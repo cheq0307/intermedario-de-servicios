@@ -6,6 +6,7 @@ use App\Domain\Marketplace\Enums\DisputeStatus;
 use App\Domain\Marketplace\Enums\JobRequestStatus;
 use App\Domain\Marketplace\Enums\OrderStatus;
 use App\Domain\Marketplace\Enums\PaymentStatus;
+use App\Jobs\FinalizeMarketplacePayment;
 use App\Models\Conversation;
 use App\Models\Dispute;
 use App\Models\Order;
@@ -118,15 +119,18 @@ class DisputeController extends Controller
             }
 
             if ($nextStatus === OrderStatus::Completed) {
-                $order->payments()
-                    ->where('provider', 'fake')
-                    ->where('status', PaymentStatus::Paid->value)
-                    ->update(['status' => PaymentStatus::Released->value, 'released_at' => now()]);
+                $payment = $order->payments()->where('status', PaymentStatus::Paid->value)->first();
+                if ($payment) {
+                    $payment->update(['status' => PaymentStatus::ReleasePending]);
+                    FinalizeMarketplacePayment::dispatch($payment->id, 'release')->afterCommit();
+                }
             } elseif ($nextStatus === OrderStatus::Cancelled) {
-                $order->payments()->where('provider', 'fake')->where('status', PaymentStatus::Pending->value)
-                    ->update(['status' => PaymentStatus::Cancelled->value]);
-                $order->payments()->where('provider', 'fake')->where('status', PaymentStatus::Paid->value)
-                    ->update(['status' => PaymentStatus::Refunded->value, 'refunded_at' => now()]);
+                $order->payments()->where('status', PaymentStatus::Pending->value)->update(['status' => PaymentStatus::Cancelled->value]);
+                $payment = $order->payments()->where('status', PaymentStatus::Paid->value)->first();
+                if ($payment) {
+                    $payment->update(['status' => PaymentStatus::RefundPending]);
+                    FinalizeMarketplacePayment::dispatch($payment->id, 'refund')->afterCommit();
+                }
             }
             $order->update($orderAttributes);
             $lockedDispute->update([

@@ -28,4 +28,5 @@ return [
     'payment_driver' => env('MARKETPLACE_PAYMENT_DRIVER', 'fake'),
     'allow_fake_payments' => (bool) env('MARKETPLACE_ALLOW_FAKE_PAYMENTS', false),
     'reservation_minutes' => (int) env('MARKETPLACE_RESERVATION_MINUTES', 20),
+    'operations_alert_email' => env('OPERATIONS_ALERT_EMAIL'),
 ];

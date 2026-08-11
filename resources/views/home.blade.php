@@ -53,11 +53,11 @@
                         Descubre comida, productos, comercios y personas de confianza que ofrecen sus servicios en tu propia comunidad.
                     </p>
 
-                    <form class="mt-8 flex w-full max-w-2xl flex-col gap-3 overflow-hidden rounded-[1.75rem] bg-white p-3 shadow-[0_24px_70px_rgba(23,53,43,.13)] lg:flex-row" role="search">
+                    <form class="mt-8 flex w-full max-w-2xl flex-col gap-3 overflow-hidden rounded-[1.75rem] bg-white p-3 shadow-[0_24px_70px_rgba(23,53,43,.13)] lg:flex-row" role="search" method="GET" action="{{ route('explore') }}">
                         <label class="flex min-w-0 flex-1 items-center gap-3 px-3" for="busqueda">
                             <span class="text-xl" aria-hidden="true">⌕</span>
                             <span class="sr-only">Buscar</span>
-                            <input id="busqueda" class="w-full border-0 bg-transparent py-3 text-base font-semibold text-[#17352b] outline-none placeholder:text-[#8b9c96]" type="search" placeholder="¿Qué estás buscando?">
+                            <input id="busqueda" class="w-full border-0 bg-transparent py-3 text-base font-semibold text-[#17352b] outline-none placeholder:text-[#8b9c96]" type="search" name="q" maxlength="100" placeholder="¿Qué estás buscando?">
                         </label>
                         <button class="w-full rounded-2xl bg-[#d2693c] px-7 py-3.5 font-extrabold text-white transition hover:bg-[#b9552d] lg:w-auto" type="submit">Buscar cerca</button>
                     </form>
@@ -83,20 +83,17 @@
                             </div>
 
                             <div class="mt-6 space-y-3">
-                                @foreach ([
-                                    ['🌮', '#fee3d1', 'Tacos El Comalito', 'Comida · A 350 m', '4.9'],
-                                    ['🔧', '#dbeae3', 'Reparaciones Martínez', 'Hogar · Disponible hoy', '4.8'],
-                                    ['✏️', '#f8ebba', 'Papelería La Esquina', 'Productos · A 600 m', '4.7'],
-                                ] as [$icon, $color, $name, $details, $rating])
-                                    <article class="group flex min-w-0 max-w-full items-center gap-3 rounded-2xl bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:gap-4">
-                                        <div class="grid size-14 shrink-0 place-items-center rounded-2xl text-2xl sm:size-16 sm:text-3xl" style="background-color: {{ $color }}" aria-hidden="true">{{ $icon }}</div>
-                                        <div class="min-w-0 flex-1">
-                                            <h3 class="truncate font-black">{{ $name }}</h3>
-                                            <p class="mt-1 text-xs font-semibold text-[#6f827b]">{{ $details }}</p>
+                                @forelse($featuredListings as $listing)
+                                    <a class="group flex min-w-0 max-w-full items-center gap-3 rounded-2xl bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:gap-4" href="{{ route('explore', ['q' => $listing->name]) }}">
+                                        <div class="grid size-14 shrink-0 place-items-center overflow-hidden rounded-2xl bg-[#dbeae3] text-2xl sm:size-16">
+                                            @if($listing->post?->media?->first()?->type === 'image')<img class="size-full object-cover" src="{{ $listing->post->media->first()->url }}" alt="">@else{{ $listing->type->value === 'product' ? '🛍️' : '🛠️' }}@endif
                                         </div>
-                                        <span class="shrink-0 rounded-full bg-[#e2f1e9] px-2 py-1 text-[11px] font-black text-[#1f6b4f] sm:px-2.5 sm:text-xs">{{ $rating }} ★</span>
-                                    </article>
-                                @endforeach
+                                        <div class="min-w-0 flex-1"><h3 class="truncate font-black">{{ $listing->name }}</h3><p class="mt-1 truncate text-xs font-semibold text-[#6f827b]">{{ $listing->vendor->display_name }} · {{ $listing->vendor->user->city ?: 'Tu comunidad' }}</p></div>
+                                        <span class="shrink-0 rounded-full bg-[#e2f1e9] px-2 py-1 text-[11px] font-black text-[#1f6b4f]">{{ $listing->price_amount === null ? 'Cotizar' : '$'.number_format($listing->price_amount / 100, 0) }}</span>
+                                    </a>
+                                @empty
+                                    <div class="rounded-2xl bg-white p-5 text-center"><p class="font-black">La plaza esta por abrir</p><p class="mt-1 text-sm text-[#6f827b]">Las primeras ofertas aprobadas apareceran aqui.</p></div>
+                                @endforelse
                             </div>
                         </div>
                     </div>

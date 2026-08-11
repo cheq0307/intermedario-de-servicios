@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Domain\Marketplace\Enums\JobRequestStatus;
 use App\Domain\Marketplace\Enums\OrderStatus;
 use App\Domain\Marketplace\Enums\PaymentStatus;
+use App\Jobs\FinalizeMarketplacePayment;
 use App\Models\Conversation;
 use App\Models\Order;
 use App\Notifications\MarketplaceActivity;
@@ -31,7 +32,7 @@ class ServiceOrderController extends Controller
 
     public function show(Request $request, Order $order): View
     {
-        $order->load(['buyer:id,name,avatar_path', 'vendor.user:id,name,avatar_path', 'jobRequest', 'jobProposal', 'items', 'dispute', 'reviews.author:id,name']);
+        $order->load(['buyer:id,name,avatar_path', 'vendor.user:id,name,avatar_path', 'jobRequest', 'jobProposal', 'items', 'payments', 'dispute', 'reviews.author:id,name']);
         $this->authorizeParticipant($request, $order);
 
         $participantIds = collect([$order->buyer_id, $order->vendor->user_id])->sort()->values();
@@ -94,10 +95,11 @@ class ServiceOrderController extends Controller
                 'status' => OrderStatus::Completed,
                 'completed_at' => now(),
             ]);
-            $lockedOrder->payments()
-                ->where('provider', 'fake')
-                ->where('status', PaymentStatus::Paid->value)
-                ->update(['status' => PaymentStatus::Released->value, 'released_at' => now()]);
+            $payment = $lockedOrder->payments()->where('status', PaymentStatus::Paid->value)->first();
+            if ($payment) {
+                $payment->update(['status' => PaymentStatus::ReleasePending]);
+                FinalizeMarketplacePayment::dispatch($payment->id, 'release')->afterCommit();
+            }
             $lockedOrder->jobRequest?->update(['status' => JobRequestStatus::Completed]);
             $this->recordSystemMessage($lockedOrder, 'El cliente confirmó la entrega. Trabajo completado.', $request->user()->id);
         });

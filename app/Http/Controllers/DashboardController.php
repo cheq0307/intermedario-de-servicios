@@ -18,8 +18,11 @@ class DashboardController extends Controller
         }
 
         $posts = Post::query()
-            ->with(['user', 'listing', 'jobRequest'])
+            ->with(['user', 'listing', 'jobRequest', 'media', 'comments.user'])
+            ->withCount(['reactions', 'comments', 'shares'])
+            ->withExists(['reactions as reacted_by_user' => fn ($query) => $query->where('user_id', $user->id)])
             ->whereNotNull('published_at')
+            ->whereHas('user')
             ->latest('published_at')
             ->latest('id')
             ->paginate(12);

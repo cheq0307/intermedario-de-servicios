@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Post extends Model
 {
@@ -48,5 +49,25 @@ class Post extends Model
     public function jobRequest(): BelongsTo
     {
         return $this->belongsTo(JobRequest::class);
+    }
+
+    public function media(): HasMany
+    {
+        return $this->hasMany(PostMedia::class)->orderBy('position');
+    }
+
+    public function reactions(): HasMany
+    {
+        return $this->hasMany(PostReaction::class);
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(PostComment::class)->latest();
+    }
+
+    public function shares(): HasMany
+    {
+        return $this->hasMany(PostShare::class);
     }
 }

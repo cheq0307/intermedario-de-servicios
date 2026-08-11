@@ -82,3 +82,41 @@ if (passwordInput && passwordConfirmation && passwordRequirements) {
     passwordConfirmation.addEventListener('input', syncPasswordRequirements);
     syncPasswordRequirements();
 }
+
+const mediaInput = document.querySelector('[data-media-input]');
+const mediaPreview = document.querySelector('[data-media-preview]');
+if (mediaInput && mediaPreview) {
+    mediaInput.addEventListener('change', () => {
+        mediaPreview.replaceChildren();
+        [...mediaInput.files].slice(0, 6).forEach((file) => {
+            const url = URL.createObjectURL(file);
+            const element = file.type.startsWith('video/') ? document.createElement('video') : document.createElement('img');
+            element.src = url;
+            element.className = 'h-32 w-full rounded-2xl bg-black object-cover';
+            if (element instanceof HTMLVideoElement) element.controls = true;
+            element.addEventListener('load', () => URL.revokeObjectURL(url), { once: true });
+            mediaPreview.append(element);
+        });
+        mediaPreview.hidden = mediaInput.files.length === 0;
+    });
+}
+
+document.querySelectorAll('[data-comment-toggle]').forEach((button) => button.addEventListener('click', () => {
+    document.getElementById(button.dataset.commentToggle)?.querySelector('input[name="body"]')?.focus();
+}));
+
+document.querySelectorAll('[data-share-form]').forEach((form) => form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!navigator.share) {
+        try { await navigator.clipboard.writeText(form.dataset.shareUrl); } catch (_) { /* El registro se conserva aunque el navegador bloquee el portapapeles. */ }
+        form.querySelector('input[name="channel"]').value = 'clipboard';
+        form.submit();
+        return;
+    }
+    try {
+        await navigator.share({ title: form.dataset.shareTitle, url: form.dataset.shareUrl });
+        form.submit();
+    } catch (error) {
+        if (error.name !== 'AbortError') form.submit();
+    }
+}));

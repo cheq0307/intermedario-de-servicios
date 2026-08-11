@@ -29,3 +29,4 @@ Artisan::command('plaza:grant-admin {email} {--superadmin}', function () {
 })->purpose('Assign an administrative role to an existing Plaza Local user');
 
 Schedule::command('plaza:expire-reservations')->everyMinute()->withoutOverlapping();
+Schedule::command('plaza:health-check --notify')->everyFiveMinutes()->withoutOverlapping();

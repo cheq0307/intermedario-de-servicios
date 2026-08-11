@@ -31,6 +31,10 @@ class Vendor extends Model
         'address',
         'business_hours',
         'commission_rate_basis_points',
+        'stripe_account_id',
+        'stripe_details_submitted',
+        'stripe_charges_enabled',
+        'stripe_payouts_enabled',
     ];
 
     protected function casts(): array
@@ -38,6 +42,9 @@ class Vendor extends Model
         return [
             'verified_at' => 'datetime',
             'business_hours' => 'array',
+            'stripe_details_submitted' => 'boolean',
+            'stripe_charges_enabled' => 'boolean',
+            'stripe_payouts_enabled' => 'boolean',
         ];
     }
 

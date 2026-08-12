@@ -38,6 +38,28 @@ class ProfileTest extends TestCase
             ->assertDontSee($provider->email);
     }
 
+    public function test_profile_owner_can_see_their_own_email_address(): void
+    {
+        $user = User::factory()->create(['account_type' => 'client']);
+
+        $this->actingAs($user)
+            ->get(route('profile.show', $user))
+            ->assertOk()
+            ->assertSee('Correo:')
+            ->assertSee($user->email);
+    }
+
+    public function test_administrator_can_see_email_for_account_support(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::findOrCreate('admin'));
+        $user = User::factory()->create(['account_type' => 'client']);
+
+        $this->actingAs($admin)
+            ->get(route('profile.show', $user))
+            ->assertOk()
+            ->assertSee($user->email);
+    }
     public function test_provider_can_update_professional_profile(): void
     {
         $provider = User::factory()->create(['account_type' => 'provider']);

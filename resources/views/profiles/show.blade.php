@@ -9,6 +9,7 @@
 <body class="min-h-screen bg-[#FAF8F4] text-[#17313A] antialiased">
     @php
         $isOwner = auth()->id() === $user->id;
+        $canViewPrivateContact = $isOwner || auth()->user()?->hasAnyRole(['admin', 'superadmin']);
         $isProvider = $user->canActAsProvider();
         $vendor = $user->vendor;
         $roleLabels = ['client' => 'Cliente', 'provider' => 'Proveedor', 'admin' => 'Administrador', 'superadmin' => 'Superadministrador'];
@@ -52,11 +53,16 @@
                         @endif
                         <div class="pb-1">
                             <div class="flex flex-wrap items-center gap-2">
-                                <h1 class="text-3xl font-black tracking-tight">{{ $isProvider ? ($vendor?->display_name ?? $user->name) : $user->name }}</h1>
+                                <h1 class="rounded-xl bg-white px-3 py-1 text-3xl font-black tracking-tight text-[#123B4A] shadow-sm">{{ $isProvider ? ($vendor?->display_name ?? $user->name) : $user->name }}</h1>
                                 @if ($vendor?->verified_at)<span class="rounded-full bg-[#E9F7F0] px-3 py-1 text-xs font-black text-[#14734A]">Verificado</span>@endif
                             </div>
                             @if($profileRoles->isNotEmpty())<div class="mt-2 flex flex-wrap gap-2">@foreach($profileRoles as $role)<span class="rounded-full border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-1 text-xs font-black text-[#536A72]">{{ $role }}</span>@endforeach</div>@endif
                             <p class="mt-2 font-bold text-[#6B7D83]">{{ $isProvider ? ($vendor?->specialty ?: 'Proveedor local') : 'Cliente de la comunidad' }} @if($user->city) · {{ $user->city }} @endif</p>
+                            @if ($canViewPrivateContact)
+                                <p class="mt-1 break-all text-sm font-bold text-[#314B54]">Correo: <a class="text-[#14734A] underline decoration-[#14734A]/30 underline-offset-2" href="mailto:{{ $user->email }}">{{ $user->email }}</a></p>
+                            @elseif ($user->hasVerifiedEmail())
+                                <p class="mt-1 text-sm font-bold text-[#14734A]">Correo verificado</p>
+                            @endif
                         </div>
                     </div>
                     @if ($isProvider)

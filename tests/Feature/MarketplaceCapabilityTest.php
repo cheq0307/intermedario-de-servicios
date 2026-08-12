@@ -75,6 +75,23 @@ class MarketplaceCapabilityTest extends TestCase
         $this->assertFalse($superadmin->fresh()->canActAsProvider());
     }
 
+    public function test_legacy_superadmin_with_commercial_roles_is_kept_inside_administration(): void
+    {
+        $superadmin = User::factory()->create(['account_type' => 'client']);
+        $superadmin->assignRole([
+            Role::findOrCreate('client'),
+            Role::findOrCreate('provider'),
+            Role::findOrCreate('superadmin'),
+        ]);
+
+        $this->actingAs($superadmin)
+            ->get(route('dashboard'))
+            ->assertRedirect(route('admin.index'));
+
+        $this->post(route('capabilities.switch', 'provider'))->assertForbidden();
+        $this->get(route('explore'))->assertRedirect(route('admin.index'));
+    }
+
     public function test_dual_account_dashboard_switches_the_publication_form(): void
     {
         $user = User::factory()->create(['account_type' => 'client']);

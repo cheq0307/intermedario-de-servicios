@@ -157,7 +157,10 @@ class AdminAuthorizationTest extends TestCase
             ->assertOk()
             ->assertSee('Otra persona')
             ->assertDontSee('Cuenta propietaria')
-            ->assertSee('Explorar plaza')
+            ->assertSee('Cerrar sesi')
+            ->assertSee('Control global de comunidades')
+            ->assertDontSee('Explorar plaza')
+            ->assertDontSee('Ir a mi cuenta comercial')
             ->assertDontSee('Capacidades comerciales');
     }
 

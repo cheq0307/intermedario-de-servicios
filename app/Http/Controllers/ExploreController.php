@@ -7,6 +7,7 @@ use App\Models\JobRequest;
 use App\Models\Listing;
 use App\Models\Vendor;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -14,8 +15,11 @@ use Illuminate\View\View;
 
 class ExploreController extends Controller
 {
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request): View|RedirectResponse
     {
+        if ($request->user()?->hasRole('superadmin')) {
+            return redirect()->route('admin.index');
+        }
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
             'type' => ['nullable', Rule::in(['all', 'product', 'service', 'provider', 'job_request'])],

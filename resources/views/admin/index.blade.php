@@ -10,10 +10,11 @@
     <header class="sticky top-0 z-40 border-b border-[#123B4A]/10 bg-white/95 backdrop-blur-xl">
         <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
             <a class="flex items-center gap-3 font-black" href="{{ route('admin.index') }}"><span class="grid size-10 place-items-center rounded-2xl bg-[#123B4A] text-white">P</span><span>Plaza Local</span></a>
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center justify-end gap-2">
                 <span class="hidden rounded-full bg-[#FFF1E8] px-4 py-2 text-xs font-black text-[#D85B0B] sm:inline-flex">{{ $isSuperadmin ? 'Superadministrador' : 'Administrador' }}</span>
                 <a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="#moderacion-proveedores">Proveedores</a><a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('disputes.admin-index') }}">Disputas</a>
-                <a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('explore') }}">Explorar plaza</a>
+                @unless($isSuperadmin)<a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('explore') }}">Explorar plaza</a>@endunless
+                <form method="POST" action="{{ route('logout') }}">@csrf<button class="rounded-full border border-red-200 bg-white px-4 py-2 text-sm font-black text-red-700" type="submit">Cerrar sesión</button></form>
             </div>
         </div>
     </header>
@@ -23,8 +24,10 @@
         @if($errors->any())<div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-black text-red-700" role="alert">{{ $errors->first() }}</div>@endif
 
         <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div><p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Espacio administrativo</p><h1 class="mt-2 text-3xl font-black">Control de Plaza Local</h1><p class="mt-2 max-w-2xl text-sm font-semibold leading-6 text-[#6B7D83]">Administra excepciones, confianza y seguridad sin mezclar estas tareas con tu actividad como cliente o proveedor.</p></div>
-                        @if(auth()->user()->canActAsClient() || auth()->user()->canActAsProvider())
+            <div><p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Espacio administrativo</p><h1 class="mt-2 text-3xl font-black">Control general de Plaza Local</h1><p class="mt-2 max-w-2xl text-sm font-semibold leading-6 text-[#6B7D83]">Controla usuarios, proveedores, operaciones y seguridad desde un solo lugar. Las comunidades futuras se administrarán desde este mismo panel central.</p></div>
+            @if($isSuperadmin)
+                <span class="rounded-full bg-[#E9F7F0] px-5 py-3 text-center text-sm font-black text-[#14734A]">Control global de comunidades</span>
+            @elseif(auth()->user()->canActAsClient() || auth()->user()->canActAsProvider())
                 <a class="rounded-full bg-[#123B4A] px-5 py-3 text-center text-sm font-black text-white" href="{{ route('dashboard') }}">Ir a mi cuenta comercial</a>
             @else
                 <a class="rounded-full bg-[#123B4A] px-5 py-3 text-center text-sm font-black text-white" href="{{ route('explore') }}">Explorar la plaza</a>

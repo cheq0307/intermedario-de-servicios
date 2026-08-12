@@ -12,6 +12,13 @@ class DashboardController extends Controller
     public function __invoke(Request $request): View|RedirectResponse
     {
         $user = $request->user();
+
+        if ($user->hasRole('superadmin')) {
+            $request->session()->forget('marketplace_mode');
+
+            return redirect()->route('admin.index');
+        }
+
         $activeMode = $request->session()->get('marketplace_mode');
         if (! is_string($activeMode) || ! $user->supportsMarketplaceMode($activeMode)) {
             $activeMode = $user->defaultMarketplaceMode();

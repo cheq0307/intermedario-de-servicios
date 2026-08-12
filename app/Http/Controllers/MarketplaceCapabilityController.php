@@ -84,6 +84,7 @@ class MarketplaceCapabilityController extends Controller
 
     public function switchMode(Request $request, string $mode): RedirectResponse
     {
+        abort_if($request->user()->hasRole('superadmin'), 403, 'La cuenta superadministradora es exclusivamente administrativa.');
         abort_unless(in_array($mode, ['client', 'provider'], true), 404);
         abort_unless($request->user()->supportsMarketplaceMode($mode), 403);
 

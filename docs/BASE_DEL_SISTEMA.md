@@ -24,11 +24,19 @@ La plataforma debe registrar el origen y avance de cada operación para que la c
 
 Una sola identidad puede combinar las capacidades de cliente y proveedor sin duplicar correo, historial ni reputación. Si posee ambas, cambia el contexto visible desde la misma sesión.
 
-Los permisos `admin` y `superadmin` son independientes. Por lo tanto, se soportan cuentas de personal sin actividad comercial y también administradores que, por decisión explícita, compran o venden.
+Los permisos administrativos no conceden capacidades comerciales automáticamente. Un administrador delegado puede conservar capacidades comerciales si la operación lo requiere, pero la cuenta `superadmin` es exclusivamente administrativa: no entra al feed, no compra, no publica y no opera como proveedor. Si la persona propietaria desea usar la plaza, debe registrar otra cuenta comercial.
 
 El campo histórico `account_type` se conserva temporalmente para compatibilidad de datos, pero las autorizaciones se basan en roles/capacidades.
 
 Activar la capacidad de proveedor crea un perfil comercial pendiente; no permite operar como proveedor hasta su aprobación administrativa.
+
+## Escalabilidad territorial
+
+Plaza Local se expandirá como un solo sistema central, no como una instalación independiente por pueblo. La unidad territorial será `community` (comunidad/localidad) y cada proveedor, publicación, solicitud, pedido y configuración operativa deberá pertenecer a una comunidad o a un alcance territorial explícito.
+
+El `superadmin` tendrá visibilidad y control global sobre todas las comunidades. Los administradores delegados podrán limitarse más adelante a una o varias comunidades mediante asignaciones de alcance; nunca deberán obtener acceso territorial solo por conocer una URL o un identificador.
+
+Abrir una nueva plaza significará crear y configurar una comunidad dentro del mismo despliegue: nombre, slug, centro geográfico, radio, estado, reglas y administradores responsables. Las consultas y políticas deberán aplicar siempre el alcance comunitario, mientras los reportes globales quedarán reservados al `superadmin`.
 
 ## Superficies principales
 

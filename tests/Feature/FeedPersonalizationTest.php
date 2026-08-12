@@ -93,6 +93,28 @@ class FeedPersonalizationTest extends TestCase
             ->assertSee('Solicitud dentro de su pestaña especializada.');
     }
 
+    public function test_suspended_provider_offers_are_hidden_but_client_requests_remain_visible(): void
+    {
+        $viewer = User::factory()->create(['account_type' => 'client']);
+        $dualUser = User::factory()->create(['account_type' => 'provider']);
+        $dualUser->assignRole('client');
+        $dualUser->vendor()->create([
+            'display_name' => 'Proveedor suspendido',
+            'slug' => 'proveedor-suspendido-'.$dualUser->id,
+            'status' => 'suspended',
+            'suspension_reason' => 'Incumplimiento reiterado de las reglas.',
+            'suspended_at' => now(),
+        ]);
+
+        $this->createPost($dualUser, 'service', 'Oferta comercial que debe ocultarse por suspensión.');
+        $this->createPost($dualUser, 'job_request', 'Solicitud como cliente que debe permanecer visible.');
+
+        $this->actingAs($viewer)
+            ->get(route('dashboard', ['feed' => 'all']))
+            ->assertOk()
+            ->assertDontSee('Oferta comercial que debe ocultarse por suspensión.')
+            ->assertSee('Solicitud como cliente que debe permanecer visible.');
+    }
     private function createPost(User $user, string $type, string $body): Post
     {
         return Post::create([

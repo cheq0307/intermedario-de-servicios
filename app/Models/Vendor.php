@@ -30,6 +30,8 @@ class Vendor extends Model
         'submitted_at',
         'reviewed_at',
         'rejection_reason',
+        'suspension_reason',
+        'suspended_at',
         'verified_at',
         'latitude',
         'longitude',
@@ -47,6 +49,7 @@ class Vendor extends Model
         return [
             'submitted_at' => 'datetime',
             'reviewed_at' => 'datetime',
+            'suspended_at' => 'datetime',
             'verified_at' => 'datetime',
             'business_hours' => 'array',
             'stripe_details_submitted' => 'boolean',

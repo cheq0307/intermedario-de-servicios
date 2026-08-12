@@ -12,9 +12,16 @@ class PostEngagementController extends Controller
     public function toggleReaction(Request $request, Post $post): RedirectResponse
     {
         $reaction = $post->reactions()->where('user_id', $request->user()->id)->first();
-        $reaction ? $reaction->delete() : $post->reactions()->create(['user_id' => $request->user()->id, 'type' => 'like']);
 
-        return back()->withFragment('post-'.$post->id);
+        if ($reaction) {
+            $reaction->delete();
+            $message = 'Ya no te gusta esta publicación.';
+        } else {
+            $post->reactions()->create(['user_id' => $request->user()->id, 'type' => 'like']);
+            $message = 'Marcaste esta publicación con Me gusta.';
+        }
+
+        return back()->withFragment('post-'.$post->id)->with('status', $message);
     }
 
     public function comment(Request $request, Post $post): RedirectResponse

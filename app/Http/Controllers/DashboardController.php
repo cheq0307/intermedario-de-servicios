@@ -46,6 +46,10 @@ class DashboardController extends Controller
             ->withExists(['reactions as reacted_by_user' => fn ($query) => $query->where('user_id', $user->id)])
             ->whereNotNull('published_at')
             ->whereHas('user')
+            ->where(function ($query): void {
+                $query->whereNotIn('type', ['portfolio', 'business_update', 'product', 'service', 'promotion'])
+                    ->orWhereDoesntHave('user.vendor', fn ($vendorQuery) => $vendorQuery->where('status', 'suspended'));
+            })
             ->when($feedTypes !== null, function ($query) use ($feed, $feedTypes, $user): void {
                 $query->where(function ($query) use ($feed, $feedTypes, $user): void {
                     $query->whereIn('type', $feedTypes);

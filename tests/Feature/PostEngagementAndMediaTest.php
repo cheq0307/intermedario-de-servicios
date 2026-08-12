@@ -21,9 +21,14 @@ class PostEngagementAndMediaTest extends TestCase
         $viewer = User::factory()->create();
         $post = Post::create(['user_id' => $author->id, 'type' => 'job_request', 'body' => 'Necesito ayuda con una reparacion local.', 'published_at' => now()]);
 
-        $this->actingAs($viewer)->post(route('posts.reactions.toggle', $post))->assertRedirect();
+        $this->actingAs($viewer)->post(route('posts.reactions.toggle', $post))
+            ->assertRedirect()
+            ->assertSessionHas('status', 'Marcaste esta publicación con Me gusta.');
         $this->assertDatabaseHas('post_reactions', ['post_id' => $post->id, 'user_id' => $viewer->id]);
-        $this->actingAs($viewer)->post(route('posts.reactions.toggle', $post))->assertRedirect();
+        $this->actingAs($viewer)->get(route('dashboard'))->assertOk()->assertSee('Quitar Me gusta');
+        $this->actingAs($viewer)->post(route('posts.reactions.toggle', $post))
+            ->assertRedirect()
+            ->assertSessionHas('status', 'Ya no te gusta esta publicación.');
         $this->assertDatabaseMissing('post_reactions', ['post_id' => $post->id, 'user_id' => $viewer->id]);
 
         $this->actingAs($viewer)->post(route('posts.comments.store', $post), ['body' => 'Puedo ayudarte manana.'])->assertRedirect();

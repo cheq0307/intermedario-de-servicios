@@ -399,7 +399,7 @@
                                     </button>
                                 @endif
                             @endif
-                            <form method="POST" action="{{ route('posts.reactions.toggle', $post) }}">@csrf<button class="w-full rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316] {{ $post->reacted_by_user ? 'text-[#F97316]' : '' }}" type="submit">{{ $post->reacted_by_user ? 'Te gusta' : 'Me gusta' }}</button></form>
+                            <form method="POST" action="{{ route('posts.reactions.toggle', $post) }}">@csrf<button class="w-full rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316] {{ $post->reacted_by_user ? 'bg-[#FFF1E8] text-[#D85B0B]' : '' }}" type="submit" aria-pressed="{{ $post->reacted_by_user ? 'true' : 'false' }}" title="{{ $post->reacted_by_user ? 'Retirar Me gusta' : 'Marcar con Me gusta' }}">{{ $post->reacted_by_user ? 'Quitar Me gusta' : 'Me gusta' }}</button></form>
                             <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button" data-comment-toggle="comment-{{ $post->id }}">Comentar</button>
                             <form method="POST" action="{{ route('posts.shares.store', $post) }}" data-share-form data-share-url="{{ route('dashboard').'#post-'.$post->id }}" data-share-title="{{ $post->user->name }} en Plaza Local">@csrf<input type="hidden" name="channel" value="native"><button class="w-full rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="submit">Compartir</button></form>
                         </div>

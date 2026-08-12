@@ -17,11 +17,13 @@
         $dayLabels = ['monday' => 'Lun', 'tuesday' => 'Mar', 'wednesday' => 'Mié', 'thursday' => 'Jue', 'friday' => 'Vie', 'saturday' => 'Sáb', 'sunday' => 'Dom'];
         $businessHours = $vendor?->business_hours ?? [];
         $withinBusinessHours = $vendor?->isWithinBusinessHours();
-        $availability = [
-            'available' => ['Disponible para nueva chamba', '#14734A', '#E9F7F0'],
-            'busy' => ['Realizando una chamba', '#9A5A0A', '#FFF4D6'],
-            'unavailable' => ['No disponible', '#8A3A3A', '#FCE8E8'],
-        ][$vendor?->availability_status ?? 'available'];
+        $availability = $vendor?->status === 'suspended'
+            ? ['Perfil suspendido', '#8A3A3A', '#FCE8E8']
+            : [
+                'available' => ['Disponible para nueva chamba', '#14734A', '#E9F7F0'],
+                'busy' => ['Realizando una chamba', '#9A5A0A', '#FFF4D6'],
+                'unavailable' => ['No disponible', '#8A3A3A', '#FCE8E8'],
+            ][$vendor?->availability_status ?? 'available'];
     @endphp
 
     <header class="border-b border-[#123B4A]/10 bg-white/90 backdrop-blur-xl">

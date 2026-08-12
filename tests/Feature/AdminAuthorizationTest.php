@@ -51,10 +51,13 @@ class AdminAuthorizationTest extends TestCase
         $this->actingAs($admin)->patch(route('admin.vendors.approve', $vendor))->assertRedirect();
         $this->assertSame('active', $vendor->fresh()->status);
         $this->assertNotNull($vendor->fresh()->verified_at);
+        $this->actingAs($admin)->get(route('admin.index'))->assertOk()->assertSee('Suspender proveedor')->assertSee('Moderación de proveedores');
         $this->actingAs($admin)->post(route('admin.users.grant', $target))->assertForbidden();
 
         $this->actingAs($admin)->patch(route('admin.vendors.suspend', $vendor), ['reason' => 'Documentación comercial inconsistente.'])->assertRedirect();
         $this->assertSame('suspended', $vendor->fresh()->status);
+        $this->assertSame('Documentación comercial inconsistente.', $vendor->fresh()->suspension_reason);
+        $this->assertNotNull($vendor->fresh()->suspended_at);
         $this->assertSame(2, AuditLog::where('user_id', $admin->id)->count());
     }
 

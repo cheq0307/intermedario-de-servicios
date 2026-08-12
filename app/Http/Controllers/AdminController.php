@@ -72,6 +72,8 @@ class AdminController extends Controller
     public function suspendVendor(Request $request, Vendor $vendor): RedirectResponse
     {
         $this->authorizeAdmin($request);
+        abort_if($vendor->user_id === $request->user()->id, 403, 'Un administrador no puede suspender su propio perfil comercial.');
+        abort_unless($vendor->status === 'active', 422, 'Solo un proveedor activo puede ser suspendido.');
         $validated = $request->validate(['reason' => ['required', 'string', 'min:10', 'max:1000']]);
         $this->changeVendorStatus($request, $vendor, 'suspended', ['reason' => $validated['reason']]);
         $vendor->loadMissing('user');
@@ -108,6 +110,8 @@ class AdminController extends Controller
                 'verified_at' => $status === 'active' ? now() : null,
                 'reviewed_at' => now(),
                 'rejection_reason' => $status === 'rejected' ? ($metadata['reason'] ?? null) : null,
+                'suspension_reason' => $status === 'suspended' ? ($metadata['reason'] ?? null) : null,
+                'suspended_at' => $status === 'suspended' ? now() : null,
             ]);
             $this->audit($request, 'vendor.'.$status, $vendor, $metadata);
         });

@@ -12,7 +12,7 @@
             <a class="flex items-center gap-3 font-black" href="{{ route('admin.index') }}"><span class="grid size-10 place-items-center rounded-2xl bg-[#123B4A] text-white">P</span><span>Plaza Local</span></a>
             <div class="flex items-center gap-2">
                 <span class="hidden rounded-full bg-[#FFF1E8] px-4 py-2 text-xs font-black text-[#D85B0B] sm:inline-flex">{{ $isSuperadmin ? 'Superadministrador' : 'Administrador' }}</span>
-                <a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('disputes.admin-index') }}">Disputas</a>
+                <a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="#moderacion-proveedores">Proveedores</a><a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('disputes.admin-index') }}">Disputas</a>
                 <a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('explore') }}">Explorar plaza</a>
             </div>
         </div>
@@ -56,7 +56,41 @@
         </section>
 
         <div class="mt-8 grid gap-6 xl:grid-cols-2">
-            <section class="rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6"><h2 class="text-xl font-black">Proveedores activos o suspendidos</h2><div class="mt-5 space-y-4">@forelse($vendors as $vendor)<article class="rounded-2xl bg-[#FAF8F4] p-4"><div class="flex flex-wrap justify-between gap-3"><div><strong>{{ $vendor->display_name }}</strong><p class="text-xs font-bold text-[#6B7D83]">{{ $vendor->user->email }} · {{ $vendor->status === 'active' ? 'activo' : 'suspendido' }}</p></div>@if($vendor->status === 'suspended' && $vendor->isReadyForReview())<form method="POST" action="{{ route('admin.vendors.approve', $vendor) }}">@csrf @method('PATCH')<button class="rounded-full bg-[#14734A] px-4 py-2 text-xs font-black text-white">Reactivar</button></form>@endif</div>@if($vendor->status === 'active')<form class="mt-3 flex gap-2" method="POST" action="{{ route('admin.vendors.suspend', $vendor) }}">@csrf @method('PATCH')<input class="min-w-0 flex-1 rounded-xl border border-[#123B4A]/10 bg-white px-3 py-2 text-xs" name="reason" minlength="10" required placeholder="Motivo de suspensión"><button class="rounded-full border border-red-200 px-4 py-2 text-xs font-black text-red-700">Suspender</button></form>@endif</article>@empty<p class="text-sm font-bold text-[#6B7D83]">Aún no hay proveedores procesados.</p>@endforelse</div></section>
+            <section class="rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6" id="moderacion-proveedores">
+                <p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Confianza y seguridad</p>
+                <h2 class="mt-1 text-xl font-black">Moderación de proveedores</h2>
+                <p class="mt-2 text-sm font-semibold leading-6 text-[#6B7D83]">Suspende un proveedor activo cuando exista una infracción. El motivo queda registrado en auditoría, se notifica al proveedor y sus ofertas dejan de mostrarse.</p>
+                <div class="mt-5 space-y-4">
+                    @forelse($vendors as $vendor)
+                        <article class="rounded-2xl border p-4 {{ $vendor->status === 'suspended' ? 'border-red-200 bg-red-50' : 'border-[#123B4A]/10 bg-[#FAF8F4]' }}">
+                            <div class="flex flex-wrap items-start justify-between gap-3">
+                                <div>
+                                    <strong>{{ $vendor->display_name }}</strong>
+                                    <p class="text-xs font-bold text-[#6B7D83]">{{ $vendor->user->email }}</p>
+                                    <span class="mt-2 inline-flex rounded-full px-3 py-1 text-xs font-black {{ $vendor->status === 'active' ? 'bg-[#E9F7F0] text-[#14734A]' : 'bg-red-100 text-red-700' }}">{{ $vendor->status === 'active' ? 'Activo' : 'Suspendido' }}</span>
+                                </div>
+                                <a class="rounded-full border border-[#123B4A]/15 bg-white px-4 py-2 text-xs font-black" href="{{ route('profile.show', $vendor->user) }}">Ver perfil</a>
+                            </div>
+                            @if($vendor->status === 'suspended')
+                                <div class="mt-3 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-red-800">
+                                    <strong>Motivo:</strong> {{ $vendor->suspension_reason ?: 'Registrado en auditoría antes de esta actualización.' }}
+                                    @if($vendor->suspended_at)<span class="mt-1 block text-xs text-[#6B7D83]">{{ $vendor->suspended_at->format('d/m/Y H:i') }}</span>@endif
+                                </div>
+                                @if($vendor->isReadyForReview())
+                                    <form class="mt-3" method="POST" action="{{ route('admin.vendors.approve', $vendor) }}">@csrf @method('PATCH')<button class="rounded-full bg-[#14734A] px-4 py-2 text-xs font-black text-white" type="submit">Reactivar proveedor</button></form>
+                                @endif
+                            @else
+                                <form class="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]" method="POST" action="{{ route('admin.vendors.suspend', $vendor) }}">@csrf @method('PATCH')
+                                    <label><span class="sr-only">Motivo de suspensión</span><input class="w-full rounded-xl border border-red-200 bg-white px-3 py-2.5 text-sm" name="reason" minlength="10" maxlength="1000" required placeholder="Describe la infracción o motivo (mínimo 10 caracteres)"></label>
+                                    <button class="rounded-full border border-red-300 bg-white px-5 py-2.5 text-xs font-black text-red-700" type="submit">Suspender proveedor</button>
+                                </form>
+                            @endif
+                        </article>
+                    @empty
+                        <p class="rounded-2xl border border-dashed border-[#123B4A]/20 p-6 text-sm font-bold text-[#6B7D83]">Aún no hay proveedores aprobados para moderar.</p>
+                    @endforelse
+                </div>
+            </section>
             <section class="rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6"><h2 class="text-xl font-black">Usuarios y autoridad</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Solo el superadministrador puede delegar o retirar administradores.</p><div class="mt-5 space-y-3">@foreach($users as $user)<article class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#FAF8F4] p-4"><div><strong>{{ $user->name }}</strong><p class="text-xs font-bold text-[#6B7D83]">{{ $user->email }} · {{ $user->roles->pluck('name')->join(', ') }}</p></div>@if($isSuperadmin && !$user->hasRole('superadmin'))<div>@if($user->hasRole('admin'))<form method="POST" action="{{ route('admin.users.revoke', $user) }}">@csrf @method('DELETE')<button class="rounded-full border border-red-200 px-4 py-2 text-xs font-black text-red-700">Retirar admin</button></form>@else<form method="POST" action="{{ route('admin.users.grant', $user) }}">@csrf<button class="rounded-full bg-[#123B4A] px-4 py-2 text-xs font-black text-white">Hacer admin</button></form>@endif</div>@endif</article>@endforeach</div></section>
         </div>
 

@@ -70,7 +70,7 @@ class ProfileTest extends TestCase
             'email' => $provider->email,
         ]);
 
-        $community = Community::create(['name' => 'Centro', 'municipality' => 'Mi comunidad', 'distance_km' => 0, 'is_active' => true]);
+        $community = Community::create(['name' => 'Centro', 'municipality' => 'Mi comunidad', 'default_radius_km' => 8, 'is_active' => true]);
 
         $this->actingAs($provider)->put(route('profile.update'), [
             'name' => 'Mario Hernández',

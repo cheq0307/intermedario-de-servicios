@@ -42,7 +42,7 @@ Abrir una nueva plaza significará crear y configurar una comunidad dentro del m
 
 El feed social mantiene visibles las publicaciones y solicitudes de todas las comunidades activas para favorecer descubrimiento e interacción. La exploración comercial es independiente: el usuario puede delimitar productos, proveedores y solicitudes seleccionando una comunidad administrada.
 
-La distancia registrada desde la sede sirve como referencia operativa, pero no representa por sí sola la distancia real entre dos pueblos. El filtrado por radio en kilómetros se habilitará cuando cada comunidad cuente con coordenadas centrales verificadas; entonces se calculará geográficamente y no mediante una resta de distancias aproximadas.
+No existe una sede geográfica para las búsquedas. Cada comunidad es su propio centro local y define coordenadas y un radio predeterminado. El alcance comercial puede limitarse a esa comunidad, ampliarse a comunidades cuyos centros estén dentro del radio elegido o abrirse a toda la plataforma. Si faltan coordenadas, el sistema conserva únicamente la comunidad seleccionada y nunca inventa distancias.
 
 ## Superficies principales
 

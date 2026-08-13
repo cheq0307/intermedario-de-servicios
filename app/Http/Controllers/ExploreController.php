@@ -21,12 +21,15 @@ class ExploreController extends Controller
         if ($request->user()?->hasRole('superadmin')) {
             return redirect()->route('admin.index');
         }
+
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
             'type' => ['nullable', Rule::in(['all', 'product', 'service', 'provider', 'job_request'])],
             'min_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'max_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'community_id' => ['nullable', 'integer', Rule::exists('communities', 'id')->where('is_active', true)],
+            'scope' => ['nullable', Rule::in(['community', 'nearby', 'all'])],
+            'radius_km' => ['nullable', 'numeric', 'min:1', 'max:100'],
         ]);
 
         if (isset($filters['min_price'], $filters['max_price']) && (float) $filters['max_price'] < (float) $filters['min_price']) {
@@ -37,8 +40,26 @@ class ExploreController extends Controller
         $type = $filters['type'] ?? 'all';
         $minPrice = $this->minorUnits($filters['min_price'] ?? null);
         $maxPrice = $this->minorUnits($filters['max_price'] ?? null);
-        $communityId = isset($filters['community_id']) ? (int) $filters['community_id'] : null;
-        $communities = Community::query()->where('is_active', true)->orderBy('distance_km')->orderBy('name')->get();
+        $communities = Community::query()->where('is_active', true)->orderBy('name')->get();
+        $scope = $filters['scope'] ?? 'community';
+        $communityId = isset($filters['community_id'])
+            ? (int) $filters['community_id']
+            : $request->user()?->community_id;
+        $selectedCommunity = $communityId ? $communities->firstWhere('id', $communityId) : null;
+        $radiusKm = (float) ($filters['radius_km'] ?? $selectedCommunity?->default_radius_km ?? 8);
+        $radiusSearchAvailable = $selectedCommunity?->hasCoordinates() ?? false;
+        $territoryCommunityIds = match ($scope) {
+            'all' => null,
+            'nearby' => $selectedCommunity
+                ? $communities->filter(function (Community $community) use ($selectedCommunity, $radiusKm): bool {
+                    $distance = $selectedCommunity->distanceTo($community);
+
+                    return $community->is($selectedCommunity) || ($distance !== null && $distance <= $radiusKm);
+                })->pluck('id')->all()
+                : null,
+            default => $selectedCommunity ? [$selectedCommunity->id] : null,
+        };
+        $filters = array_merge($filters, ['community_id' => $communityId, 'scope' => $scope, 'radius_km' => $radiusKm]);
 
         $listings = Listing::query()
             ->with(['vendor.user:id,name,avatar_path,city'])
@@ -55,7 +76,7 @@ class ExploreController extends Controller
             })
             ->when($minPrice !== null, fn (Builder $query) => $query->where('price_amount', '>=', $minPrice))
             ->when($maxPrice !== null, fn (Builder $query) => $query->where('price_amount', '<=', $maxPrice))
-            ->when($communityId, fn (Builder $query) => $query->whereHas('vendor.user', fn (Builder $user) => $user->where('community_id', $communityId)))
+            ->when($territoryCommunityIds !== null, fn (Builder $query) => $query->whereHas('vendor.user', fn (Builder $user) => $user->whereIn('community_id', $territoryCommunityIds)))
             ->latest()
             ->paginate(12, ['*'], 'listings_page')
             ->withQueryString();
@@ -71,7 +92,7 @@ class ExploreController extends Controller
                         ->orWhere('description', 'like', "%{$term}%");
                 });
             })
-            ->when($communityId, fn (Builder $query) => $query->whereHas('user', fn (Builder $user) => $user->where('community_id', $communityId)))
+            ->when($territoryCommunityIds !== null, fn (Builder $query) => $query->whereHas('user', fn (Builder $user) => $user->whereIn('community_id', $territoryCommunityIds)))
             ->latest('verified_at')
             ->paginate(12, ['*'], 'providers_page')
             ->withQueryString();
@@ -81,12 +102,12 @@ class ExploreController extends Controller
             ->whereIn('status', [JobRequestStatus::Published, JobRequestStatus::InConversation])
             ->when($type !== 'all' && $type !== 'job_request', fn (Builder $query) => $query->whereRaw('1 = 0'))
             ->when($term !== '', fn (Builder $query) => $query->where(fn (Builder $query) => $query->where('title', 'like', "%{$term}%")->orWhere('description', 'like', "%{$term}%")))
-            ->when($communityId, fn (Builder $query) => $query->whereHas('client', fn (Builder $user) => $user->where('community_id', $communityId)))
+            ->when($territoryCommunityIds !== null, fn (Builder $query) => $query->whereHas('client', fn (Builder $user) => $user->whereIn('community_id', $territoryCommunityIds)))
             ->latest('published_at')
             ->paginate(12, ['*'], 'requests_page')
             ->withQueryString();
 
-        return view('explore.index', compact('filters', 'listings', 'providers', 'jobRequests', 'type', 'communities'));
+        return view('explore.index', compact('filters', 'listings', 'providers', 'jobRequests', 'type', 'communities', 'scope', 'selectedCommunity', 'radiusKm', 'radiusSearchAvailable'));
     }
 
     private function minorUnits(mixed $value): ?int

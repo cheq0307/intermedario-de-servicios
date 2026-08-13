@@ -20,7 +20,7 @@ class RegisteredUserController extends Controller
 {
     public function create(): View
     {
-        $communities = Community::query()->where('is_active', true)->orderBy('distance_km')->orderBy('name')->get();
+        $communities = Community::query()->where('is_active', true)->orderBy('name')->get();
 
         return view('auth.register', compact('communities'));
     }

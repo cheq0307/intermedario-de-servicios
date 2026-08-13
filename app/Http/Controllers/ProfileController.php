@@ -29,7 +29,7 @@ class ProfileController extends Controller
     public function edit(): View
     {
         $user = request()->user()->load(['vendor', 'community']);
-        $communities = Community::query()->where('is_active', true)->orderBy('distance_km')->orderBy('name')->get();
+        $communities = Community::query()->where('is_active', true)->orderBy('name')->get();
 
         return view('profiles.edit', compact('user', 'communities'));
     }

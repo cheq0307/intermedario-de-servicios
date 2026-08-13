@@ -199,13 +199,26 @@ class AdminAuthorizationTest extends TestCase
                 'name' => 'San Miguel',
                 'municipality' => 'Municipio Ejemplo',
                 'state' => 'Puebla',
-                'distance_km' => 42.5,
+                'latitude' => 19.4326077,
+                'longitude' => -99.1332080,
+                'default_radius_km' => 12,
             ])
             ->assertRedirect();
 
         $community = Community::where('name', 'San Miguel')->firstOrFail();
-        $this->assertSame('42.50', $community->distance_km);
+        $this->assertSame('19.4326077', $community->latitude);
+        $this->assertSame('-99.1332080', $community->longitude);
+        $this->assertSame('12.00', $community->default_radius_km);
         $this->assertDatabaseHas('audit_logs', ['action' => 'community.created', 'subject_id' => $community->id]);
+        $this->patch(route('admin.communities.update', $community), [
+            'latitude' => 19.5000000,
+            'longitude' => -99.2000000,
+            'default_radius_km' => 20,
+        ])->assertRedirect();
+        $this->assertSame('19.5000000', $community->fresh()->latitude);
+        $this->assertSame('20.00', $community->fresh()->default_radius_km);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'community.updated', 'subject_id' => $community->id]);
+
 
         $this->get(route('admin.index'))
             ->assertOk()

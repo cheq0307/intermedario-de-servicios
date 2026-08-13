@@ -55,8 +55,8 @@ class AdminController extends Controller
                 ->get();
         }
         $auditLogs = AuditLog::with('user:id,name')->latest('created_at')->limit(30)->get();
-        $communities = Community::query()->withCount('users')->orderBy('distance_km')->orderBy('name')->get();
-        $auditActions = ['admin.granted' => 'Administrador asignado', 'admin.revoked' => 'Permiso de administrador retirado', 'vendor.active' => 'Proveedor aprobado o reactivado', 'vendor.rejected' => 'Cambios solicitados al proveedor', 'vendor.suspended' => 'Proveedor suspendido', 'community.created' => 'Comunidad agregada'];
+        $communities = Community::query()->withCount('users')->orderBy('name')->get();
+        $auditActions = ['admin.granted' => 'Administrador asignado', 'admin.revoked' => 'Permiso de administrador retirado', 'vendor.active' => 'Proveedor aprobado o reactivado', 'vendor.rejected' => 'Cambios solicitados al proveedor', 'vendor.suspended' => 'Proveedor suspendido', 'community.created' => 'Comunidad agregada', 'community.updated' => 'Centro comunitario actualizado'];
         $auditSubjects = ['User' => 'Usuario', 'Vendor' => 'Proveedor', 'Community' => 'Comunidad'];
         $isSuperadmin = $request->user()->hasRole('superadmin');
 
@@ -114,7 +114,9 @@ class AdminController extends Controller
             'name' => ['required', 'string', 'max:120', 'unique:communities,name'],
             'municipality' => ['required', 'string', 'max:120'],
             'state' => ['nullable', 'string', 'max:120'],
-            'distance_km' => ['required', 'numeric', 'min:0', 'max:9999.99'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
+            'default_radius_km' => ['required', 'numeric', 'min:1', 'max:100'],
         ]);
 
         $community = Community::create($validated + ['is_active' => true]);
@@ -122,6 +124,23 @@ class AdminController extends Controller
 
         return back()->with('status', 'Comunidad agregada al catálogo territorial.');
     }
+    public function updateCommunity(Request $request, Community $community): RedirectResponse
+    {
+        $this->authorizeAdmin($request);
+        $validated = $request->validate([
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
+            'default_radius_km' => ['required', 'numeric', 'min:1', 'max:100'],
+        ]);
+
+        $community->update($validated);
+        $this->audit($request, 'community.updated', $community, [
+            'default_radius_km' => $validated['default_radius_km'],
+        ]);
+
+        return back()->with('status', 'Centro y radio de la comunidad actualizados.');
+    }
+
 
     public function grantAdmin(Request $request, User $user): RedirectResponse
     {

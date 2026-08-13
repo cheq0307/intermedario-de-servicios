@@ -88,6 +88,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/trabajos/{order}/calificaciones', [ReviewController::class, 'store'])->name('reviews.store');
         Route::get('/administracion', [AdminController::class, 'index'])->name('admin.index');
         Route::get('/administracion/usuarios', [AdminDirectoryController::class, 'users'])->name('admin.users.index');
+        Route::get('/administracion/proveedores/{vendor}', [AdminDirectoryController::class, 'showVendor'])->name('admin.vendors.show');
         Route::get('/administracion/proveedores', [AdminDirectoryController::class, 'vendors'])->name('admin.vendors.index');
         Route::patch('/administracion/proveedores/{vendor}/aprobar', [AdminController::class, 'approveVendor'])->name('admin.vendors.approve');
         Route::patch('/administracion/proveedores/{vendor}/rechazar', [AdminController::class, 'rejectVendor'])->name('admin.vendors.reject');

@@ -73,6 +73,10 @@ class Vendor extends Model
             ->filter(fn (string $label, string $field): bool => blank($this->{$field}))
             ->all();
 
+        if (! $this->categories()->where('is_active', true)->exists()) {
+            $missing['categories'] = 'al menos un rubro ofrecido';
+        }
+
         if (! $this->businessHoursConfigured()) {
             $missing['business_hours'] = 'horario de atención';
         }

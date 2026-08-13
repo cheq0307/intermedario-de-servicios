@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AuditLog;
+use App\Models\Category;
 use App\Models\Community;
 use App\Models\User;
 use App\Models\Vendor;
@@ -46,9 +47,10 @@ class AdminAuthorizationTest extends TestCase
             'status' => 'pending',
             'submitted_at' => now(),
         ]);
+        $vendor->categories()->attach(Category::query()->value('id'));
         $target = User::factory()->create();
 
-        $this->actingAs($admin)->get(route('admin.index'))->assertOk()->assertSee('Negocio pendiente');
+        $this->actingAs($admin)->get(route('admin.index'))->assertOk()->assertSee('1 solicitudes pendientes')->assertDontSee('Negocio pendiente');
         $this->actingAs($admin)->patch(route('admin.vendors.approve', $vendor))->assertRedirect();
         $this->assertSame('active', $vendor->fresh()->status);
         $this->assertNotNull($vendor->fresh()->verified_at);
@@ -99,13 +101,13 @@ class AdminAuthorizationTest extends TestCase
             'status' => 'pending',
             'submitted_at' => now(),
         ]);
+        $vendor->categories()->attach(Category::query()->value('id'));
 
         $this->actingAs($admin)
             ->get(route('admin.index'))
             ->assertOk()
-            ->assertSee('Proveedores pendientes')
-            ->assertSee('Servicios listos')
-            ->assertSee('Aprobar proveedor');
+            ->assertSee('1 solicitudes pendientes')
+            ->assertDontSee('Aprobar proveedor');
 
         $this->patch(route('admin.vendors.approve', $vendor))->assertRedirect();
 
@@ -218,7 +220,6 @@ class AdminAuthorizationTest extends TestCase
         $this->assertSame('19.5000000', $community->fresh()->latitude);
         $this->assertSame('20.00', $community->fresh()->default_radius_km);
         $this->assertDatabaseHas('audit_logs', ['action' => 'community.updated', 'subject_id' => $community->id]);
-
 
         $this->get(route('admin.index'))
             ->assertOk()

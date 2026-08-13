@@ -2,17 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Category;
 use App\Models\AuditLog;
+use App\Models\Category;
 use App\Models\Community;
 use App\Models\Dispute;
 use App\Models\Order;
+use App\Models\PostalCode;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Notifications\MarketplaceActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Role;
@@ -125,11 +127,28 @@ class AdminController extends Controller
             'default_radius_km' => ['required', 'numeric', 'min:1', 'max:100'],
         ]);
 
-        $community = Community::create($validated + ['is_active' => true]);
+        $community = DB::transaction(function () use ($validated): Community {
+            $community = Community::create($validated + ['is_active' => true]);
+
+            if (! empty($validated['postal_code'])) {
+                PostalCode::query()->updateOrCreate([
+                    'postal_code' => $validated['postal_code'],
+                    'settlement' => $validated['name'],
+                    'municipality' => $validated['municipality'],
+                ], [
+                    'settlement_type' => 'Comunidad registrada',
+                    'state' => $validated['state'] ?? null,
+                    'city' => $validated['municipality'],
+                ]);
+            }
+
+            return $community;
+        });
         $this->audit($request, 'community.created', $community);
 
         return back()->with('status', 'Comunidad agregada al catálogo territorial.');
     }
+
     public function updateCommunity(Request $request, Community $community): RedirectResponse
     {
         $this->authorizeAdmin($request);
@@ -146,11 +165,12 @@ class AdminController extends Controller
 
         return back()->with('status', 'Centro y radio de la comunidad actualizados.');
     }
+
     public function storeCategory(Request $request): RedirectResponse
     {
         $this->authorizeAdmin($request);
         $validated = $request->validate(['name' => ['required', 'string', 'max:100']]);
-        $slug = \Illuminate\Support\Str::slug($validated['name']);
+        $slug = Str::slug($validated['name']);
         abort_if($slug === '', 422, 'El nombre del rubro no es válido.');
         $category = Category::firstOrCreate(['slug' => $slug], ['name' => $validated['name'], 'is_active' => true]);
         if (! $category->wasRecentlyCreated) {
@@ -172,8 +192,6 @@ class AdminController extends Controller
 
         return back()->with('status', $category->is_active ? 'Rubro reactivado.' : 'Rubro desactivado.');
     }
-
-
 
     public function grantAdmin(Request $request, User $user): RedirectResponse
     {

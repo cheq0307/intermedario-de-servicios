@@ -65,6 +65,20 @@ class AdminDirectoryController extends Controller
         return view('admin.vendors', compact('vendors', 'communities', 'filters'));
     }
 
+    public function showVendor(Request $request, Vendor $vendor): View
+    {
+        $this->authorizeAdmin($request);
+        abort_if($vendor->user_id === $request->user()->id, 403, 'No puedes revisar tu propio perfil comercial.');
+
+        $vendor->load([
+            'categories:id,name,slug',
+            'user.community:id,name,municipality,state,postal_code',
+            'user.categoryPreferences:id,name,slug',
+        ])->loadCount(['listings', 'orders']);
+
+        return view('admin.vendors.show', compact('vendor'));
+    }
+
     private function authorizeAdmin(Request $request): void
     {
         abort_unless($request->user()->hasAnyRole(['admin', 'superadmin']), 403);

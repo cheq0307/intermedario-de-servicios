@@ -85,9 +85,8 @@
             </div>
         </section>
 
-        <section class="mt-8 rounded-[1.75rem] border border-[#F97316]/20 bg-white p-5 shadow-sm sm:p-6" id="aprobaciones">
         <section class="mt-8 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6" id="rubros">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Catálogo comercial</p><h2 class="mt-1 text-xl font-black">Rubros, servicios e intereses</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Este catálogo alimenta perfiles, publicaciones, filtros, notificaciones y recomendaciones.</p></div>
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Configuración global</p><h2 class="mt-1 text-xl font-black">Catálogo maestro de rubros</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Define las opciones disponibles para toda Plaza Local. No representa los intereses personales de esta cuenta administrativa: cada usuario elige “Mis intereses” y, por separado, “Lo que ofrezco”.</p></div>
                 <form class="flex gap-2" method="POST" action="{{ route('admin.categories.store') }}">@csrf<input class="min-w-0 rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" name="name" required maxlength="100" placeholder="Ej. Taxi o comida local"><button class="rounded-full bg-[#123B4A] px-5 py-3 text-sm font-black text-white" type="submit">Agregar rubro</button></form>
             </div>
             <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -100,21 +99,8 @@
             </div>
         </section>
 
-            <div class="flex flex-wrap items-center justify-between gap-3"><div><p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Bandeja de revisión</p><h2 class="mt-1 text-xl font-black">Proveedores pendientes</h2></div><span class="rounded-full bg-[#FFF1E8] px-4 py-2 text-xs font-black text-[#D85B0B]">{{ $pendingVendors->count() }} pendientes</span></div>
-            <div class="mt-5 grid gap-4 lg:grid-cols-2">
-                @forelse($pendingVendors as $vendor)
-                    @php($missing = $vendor->missingReviewRequirements())
-                    @php($ready = $vendor->isReadyForReview())
-                    <article class="rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] p-5">
-                        <div class="flex items-start justify-between gap-3"><div><h3 class="font-black">{{ $vendor->display_name }}</h3><p class="mt-1 text-xs font-bold text-[#6B7D83]">{{ $vendor->user->email }}</p></div><span class="rounded-full px-3 py-1 text-xs font-black {{ $ready ? 'bg-[#E9F7F0] text-[#14734A]' : 'bg-[#FFF4D6] text-[#79551E]' }}">{{ $ready ? 'Lista para revisar' : 'Incompleta' }}</span></div>
-                        <div class="mt-4 text-sm font-semibold leading-6 text-[#536A72]"><p>Correo: <strong>{{ $vendor->user->hasVerifiedEmail() ? 'verificado' : 'sin verificar' }}</strong></p><p>Especialidad: <strong>{{ $vendor->specialty ?: 'pendiente' }}</strong></p><p>Zona: <strong>{{ $vendor->service_area ?: 'pendiente' }}</strong></p></div>
-                        @if(!$ready)<p class="mt-3 rounded-xl bg-[#FFF4D6] px-3 py-2 text-xs font-bold text-[#79551E]">Falta: {{ collect($missing)->values()->join(', ') }}{{ !$vendor->user->hasVerifiedEmail() ? ($missing ? ', ' : '').'verificar correo' : '' }}.</p>@endif
-                        <div class="mt-4 flex flex-wrap gap-2"><a class="rounded-full border border-[#123B4A]/15 bg-white px-4 py-2 text-xs font-black" href="{{ route('profile.show', $vendor->user) }}">Ver perfil</a>@if($ready)<form method="POST" action="{{ route('admin.vendors.approve', $vendor) }}">@csrf @method('PATCH')<button class="rounded-full bg-[#14734A] px-4 py-2 text-xs font-black text-white" type="submit">Aprobar proveedor</button></form><form class="flex min-w-[240px] flex-1 gap-2" method="POST" action="{{ route('admin.vendors.reject', $vendor) }}">@csrf @method('PATCH')<input class="min-w-0 flex-1 rounded-full border border-red-200 bg-white px-3 py-2 text-xs" name="reason" minlength="10" maxlength="1000" required placeholder="Motivo de devolución"><button class="rounded-full border border-red-200 px-4 py-2 text-xs font-black text-red-700" type="submit">Solicitar cambios</button></form>@else<span class="rounded-full bg-[#E5E9E7] px-4 py-2 text-xs font-black text-[#70817B]">Esperando datos</span>@endif</div>
-                    </article>
-                @empty
-                    <div class="rounded-2xl border border-dashed border-[#123B4A]/20 p-8 text-center font-bold text-[#6B7D83] lg:col-span-2">No hay proveedores pendientes por revisar.</div>
-                @endforelse
-            </div>
+        <section class="mt-8 rounded-[1.75rem] border border-[#F97316]/20 bg-white p-5 shadow-sm sm:p-6" id="aprobaciones">
+            <div class="flex flex-wrap items-center justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Avisos de revisión</p><h2 class="mt-1 text-xl font-black">{{ $pendingVendors->count() }} solicitudes pendientes</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Esta tarjeta solo avisa el trabajo pendiente. La información completa y las decisiones están concentradas en el módulo de proveedores.</p></div><a class="rounded-full bg-[#123B4A] px-5 py-3 text-sm font-black text-white" href="{{ route('admin.vendors.index', ['status' => 'pending']) }}">Abrir pendientes</a></div>
         </section>
 
         <div class="mt-8 grid gap-6 xl:grid-cols-2">
@@ -215,7 +201,7 @@
                 status.textContent = `${data.places.length} asentamiento(s) encontrado(s). Puedes elegir otro en “Nombre de la comunidad”.`;
                 status.className = 'mt-1 block text-xs font-bold text-[#14734A]';
             } catch (error) {
-                status.textContent = 'No encontramos ese CP. Verifica que el catálogo oficial esté importado.';
+                status.textContent = 'Ese CP no está en el catálogo actual. Completa manualmente comunidad, municipio y estado; al guardar quedará disponible para futuras consultas.';
                 status.className = 'mt-1 block text-xs font-bold text-red-600';
             }
         });

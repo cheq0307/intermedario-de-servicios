@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Community;
 use App\Models\JobRequest;
 use App\Models\Listing;
 use App\Models\User;
@@ -32,6 +33,26 @@ class ExploreTest extends TestCase
         $viewer = User::factory()->create();
 
         $this->actingAs($viewer)->get(route('explore'))->assertOk()->assertDontSee('Comercio suspendido')->assertDontSee('Producto oculto');
+    }
+
+    public function test_user_can_limit_commercial_search_to_an_administered_community(): void
+    {
+        $mainCommunity = Community::query()->firstOrFail();
+        $otherCommunity = Community::create(['name' => 'Pueblo vecino', 'municipality' => 'Municipio vecino', 'distance_km' => 35, 'is_active' => true]);
+        [$mainProvider, $mainVendor] = $this->provider('Proveedor del centro', 'Plomería');
+        [$otherProvider, $otherVendor] = $this->provider('Proveedor del pueblo vecino', 'Electricidad');
+        $mainProvider->update(['community_id' => $mainCommunity->id]);
+        $otherProvider->update(['community_id' => $otherCommunity->id]);
+        Listing::create(['vendor_id' => $mainVendor->id, 'type' => 'service', 'name' => 'Servicio del centro', 'slug' => 'servicio-centro', 'price_type' => 'quote', 'is_active' => true]);
+        Listing::create(['vendor_id' => $otherVendor->id, 'type' => 'service', 'name' => 'Servicio del pueblo vecino', 'slug' => 'servicio-vecino', 'price_type' => 'quote', 'is_active' => true]);
+        $viewer = User::factory()->create();
+
+        $this->actingAs($viewer)
+            ->get(route('explore', ['community_id' => $otherCommunity->id]))
+            ->assertOk()
+            ->assertSee('Servicio del pueblo vecino')
+            ->assertDontSee('Servicio del centro')
+            ->assertSee('El feed social muestra toda la actividad.');
     }
 
     public function test_price_filters_use_mxn_values(): void

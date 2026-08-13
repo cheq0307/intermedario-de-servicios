@@ -151,10 +151,10 @@ class AdminAuthorizationTest extends TestCase
     {
         $superadmin = User::factory()->create(['name' => 'Cuenta propietaria']);
         $superadmin->syncRoles([Role::findOrCreate('superadmin')]);
-        User::factory()->create(['name' => 'Otra persona']);
+        User::factory()->create(['name' => 'Otra persona', 'email' => 'otra@example.test']);
 
         $this->actingAs($superadmin)
-            ->get(route('admin.index'))
+            ->get(route('admin.index', ['admin_q' => 'Otra']))
             ->assertOk()
             ->assertSee('Otra persona')
             ->assertDontSee('Cuenta propietaria')
@@ -212,6 +212,24 @@ class AdminAuthorizationTest extends TestCase
             ->assertSee('¿Qué puede hacer cada administrador?')
             ->assertSee('Comunidad agregada')
             ->assertDontSee('community.created');
+    }
+
+    public function test_admin_candidates_only_appear_after_a_search(): void
+    {
+        $superadmin = User::factory()->create();
+        $superadmin->syncRoles([Role::findOrCreate('superadmin')]);
+        $candidate = User::factory()->create(['name' => 'Candidata Delegada', 'email' => 'delegada@example.test']);
+
+        $this->actingAs($superadmin)
+            ->get(route('admin.index'))
+            ->assertOk()
+            ->assertDontSee($candidate->email)
+            ->assertSee('Buscar usuario');
+
+        $this->get(route('admin.index', ['admin_q' => 'delegada@example.test']))
+            ->assertOk()
+            ->assertSee($candidate->email)
+            ->assertSee('Hacer administrador');
     }
 
     public function test_regular_user_cannot_access_administration(): void

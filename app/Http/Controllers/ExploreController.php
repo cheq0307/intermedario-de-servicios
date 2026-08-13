@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Marketplace\Enums\JobRequestStatus;
+use App\Models\Community;
 use App\Models\JobRequest;
 use App\Models\Listing;
 use App\Models\Vendor;
@@ -25,7 +26,7 @@ class ExploreController extends Controller
             'type' => ['nullable', Rule::in(['all', 'product', 'service', 'provider', 'job_request'])],
             'min_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'max_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
-            'city' => ['nullable', 'string', 'max:100'],
+            'community_id' => ['nullable', 'integer', Rule::exists('communities', 'id')->where('is_active', true)],
         ]);
 
         if (isset($filters['min_price'], $filters['max_price']) && (float) $filters['max_price'] < (float) $filters['min_price']) {
@@ -36,6 +37,8 @@ class ExploreController extends Controller
         $type = $filters['type'] ?? 'all';
         $minPrice = $this->minorUnits($filters['min_price'] ?? null);
         $maxPrice = $this->minorUnits($filters['max_price'] ?? null);
+        $communityId = isset($filters['community_id']) ? (int) $filters['community_id'] : null;
+        $communities = Community::query()->where('is_active', true)->orderBy('distance_km')->orderBy('name')->get();
 
         $listings = Listing::query()
             ->with(['vendor.user:id,name,avatar_path,city'])
@@ -52,7 +55,7 @@ class ExploreController extends Controller
             })
             ->when($minPrice !== null, fn (Builder $query) => $query->where('price_amount', '>=', $minPrice))
             ->when($maxPrice !== null, fn (Builder $query) => $query->where('price_amount', '<=', $maxPrice))
-            ->when(filled($filters['city'] ?? null), fn (Builder $query) => $query->whereHas('vendor.user', fn (Builder $user) => $user->where('city', 'like', '%'.$filters['city'].'%')))
+            ->when($communityId, fn (Builder $query) => $query->whereHas('vendor.user', fn (Builder $user) => $user->where('community_id', $communityId)))
             ->latest()
             ->paginate(12, ['*'], 'listings_page')
             ->withQueryString();
@@ -68,7 +71,7 @@ class ExploreController extends Controller
                         ->orWhere('description', 'like', "%{$term}%");
                 });
             })
-            ->when(filled($filters['city'] ?? null), fn (Builder $query) => $query->whereHas('user', fn (Builder $user) => $user->where('city', 'like', '%'.$filters['city'].'%')))
+            ->when($communityId, fn (Builder $query) => $query->whereHas('user', fn (Builder $user) => $user->where('community_id', $communityId)))
             ->latest('verified_at')
             ->paginate(12, ['*'], 'providers_page')
             ->withQueryString();
@@ -78,12 +81,12 @@ class ExploreController extends Controller
             ->whereIn('status', [JobRequestStatus::Published, JobRequestStatus::InConversation])
             ->when($type !== 'all' && $type !== 'job_request', fn (Builder $query) => $query->whereRaw('1 = 0'))
             ->when($term !== '', fn (Builder $query) => $query->where(fn (Builder $query) => $query->where('title', 'like', "%{$term}%")->orWhere('description', 'like', "%{$term}%")))
-            ->when(filled($filters['city'] ?? null), fn (Builder $query) => $query->whereHas('client', fn (Builder $user) => $user->where('city', 'like', '%'.$filters['city'].'%')))
+            ->when($communityId, fn (Builder $query) => $query->whereHas('client', fn (Builder $user) => $user->where('community_id', $communityId)))
             ->latest('published_at')
             ->paginate(12, ['*'], 'requests_page')
             ->withQueryString();
 
-        return view('explore.index', compact('filters', 'listings', 'providers', 'jobRequests', 'type'));
+        return view('explore.index', compact('filters', 'listings', 'providers', 'jobRequests', 'type', 'communities'));
     }
 
     private function minorUnits(mixed $value): ?int

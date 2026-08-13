@@ -125,7 +125,35 @@
                     @endforelse
                 </div>
             </section>
-            <section class="rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6"><h2 class="text-xl font-black">Usuarios y autoridad</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Solo el superadministrador puede delegar o retirar administradores.</p><div class="mt-5 space-y-3">@foreach($users as $user)<article class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#FAF8F4] p-4"><div><strong>{{ $user->name }}</strong><p class="text-xs font-bold text-[#6B7D83]">{{ $user->email }} · {{ $user->roles->pluck('name')->join(', ') }}</p></div>@if($isSuperadmin && !$user->hasRole('superadmin'))<div>@if($user->hasRole('admin'))<form method="POST" action="{{ route('admin.users.revoke', $user) }}">@csrf @method('DELETE')<button class="rounded-full border border-red-200 px-4 py-2 text-xs font-black text-red-700">Retirar admin</button></form>@else<form method="POST" action="{{ route('admin.users.grant', $user) }}">@csrf<button class="rounded-full bg-[#123B4A] px-4 py-2 text-xs font-black text-white">Hacer admin</button></form>@endif</div>@endif</article>@endforeach</div></section>
+            <section class="rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6">
+                <h2 class="text-xl font-black">Administradores y delegación</h2>
+                <p class="mt-2 text-sm font-semibold text-[#6B7D83]">Aquí solo aparecen los administradores actuales. Busca por nombre o correo para delegar a otra persona.</p>
+                @if($isSuperadmin)
+                    <form class="mt-5 flex flex-col gap-2 sm:flex-row" method="GET" action="{{ route('admin.index') }}">
+                        <label class="min-w-0 flex-1"><span class="sr-only">Buscar usuario</span><input class="w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" type="search" name="admin_q" value="{{ $adminSearch }}" minlength="2" maxlength="100" placeholder="Nombre o correo del usuario" required></label>
+                        <button class="rounded-full bg-[#123B4A] px-5 py-3 text-sm font-black text-white" type="submit">Buscar usuario</button>
+                        @if($adminSearch !== '')<a class="self-center px-3 text-sm font-black text-[#D85B0B]" href="{{ route('admin.index') }}">Limpiar</a>@endif
+                    </form>
+                    @if($adminSearch !== '')
+                        <div class="mt-4 space-y-2">
+                            <p class="text-xs font-black uppercase tracking-[.12em] text-[#F97316]">Resultados para “{{ $adminSearch }}”</p>
+                            @forelse($adminCandidates as $candidate)
+                                <article class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#123B4A]/10 bg-white p-4"><div><strong>{{ $candidate->name }}</strong><p class="mt-1 text-xs font-bold text-[#6B7D83]">{{ $candidate->email }} · {{ $candidate->commercialRoleLabel() }}{{ $candidate->community ? ' · '.$candidate->community->name : '' }}</p></div><form method="POST" action="{{ route('admin.users.grant', $candidate) }}">@csrf<button class="rounded-full bg-[#123B4A] px-4 py-2 text-xs font-black text-white" type="submit">Hacer administrador</button></form></article>
+                            @empty
+                                <p class="rounded-2xl border border-dashed border-[#123B4A]/20 p-5 text-sm font-bold text-[#6B7D83]">No encontramos usuarios disponibles con ese nombre o correo.</p>
+                            @endforelse
+                        </div>
+                    @endif
+                @endif
+                <div class="mt-6 space-y-3">
+                    <p class="text-xs font-black uppercase tracking-[.12em] text-[#14734A]">Administradores actuales</p>
+                    @forelse($administrators as $administrator)
+                        <article class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#FAF8F4] p-4"><div><strong>{{ $administrator->name }}</strong><p class="mt-1 text-xs font-bold text-[#6B7D83]">{{ $administrator->email }}{{ $administrator->community ? ' · '.$administrator->community->name : '' }}</p></div>@if($isSuperadmin)<form method="POST" action="{{ route('admin.users.revoke', $administrator) }}">@csrf @method('DELETE')<button class="rounded-full border border-red-200 px-4 py-2 text-xs font-black text-red-700" type="submit">Retirar administrador</button></form>@endif</article>
+                    @empty
+                        <p class="rounded-2xl border border-dashed border-[#123B4A]/20 p-5 text-sm font-bold text-[#6B7D83]">Todavía no hay administradores delegados.</p>
+                    @endforelse
+                </div>
+            </section>
         </div>
 
 

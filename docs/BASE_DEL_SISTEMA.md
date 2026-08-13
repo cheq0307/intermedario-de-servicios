@@ -38,6 +38,12 @@ El `superadmin` tendrá visibilidad y control global sobre todas las comunidades
 
 Abrir una nueva plaza significará crear y configurar una comunidad dentro del mismo despliegue: nombre, slug, centro geográfico, radio, estado, reglas y administradores responsables. Las consultas y políticas deberán aplicar siempre el alcance comunitario, mientras los reportes globales quedarán reservados al `superadmin`.
 
+## Visibilidad social y alcance comercial
+
+El feed social mantiene visibles las publicaciones y solicitudes de todas las comunidades activas para favorecer descubrimiento e interacción. La exploración comercial es independiente: el usuario puede delimitar productos, proveedores y solicitudes seleccionando una comunidad administrada.
+
+La distancia registrada desde la sede sirve como referencia operativa, pero no representa por sí sola la distancia real entre dos pueblos. El filtrado por radio en kilómetros se habilitará cuando cada comunidad cuente con coordenadas centrales verificadas; entonces se calculará geográficamente y no mediante una resta de distancias aproximadas.
+
 ## Superficies principales
 
 1. **Explorar:** mezcla controlada de productos, servicios, portafolios y solicitudes vigentes.

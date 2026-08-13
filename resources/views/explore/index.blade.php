@@ -18,8 +18,9 @@
             <input class="rounded-2xl bg-[#FAF8F4] px-4 py-3" type="number" name="min_price" value="{{ $filters['min_price'] ?? '' }}" min="0" step="0.01" placeholder="Precio mín.">
             <input class="rounded-2xl bg-[#FAF8F4] px-4 py-3" type="number" name="max_price" value="{{ $filters['max_price'] ?? '' }}" min="0" step="0.01" placeholder="Precio máx.">
             <button class="rounded-full bg-[#123B4A] px-6 py-3 font-black text-white" type="submit">Buscar</button>
-            <input class="rounded-2xl bg-[#FAF8F4] px-4 py-3 md:col-span-2" type="text" name="city" value="{{ $filters['city'] ?? '' }}" maxlength="100" placeholder="Pueblo o ciudad (opcional)">
-            @if(request()->hasAny(['q', 'type', 'min_price', 'max_price', 'city']))<a class="self-center text-center text-sm font-black text-[#D85B0B]" href="{{ route('explore') }}">Limpiar filtros</a>@endif
+            <label class="md:col-span-2"><span class="sr-only">Comunidad donde buscar</span><select class="w-full rounded-2xl bg-[#FAF8F4] px-4 py-3" name="community_id"><option value="">Todas las comunidades</option>@foreach($communities as $community)<option value="{{ $community->id }}" @selected((string) ($filters['community_id'] ?? '') === (string) $community->id)>{{ $community->display_label }}</option>@endforeach</select></label>
+            <p class="self-center text-xs font-bold leading-5 text-[#6B7D83] md:col-span-2">El feed social muestra toda la actividad. Este filtro delimita productos, proveedores y solicitudes a una comunidad registrada.</p>
+            @if(request()->hasAny(['q', 'type', 'min_price', 'max_price', 'community_id']))<a class="self-center text-center text-sm font-black text-[#D85B0B]" href="{{ route('explore') }}">Limpiar filtros</a>@endif
         </form>
         @if($errors->any())<p class="mt-4 rounded-2xl bg-red-50 p-4 font-bold text-red-700">{{ $errors->first() }}</p>@endif
 

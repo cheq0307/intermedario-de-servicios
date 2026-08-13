@@ -10,7 +10,7 @@ class Community extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'municipality', 'state', 'latitude', 'longitude', 'default_radius_km', 'is_active'];
+    protected $fillable = ['name', 'municipality', 'state', 'postal_code', 'latitude', 'longitude', 'default_radius_km', 'is_active'];
 
     protected function casts(): array
     {

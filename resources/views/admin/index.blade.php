@@ -12,7 +12,7 @@
             <a class="flex items-center gap-3 font-black" href="{{ route('admin.index') }}"><span class="grid size-10 place-items-center rounded-2xl bg-[#123B4A] text-white">P</span><span>Plaza Local</span></a>
             <div class="flex flex-wrap items-center justify-end gap-2">
                 <span class="hidden rounded-full bg-[#FFF1E8] px-4 py-2 text-xs font-black text-[#D85B0B] sm:inline-flex">{{ $isSuperadmin ? 'Superadministrador' : 'Administrador' }}</span>
-                <a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="#moderacion-proveedores">Proveedores</a><a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('disputes.admin-index') }}">Disputas</a>
+                <a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('admin.users.index') }}">Usuarios</a><a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('admin.vendors.index') }}">Proveedores</a><a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('disputes.admin-index') }}">Disputas</a>
                 @unless($isSuperadmin)<a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('explore') }}">Explorar plaza</a>@endunless
                 <form method="POST" action="{{ route('logout') }}">@csrf<button class="rounded-full border border-red-200 bg-white px-4 py-2 text-sm font-black text-red-700" type="submit">Cerrar sesión</button></form>
             </div>
@@ -34,10 +34,12 @@
             @endif
         </div>
 
-        <section class="mt-7 grid gap-4 grid-cols-2 lg:grid-cols-4">
-            @foreach(['Usuarios'=>$metrics['users'],'Pendientes'=>$metrics['pending_vendors'],'Disputas abiertas'=>$metrics['open_disputes'],'Órdenes activas'=>$metrics['active_orders']] as $label=>$value)
-                <div class="rounded-3xl border border-[#123B4A]/10 bg-white p-5 shadow-sm"><strong class="text-3xl">{{ $value }}</strong><p class="mt-2 text-sm font-bold text-[#6B7D83]">{{ $label }}</p></div>
-            @endforeach
+        <section class="mt-7 grid gap-4 grid-cols-2 lg:grid-cols-5">
+            <a class="rounded-3xl border border-[#123B4A]/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5" href="{{ route('admin.users.index') }}"><strong class="text-3xl">{{ $metrics['users'] }}</strong><p class="mt-2 text-sm font-bold text-[#6B7D83]">Usuarios</p><span class="mt-3 block text-xs font-black text-[#14734A]">Abrir directorio →</span></a>
+            <a class="rounded-3xl border border-[#123B4A]/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5" href="{{ route('admin.vendors.index') }}"><strong class="text-3xl">{{ $metrics['vendors'] }}</strong><p class="mt-2 text-sm font-bold text-[#6B7D83]">Proveedores</p><span class="mt-3 block text-xs font-black text-[#14734A]">Gestionar →</span></a>
+            <a class="rounded-3xl border border-[#F97316]/20 bg-white p-5 shadow-sm transition hover:-translate-y-0.5" href="{{ route('admin.vendors.index', ['status' => 'pending']) }}"><strong class="text-3xl">{{ $metrics['pending_vendors'] }}</strong><p class="mt-2 text-sm font-bold text-[#6B7D83]">Pendientes</p><span class="mt-3 block text-xs font-black text-[#D85B0B]">Revisar →</span></a>
+            <a class="rounded-3xl border border-[#123B4A]/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5" href="{{ route('disputes.admin-index') }}"><strong class="text-3xl">{{ $metrics['open_disputes'] }}</strong><p class="mt-2 text-sm font-bold text-[#6B7D83]">Disputas abiertas</p><span class="mt-3 block text-xs font-black text-[#14734A]">Atender →</span></a>
+            <div class="rounded-3xl border border-[#123B4A]/10 bg-white p-5 shadow-sm"><strong class="text-3xl">{{ $metrics['active_orders'] }}</strong><p class="mt-2 text-sm font-bold text-[#6B7D83]">Órdenes activas</p><span class="mt-3 block text-xs font-bold text-[#8A999E]">Resumen operativo</span></div>
         </section>
 
         <section class="mt-8 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6">
@@ -52,9 +54,10 @@
         <section class="mt-8 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6" id="comunidades">
             <div><p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Cobertura territorial</p><h2 class="mt-1 text-xl font-black">Comunidades disponibles</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Cada comunidad es un centro local independiente. Sus coordenadas permiten encontrar otras comunidades dentro del radio elegido.</p></div>
             <form class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4" method="POST" action="{{ route('admin.communities.store') }}">@csrf
-                <label><span class="text-xs font-black">Nombre de la comunidad</span><input class="mt-2 w-full rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" name="name" required maxlength="120" placeholder="Ej. San Miguel"></label>
-                <label><span class="text-xs font-black">Municipio o ciudad</span><input class="mt-2 w-full rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" name="municipality" required maxlength="120"></label>
-                <label><span class="text-xs font-black">Estado</span><input class="mt-2 w-full rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" name="state" maxlength="120"></label>
+                <label><span class="text-xs font-black">Código postal</span><span class="mt-2 flex gap-2"><input id="community-postal-code" class="min-w-0 flex-1 rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" name="postal_code" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="5 dígitos"><button id="lookup-postal-code" class="rounded-xl bg-[#123B4A] px-3 text-xs font-black text-white" type="button">Consultar</button></span><span id="postal-code-status" class="mt-1 block text-xs font-bold text-[#6B7D83]">Completa municipio, estado y asentamiento.</span></label>
+                <label><span class="text-xs font-black">Nombre de la comunidad</span><input id="community-name" class="mt-2 w-full rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" name="name" list="postal-settlements" required maxlength="120" placeholder="Ej. San Miguel"><datalist id="postal-settlements"></datalist></label>
+                <label><span class="text-xs font-black">Municipio o ciudad</span><input id="community-municipality" class="mt-2 w-full rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" name="municipality" required maxlength="120"></label>
+                <label><span class="text-xs font-black">Estado</span><input id="community-state" class="mt-2 w-full rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" name="state" maxlength="120"></label>
                 <label><span class="text-xs font-black">Latitud del centro</span><input class="mt-2 w-full rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" type="number" name="latitude" min="-90" max="90" step="0.0000001" placeholder="Ej. 19.4326077"></label>
                 <label><span class="text-xs font-black">Longitud del centro</span><input class="mt-2 w-full rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" type="number" name="longitude" min="-180" max="180" step="0.0000001" placeholder="Ej. -99.1332080"></label>
                 <label><span class="text-xs font-black">Radio local predeterminado</span><input class="mt-2 w-full rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" type="number" name="default_radius_km" required min="1" max="100" step="0.5" value="8"></label>
@@ -65,7 +68,7 @@
                     <article class="rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] p-4">
                         <div class="flex items-start justify-between gap-3">
                             <div><h3 class="font-black">{{ $community->name }}</h3><p class="mt-1 text-xs font-bold text-[#6B7D83]">{{ $community->municipality }}{{ $community->state ? ', '.$community->state : '' }}</p></div>
-                            <span class="rounded-full bg-white px-3 py-1 text-xs font-black">Radio {{ number_format((float) $community->default_radius_km, 1) }} km</span>
+                            <span class="rounded-full bg-white px-3 py-1 text-xs font-black">{{ $community->postal_code ? 'CP '.$community->postal_code.' · ' : '' }}Radio {{ number_format((float) $community->default_radius_km, 1) }} km</span>
                         </div>
                         <p class="mt-3 text-xs font-bold text-[#536A72]">{{ $community->users_count }} usuarios · {{ $community->is_active ? 'Activa' : 'Inactiva' }}</p>
                         <p class="mt-1 text-xs font-bold {{ $community->hasCoordinates() ? 'text-[#14734A]' : 'text-[#D85B0B]' }}">{{ $community->hasCoordinates() ? 'Centro geográfico configurado' : 'Faltan coordenadas para búsquedas cercanas' }}</p>
@@ -170,5 +173,38 @@
 
         <section class="mt-6 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6"><h2 class="text-xl font-black">Auditoría reciente</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Registro de quién realizó cada cambio administrativo y sobre qué elemento.</p><div class="mt-4 overflow-x-auto"><table class="w-full min-w-[650px] text-left text-sm"><thead><tr class="text-[#6B7D83]"><th class="p-3">Fecha</th><th class="p-3">Responsable</th><th class="p-3">Qué ocurrió</th><th class="p-3">Elemento afectado</th></tr></thead><tbody>@forelse($auditLogs as $log)<tr class="border-t border-[#123B4A]/10"><td class="p-3">{{ $log->created_at->format('d/m/Y H:i') }}</td><td class="p-3">{{ $log->user?->name ?? 'Sistema' }}</td><td class="p-3 font-black">{{ $auditActions[$log->action] ?? str_replace(['.', '_'], ' ', ucfirst($log->action)) }}</td><td class="p-3">{{ $auditSubjects[class_basename($log->subject_type)] ?? class_basename($log->subject_type) }} #{{ $log->subject_id }}</td></tr>@empty<tr><td class="p-6 text-center font-bold text-[#6B7D83]" colspan="4">Todavía no hay acciones administrativas registradas.</td></tr>@endforelse</tbody></table></div></section>
     </main>
+    <script>
+        document.getElementById('lookup-postal-code')?.addEventListener('click', async () => {
+            const postalCode = document.getElementById('community-postal-code').value.trim();
+            const status = document.getElementById('postal-code-status');
+            if (!/^\d{5}$/.test(postalCode)) {
+                status.textContent = 'Escribe exactamente 5 dígitos.';
+                status.className = 'mt-1 block text-xs font-bold text-red-600';
+                return;
+            }
+            status.textContent = 'Consultando catálogo postal…';
+            try {
+                const response = await fetch(`/codigos-postales/${postalCode}`, {headers: {'Accept': 'application/json'}});
+                const data = await response.json();
+                if (!data.found) throw new Error('not-found');
+                const first = data.places[0];
+                document.getElementById('community-municipality').value = first.municipality;
+                document.getElementById('community-state').value = first.state;
+                document.getElementById('community-name').value = first.settlement;
+                const options = document.getElementById('postal-settlements');
+                options.replaceChildren(...data.places.map(place => {
+                    const option = document.createElement('option');
+                    option.value = place.settlement;
+                    option.label = place.settlement_type || 'Asentamiento';
+                    return option;
+                }));
+                status.textContent = `${data.places.length} asentamiento(s) encontrado(s). Puedes elegir otro en “Nombre de la comunidad”.`;
+                status.className = 'mt-1 block text-xs font-bold text-[#14734A]';
+            } catch (error) {
+                status.textContent = 'No encontramos ese CP. Verifica que el catálogo oficial esté importado.';
+                status.className = 'mt-1 block text-xs font-bold text-red-600';
+            }
+        });
+    </script>
 </body>
 </html>

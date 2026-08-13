@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminDirectoryController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ConversationController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\PostEngagementController;
 use App\Http\Controllers\PostManagementController;
+use App\Http\Controllers\PostalCodeController;
 use App\Http\Controllers\ProductOrderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
@@ -24,6 +26,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
 Route::get('/explorar', ExploreController::class)->name('explore');
+Route::get('/codigos-postales/{postalCode}', [PostalCodeController::class, 'show'])->whereNumber('postalCode')->middleware('throttle:60,1')->name('postal-codes.show');
 Route::post('/webhooks/stripe', StripeWebhookController::class)->name('stripe.webhook');
 
 Route::middleware('guest')->group(function () {
@@ -84,6 +87,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/administracion/disputas', [DisputeController::class, 'adminIndex'])->name('disputes.admin-index');
         Route::post('/trabajos/{order}/calificaciones', [ReviewController::class, 'store'])->name('reviews.store');
         Route::get('/administracion', [AdminController::class, 'index'])->name('admin.index');
+        Route::get('/administracion/usuarios', [AdminDirectoryController::class, 'users'])->name('admin.users.index');
+        Route::get('/administracion/proveedores', [AdminDirectoryController::class, 'vendors'])->name('admin.vendors.index');
         Route::patch('/administracion/proveedores/{vendor}/aprobar', [AdminController::class, 'approveVendor'])->name('admin.vendors.approve');
         Route::patch('/administracion/proveedores/{vendor}/rechazar', [AdminController::class, 'rejectVendor'])->name('admin.vendors.reject');
         Route::patch('/administracion/proveedores/{vendor}/suspender', [AdminController::class, 'suspendVendor'])->name('admin.vendors.suspend');

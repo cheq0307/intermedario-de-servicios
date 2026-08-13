@@ -12,6 +12,7 @@ use App\Notifications\MarketplaceActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Role;
 
@@ -22,6 +23,7 @@ class AdminController extends Controller
         $this->authorizeAdmin($request);
         $metrics = [
             'users' => User::count(),
+            'vendors' => Vendor::count(),
             'pending_vendors' => Vendor::where('status', 'pending')->where('user_id', '!=', $request->user()->id)->count(),
             'open_disputes' => Dispute::where('status', 'open')->count(),
             'active_orders' => Order::whereIn('status', ['accepted', 'awaiting_payment', 'paid', 'in_progress', 'ready', 'delivered', 'disputed'])->count(),
@@ -111,9 +113,10 @@ class AdminController extends Controller
     {
         $this->authorizeAdmin($request);
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:120', 'unique:communities,name'],
+            'name' => ['required', 'string', 'max:120', Rule::unique('communities', 'name')->where(fn ($query) => $query->where('municipality', $request->input('municipality')))],
             'municipality' => ['required', 'string', 'max:120'],
             'state' => ['nullable', 'string', 'max:120'],
+            'postal_code' => ['nullable', 'regex:/^\d{5}$/'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
             'default_radius_km' => ['required', 'numeric', 'min:1', 'max:100'],

@@ -38,6 +38,20 @@ El `superadmin` tendrá visibilidad y control global sobre todas las comunidades
 
 Abrir una nueva plaza significará crear y configurar una comunidad dentro del mismo despliegue: nombre, slug, centro geográfico, radio, estado, reglas y administradores responsables. Las consultas y políticas deberán aplicar siempre el alcance comunitario, mientras los reportes globales quedarán reservados al `superadmin`.
 
+## Catálogo territorial y códigos postales
+
+Los códigos postales mexicanos se importan desde el Catálogo Nacional de Códigos Postales de Correos de México. Plaza Local conserva una copia local para consultar sin depender de una API externa durante el registro.
+
+El código postal se utiliza al registrar una comunidad administrada: propone estado, municipio y asentamientos oficiales. No reemplaza la comunidad ni define por sí solo el radio comercial; las coordenadas y el radio continúan perteneciendo a cada comunidad.
+
+La importación se ejecuta con `php artisan plaza:import-postal-codes RUTA_AL_TXT`. Puede repetirse cuando Correos de México publique una actualización; el proceso actualiza registros coincidentes sin duplicarlos.
+
+## Gestión administrativa
+
+El panel administrativo no debe limitarse a contadores. Cada indicador operativo enlaza a una superficie de gestión. Los directorios de usuarios y proveedores son paginados y permiten buscar o filtrar por identidad, capacidad, comunidad, verificación y estado del proveedor.
+
+La administración mantiene superficies separadas para comunidades, solicitudes de proveedor, moderación, disputas, delegación de administradores y auditoría. El `superadmin` conserva visibilidad global; la futura restricción territorial de administradores se resolverá mediante asignaciones explícitas, no ocultando datos únicamente en la interfaz.
+
 ## Visibilidad social y alcance comercial
 
 El feed social mantiene visibles las publicaciones y solicitudes de todas las comunidades activas para favorecer descubrimiento e interacción. La exploración comercial es independiente: el usuario puede delimitar productos, proveedores y solicitudes seleccionando una comunidad administrada.

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Community;
 use App\Models\PostalCode;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
@@ -34,6 +35,38 @@ class PostalCodeTest extends TestCase
             ->assertJsonCount(2, 'places')
             ->assertJsonPath('places.0.settlement', 'Centro')
             ->assertJsonPath('places.0.municipality', 'Puebla');
+    }
+
+    public function test_lookup_returns_only_active_communities_matching_the_postal_code(): void
+    {
+        PostalCode::create([
+            'postal_code' => '74140',
+            'settlement' => 'San Matías Tlalancaleca',
+            'municipality' => 'San Matías Tlalancaleca',
+            'state' => 'Puebla',
+        ]);
+        $active = Community::create([
+            'name' => 'Centro',
+            'municipality' => 'San Matías Tlalancaleca',
+            'state' => 'Puebla',
+            'postal_code' => '74140',
+            'default_radius_km' => 8,
+            'is_active' => true,
+        ]);
+        Community::create([
+            'name' => 'Comunidad inactiva',
+            'municipality' => 'San Matías Tlalancaleca',
+            'state' => 'Puebla',
+            'postal_code' => '74140',
+            'default_radius_km' => 8,
+            'is_active' => false,
+        ]);
+
+        $this->getJson(route('postal-codes.show', '74140'))
+            ->assertOk()
+            ->assertJsonCount(1, 'communities')
+            ->assertJsonPath('communities.0.id', $active->id)
+            ->assertJsonPath('communities.0.name', 'Centro');
     }
 
     public function test_unknown_postal_code_returns_an_empty_successful_lookup(): void

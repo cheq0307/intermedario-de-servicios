@@ -13,6 +13,7 @@ use App\Models\Vendor;
 use App\Notifications\MarketplaceActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -27,6 +28,7 @@ class AdminController extends Controller
         $metrics = [
             'users' => User::count(),
             'vendors' => Vendor::count(),
+            'postal_codes' => PostalCode::count(),
             'pending_vendors' => Vendor::where('status', 'pending')->where('user_id', '!=', $request->user()->id)->count(),
             'open_disputes' => Dispute::where('status', 'open')->count(),
             'active_orders' => Order::whereIn('status', ['accepted', 'awaiting_payment', 'paid', 'in_progress', 'ready', 'delivered', 'disputed'])->count(),
@@ -147,6 +149,28 @@ class AdminController extends Controller
         $this->audit($request, 'community.created', $community);
 
         return back()->with('status', 'Comunidad agregada al catálogo territorial.');
+    }
+
+    public function importPostalCodes(Request $request): RedirectResponse
+    {
+        $this->authorizeAdmin($request);
+        $validated = $request->validate([
+            'catalog' => ['required', 'file', 'max:51200', 'mimetypes:text/plain,text/csv,application/octet-stream'],
+        ], [
+            'catalog.required' => 'Selecciona el TXT oficial de Correos de México.',
+            'catalog.max' => 'El catálogo no puede superar 50 MB.',
+            'catalog.mimetypes' => 'El catálogo debe ser el archivo TXT oficial.',
+        ]);
+
+        $exitCode = Artisan::call('plaza:import-postal-codes', [
+            'file' => $validated['catalog']->getRealPath(),
+        ]);
+        $output = trim(Artisan::output());
+        if ($exitCode !== 0) {
+            return back()->withErrors(['catalog' => $output ?: 'No fue posible importar el catálogo postal.']);
+        }
+
+        return back()->with('status', $output);
     }
 
     public function updateCommunity(Request $request, Community $community): RedirectResponse

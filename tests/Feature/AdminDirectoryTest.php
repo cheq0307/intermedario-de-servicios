@@ -6,6 +6,8 @@ use App\Models\Community;
 use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -106,5 +108,32 @@ class AdminDirectoryTest extends TestCase
             'municipality' => 'Municipio Dos',
             'postal_code' => '75000',
         ]);
+    }
+
+    public function test_admin_can_import_the_official_postal_catalog_from_the_dashboard(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::findOrCreate('admin'));
+        $contents = implode("\n", [
+            'd_codigo|d_asenta|d_tipo_asenta|D_mnpio|d_estado|d_ciudad|d_CP|c_estado|c_oficina|c_CP|c_tipo_asenta|c_mnpio|id_asenta_cpcons|d_zona|c_cve_ciudad',
+            '74140|San Matías Tlalancaleca|Pueblo|San Matías Tlalancaleca|Puebla||74141|21|74141||28|134|0001|Rural|',
+        ]);
+        $upload = UploadedFile::fake()->createWithContent('CPdescarga.txt', $contents);
+
+        try {
+            $this->actingAs($admin)
+                ->post(route('admin.postal-codes.import'), ['catalog' => $upload])
+                ->assertRedirect()
+                ->assertSessionHasNoErrors();
+
+            $this->assertDatabaseHas('postal_codes', [
+                'postal_code' => '74140',
+                'settlement' => 'San Matías Tlalancaleca',
+                'municipality' => 'San Matías Tlalancaleca',
+                'state' => 'Puebla',
+            ]);
+        } finally {
+            File::delete($upload->getPathname());
+        }
     }
 }

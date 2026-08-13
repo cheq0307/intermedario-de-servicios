@@ -12,12 +12,17 @@
             <input class="mt-2 w-full rounded-2xl border border-[#17352b]/15 bg-white px-4 py-3.5 outline-none focus:border-[#1f6b4f] focus:ring-4 focus:ring-[#1f6b4f]/10" type="text" name="name" value="{{ old('name') }}" required autocomplete="name">
             @error('name') <span class="mt-2 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
         </label>
+        <div data-postal-assistant>
+            <label class="block"><span class="text-sm font-black">Código postal</span><span class="mt-2 flex gap-2"><input class="min-w-0 flex-1 rounded-2xl border border-[#17352b]/15 bg-white px-4 py-3.5" data-postal-input inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="5 dígitos"><button class="rounded-2xl bg-[#17352b] px-4 text-sm font-black text-white" data-postal-submit type="button">Buscar</button></span></label>
+            <p class="mt-2 text-xs font-bold text-[#6f827b]" data-postal-status aria-live="polite">Escribe tu CP para encontrar tu municipio y las comunidades disponibles.</p>
+        </div>
+
 
         <label class="block">
             <span class="text-sm font-black">Ciudad y comunidad</span>
-            <select class="mt-2 w-full rounded-2xl border border-[#17352b]/15 bg-white px-4 py-3.5 outline-none focus:border-[#1f6b4f] focus:ring-4 focus:ring-[#1f6b4f]/10" name="community_id" required>
+            <select class="mt-2 w-full rounded-2xl border border-[#17352b]/15 bg-white px-4 py-3.5 outline-none focus:border-[#1f6b4f] focus:ring-4 focus:ring-[#1f6b4f]/10" name="community_id" data-community-select required>
                 <option value="">Selecciona tu comunidad</option>
-                @foreach($communities as $community)<option value="{{ $community->id }}" @selected((string) old('community_id') === (string) $community->id)>{{ $community->display_label }}</option>@endforeach
+                @foreach($communities as $community)<option value="{{ $community->id }}" data-postal-code="{{ $community->postal_code }}" @selected((string) old('community_id') === (string) $community->id)>{{ $community->display_label }}</option>@endforeach
             </select>
             @error('community_id') <span class="mt-2 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
         </label>

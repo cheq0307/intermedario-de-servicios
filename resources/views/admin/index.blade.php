@@ -51,6 +51,14 @@
             </div>
         </section>
 
+            <div class="mt-5 flex flex-col gap-4 rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] p-4 lg:flex-row lg:items-end lg:justify-between">
+                <div><p class="text-sm font-black">Catálogo oficial de códigos postales</p><p class="mt-1 text-xs font-semibold text-[#6B7D83]">{{ number_format($metrics['postal_codes']) }} asentamientos cargados. Importa el TXT del estado que habilitarás; los registros existentes se actualizan sin duplicarse. <a class="font-black text-[#14734A] underline" href="https://www.correosdemexico.gob.mx/SSLServicios/ConsultaCP/CodigoPostal_Exportar.aspx" target="_blank" rel="noopener noreferrer">Descargar catálogo oficial</a>.</p></div>
+                <form class="flex flex-col gap-2 sm:flex-row" method="POST" action="{{ route('admin.postal-codes.import') }}" enctype="multipart/form-data">@csrf
+                    <input class="max-w-sm rounded-xl border border-[#123B4A]/10 bg-white px-3 py-2 text-sm" type="file" name="catalog" accept=".txt,text/plain" required>
+                    <button class="rounded-full bg-[#14734A] px-5 py-2.5 text-sm font-black text-white" type="submit">Importar TXT oficial</button>
+                </form>
+            </div>
+            @error('catalog')<p class="mt-2 text-sm font-bold text-red-700">{{ $message }}</p>@enderror
         <section class="mt-8 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6" id="comunidades">
             <div><p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Cobertura territorial</p><h2 class="mt-1 text-xl font-black">Comunidades disponibles</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Cada comunidad es un centro local independiente. Sus coordenadas permiten encontrar otras comunidades dentro del radio elegido.</p></div>
             <form class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4" method="POST" action="{{ route('admin.communities.store') }}">@csrf

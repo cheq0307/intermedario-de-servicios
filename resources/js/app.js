@@ -134,3 +134,61 @@ document.addEventListener('click', (event) => {
     button.setAttribute('aria-label', revealing ? 'Ocultar contraseña' : 'Mostrar contraseña');
     button.setAttribute('aria-pressed', revealing ? 'true' : 'false');
 });
+document.querySelectorAll('[data-postal-assistant]').forEach((assistant) => {
+    const input = assistant.querySelector('[data-postal-input]');
+    const button = assistant.querySelector('[data-postal-submit]');
+    const status = assistant.querySelector('[data-postal-status]');
+    const communitySelect = assistant.parentElement?.querySelector('[data-community-select]')
+        ?? document.querySelector('[data-community-select]');
+
+    if (!(input instanceof HTMLInputElement) || !(button instanceof HTMLButtonElement) || !status) return;
+
+    const lookup = async () => {
+        const postalCode = input.value.trim();
+        if (!/^\d{5}$/.test(postalCode)) {
+            status.textContent = 'Escribe exactamente 5 dígitos.';
+            status.className = 'mt-2 text-xs font-bold text-red-600';
+            return;
+        }
+
+        button.disabled = true;
+        status.textContent = 'Buscando ubicación…';
+        try {
+            const response = await fetch(`/codigos-postales/${postalCode}`, { headers: { Accept: 'application/json' } });
+            if (!response.ok) throw new Error('lookup-failed');
+            const data = await response.json();
+            if (!data.found || data.places.length === 0) {
+                status.textContent = 'No encontramos ese CP en el catálogo cargado. Puedes seleccionar tu comunidad manualmente.';
+                status.className = 'mt-2 text-xs font-bold text-red-600';
+                return;
+            }
+
+            const place = data.places[0];
+            const exactOptions = communitySelect instanceof HTMLSelectElement
+                ? [...communitySelect.options].filter((option) => option.dataset.postalCode === postalCode)
+                : [];
+            if (exactOptions.length === 1 && communitySelect instanceof HTMLSelectElement) {
+                communitySelect.value = exactOptions[0].value;
+                communitySelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            const location = [place.municipality, place.state].filter(Boolean).join(', ');
+            if (exactOptions.length === 1) {
+                status.textContent = `${location}. Seleccionamos ${exactOptions[0].textContent.trim()}.`;
+            } else if (exactOptions.length > 1) {
+                status.textContent = `${location}. Hay ${exactOptions.length} comunidades habilitadas con este CP; elige una en la lista.`;
+            } else {
+                status.textContent = `${location}. El CP existe, pero todavía no hay una comunidad habilitada exactamente ahí; selecciona la más cercana.`;
+            }
+            status.className = 'mt-2 text-xs font-bold text-[#14734A]';
+        } catch (_) {
+            status.textContent = 'No pudimos consultar el CP en este momento. Selecciona tu comunidad manualmente.';
+            status.className = 'mt-2 text-xs font-bold text-red-600';
+        } finally {
+            button.disabled = false;
+        }
+    };
+
+    button.addEventListener('click', lookup);
+    input.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); lookup(); } });
+});

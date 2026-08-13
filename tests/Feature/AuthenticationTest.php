@@ -11,6 +11,26 @@ class AuthenticationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_registration_form_offers_postal_lookup_and_identifies_community_postal_codes(): void
+    {
+        $community = Community::create([
+            'name' => 'Centro',
+            'municipality' => 'San Matías Tlalancaleca',
+            'state' => 'Puebla',
+            'postal_code' => '74140',
+            'default_radius_km' => 8,
+            'is_active' => true,
+        ]);
+
+        $this->get(route('register'))
+            ->assertOk()
+            ->assertSee('data-postal-assistant', false)
+            ->assertSee('data-postal-input', false)
+            ->assertSee('data-community-select', false)
+            ->assertSee('data-postal-code="74140"', false)
+            ->assertSee((string) $community->id, false);
+    }
+
     public function test_password_screens_render_explicit_visibility_controls(): void
     {
         $this->get(route('login'))

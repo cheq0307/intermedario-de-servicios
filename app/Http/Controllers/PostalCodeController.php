@@ -31,10 +31,14 @@ class PostalCodeController extends Controller
                 ]);
         }
 
+        $communities = Community::query()->where('is_active', true)->where('postal_code', $postalCode)
+            ->orderBy('name')->get(['id', 'name', 'municipality', 'state', 'postal_code', 'default_radius_km']);
+
         return response()->json([
             'found' => $places->isNotEmpty(),
             'postal_code' => $postalCode,
             'places' => $places,
+            'communities' => $communities,
         ]);
     }
 }

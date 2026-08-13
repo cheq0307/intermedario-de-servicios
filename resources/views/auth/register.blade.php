@@ -2,34 +2,11 @@
     <div>
         <p class="text-xs font-black uppercase tracking-[.2em] text-[#d2693c]">Comienza en tu comunidad</p>
         <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Crea tu cuenta</h1>
-        <p class="mt-3 text-[#6f827b]">Elige cómo quieres comenzar. Podrás ampliar tu perfil después.</p>
+        <p class="mt-3 text-[#6f827b]">Una sola cuenta para solicitar, comprar, vender u ofrecer servicios.</p>
     </div>
 
     <form class="mt-8 space-y-5" method="POST" action="{{ route('register') }}">
         @csrf
-        <fieldset>
-            <legend class="text-sm font-black">Tipo de cuenta</legend>
-            <div class="mt-2 grid grid-cols-2 gap-3">
-                <label class="cursor-pointer">
-                    <input class="peer sr-only" type="radio" name="account_type" value="client" {{ old('account_type', request('tipo') === 'provider' ? 'provider' : 'client') === 'client' ? 'checked' : '' }}>
-                    <span class="block rounded-2xl border border-[#17352b]/15 bg-white p-4 transition peer-checked:border-[#1f6b4f] peer-checked:bg-[#e6f1eb] peer-checked:ring-2 peer-checked:ring-[#1f6b4f]/20">
-                        <span class="block text-xl" aria-hidden="true">🛍️</span>
-                        <span class="mt-2 block font-black">Cliente</span>
-                        <span class="mt-1 block text-xs font-semibold text-[#6f827b]">Quiero comprar o contratar.</span>
-                    </span>
-                </label>
-                <label class="cursor-pointer">
-                    <input class="peer sr-only" type="radio" name="account_type" value="provider" {{ old('account_type', request('tipo')) === 'provider' ? 'checked' : '' }}>
-                    <span class="block rounded-2xl border border-[#17352b]/15 bg-white p-4 transition peer-checked:border-[#1f6b4f] peer-checked:bg-[#e6f1eb] peer-checked:ring-2 peer-checked:ring-[#1f6b4f]/20">
-                        <span class="block text-xl" aria-hidden="true">🛠️</span>
-                        <span class="mt-2 block font-black">Proveedor</span>
-                        <span class="mt-1 block text-xs font-semibold text-[#6f827b]">Quiero vender u ofrecer servicios.</span>
-                    </span>
-                </label>
-            </div>
-            @error('account_type') <span class="mt-2 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
-        </fieldset>
-
         <label class="block">
             <span class="text-sm font-black">Nombre completo</span>
             <input class="mt-2 w-full rounded-2xl border border-[#17352b]/15 bg-white px-4 py-3.5 outline-none focus:border-[#1f6b4f] focus:ring-4 focus:ring-[#1f6b4f]/10" type="text" name="name" value="{{ old('name') }}" required autocomplete="name">
@@ -44,6 +21,16 @@
             </select>
             @error('community_id') <span class="mt-2 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
         </label>
+
+        <fieldset>
+            <legend class="text-sm font-black">¿Qué te interesa encontrar?</legend>
+            <p class="mt-1 text-xs font-semibold text-[#6f827b]">Elige algunos temas; podrás modificarlos en tu perfil.</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+                @foreach($categories as $category)<label class="cursor-pointer"><input class="peer sr-only" type="checkbox" name="interests[]" value="{{ $category->id }}" @checked(in_array($category->id, old('interests', [])))><span class="block rounded-full border border-[#17352b]/15 bg-white px-4 py-2 text-xs font-black transition peer-checked:border-[#1f6b4f] peer-checked:bg-[#e6f1eb] peer-checked:text-[#1f6b4f]">{{ $category->name }}</span></label>@endforeach
+            </div>
+            @error('interests') <span class="mt-2 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
+            @error('interests.*') <span class="mt-2 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
+        </fieldset>
 
         <div class="grid gap-4 sm:grid-cols-2">
             <label class="block sm:col-span-2">

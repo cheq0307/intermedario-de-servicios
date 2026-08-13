@@ -11,7 +11,7 @@ class FeedPersonalizationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_client_default_feed_prioritizes_providers_and_keeps_own_requests(): void
+    public function test_unified_user_feed_shows_requests_and_offers(): void
     {
         $client = User::factory()->create(['account_type' => 'client']);
         $otherClient = User::factory()->create(['account_type' => 'client']);
@@ -26,11 +26,11 @@ class FeedPersonalizationTest extends TestCase
             ->assertOk()
             ->assertSee('Servicio profesional visible para clientes.')
             ->assertSee('Mi propia solicitud permanece visible.')
-            ->assertDontSee('Solicitud de otro cliente oculta por defecto.')
-            ->assertSee('Mostramos ofertas de proveedores y tus propias publicaciones.');
+            ->assertSee('Solicitud de otro cliente oculta por defecto.')
+            ->assertSee('Mostramos solicitudes y ofertas de toda la comunidad');
     }
 
-    public function test_provider_default_feed_prioritizes_client_requests_and_keeps_own_posts(): void
+    public function test_commercial_user_still_sees_other_offers_and_requests(): void
     {
         $provider = User::factory()->create(['account_type' => 'provider']);
         $otherProvider = User::factory()->create(['account_type' => 'provider']);
@@ -45,8 +45,8 @@ class FeedPersonalizationTest extends TestCase
             ->assertOk()
             ->assertSee('Cliente busca una reparación de plomería.')
             ->assertSee('Mi promoción permanece visible para administrarla.')
-            ->assertDontSee('Oferta de otro proveedor oculta por defecto.')
-            ->assertSee('Mostramos solicitudes de clientes y tus propias publicaciones.');
+            ->assertSee('Oferta de otro proveedor oculta por defecto.')
+            ->assertSee('Mostramos solicitudes y ofertas de toda la comunidad');
     }
 
     public function test_default_feed_shows_all_publication_types_for_now(): void

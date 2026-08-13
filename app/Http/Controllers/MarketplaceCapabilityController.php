@@ -25,9 +25,8 @@ class MarketplaceCapabilityController extends Controller
         }
 
         DB::transaction(function () use ($user, $capability): void {
-            $user->assignRole(Role::findOrCreate($capability));
-
             if ($capability === 'provider') {
+                // La capacidad técnica se concede únicamente después de la aprobación administrativa.
                 Vendor::firstOrCreate(
                     ['user_id' => $user->id],
                     [
@@ -38,6 +37,8 @@ class MarketplaceCapabilityController extends Controller
                         'status' => 'draft',
                     ],
                 );
+            } else {
+                $user->assignRole(Role::findOrCreate('client'));
             }
         });
 
@@ -54,7 +55,7 @@ class MarketplaceCapabilityController extends Controller
     {
         $user = $request->user()->load('vendor');
         abort_if($user->hasRole('superadmin'), 403);
-        abort_unless($user->canActAsProvider() && $user->vendor, 403);
+        abort_unless($user->canUseMarketplace() && $user->vendor, 403);
         abort_if($user->vendor->status === 'active', 422, 'Tu perfil de proveedor ya está aprobado.');
         abort_if($user->vendor->status === 'suspended', 422, 'Un perfil suspendido debe ser revisado por soporte.');
         abort_unless($user->hasVerifiedEmail(), 422, 'Verifica tu correo antes de enviar la solicitud.');

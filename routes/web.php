@@ -95,6 +95,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/administracion/comunidades', [AdminController::class, 'storeCommunity'])->name('admin.communities.store');
         Route::patch('/administracion/comunidades/{community}', [AdminController::class, 'updateCommunity'])->name('admin.communities.update');
         Route::post('/administracion/usuarios/{user}/administrador', [AdminController::class, 'grantAdmin'])->name('admin.users.grant');
+        Route::post('/administracion/rubros', [AdminController::class, 'storeCategory'])->name('admin.categories.store');
+        Route::patch('/administracion/rubros/{category}/estado', [AdminController::class, 'toggleCategory'])->name('admin.categories.toggle');
         Route::delete('/administracion/usuarios/{user}/administrador', [AdminController::class, 'revokeAdmin'])->name('admin.users.revoke');
     });
 });

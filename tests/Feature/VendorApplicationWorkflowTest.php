@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
 use App\Models\Community;
 use App\Models\User;
 use App\Models\Vendor;
@@ -59,6 +60,7 @@ class VendorApplicationWorkflowTest extends TestCase
 
         $this->actingAs($provider)->put(route('profile.update'), [
             'name' => $provider->name, 'community_id' => Community::query()->value('id'), 'display_name' => 'Servicios Luna Actualizados', 'specialty' => 'Plomería',
+            'offers_services' => 1, 'offered_categories' => [Category::query()->value('id')],
             'service_area' => 'Centro', 'description' => 'Descripción actualizada y completa.', 'availability_status' => 'available',
             'business_days' => ['monday'], 'business_opens_at' => '09:00', 'business_closes_at' => '18:00',
         ])->assertRedirect();

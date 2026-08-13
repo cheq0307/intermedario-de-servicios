@@ -6,6 +6,7 @@ use App\Domain\Marketplace\Enums\JobRequestStatus;
 use App\Models\JobRequest;
 use App\Models\Listing;
 use App\Models\Post;
+use App\Services\Marketplace\NotifyMatchingProviders;
 use App\Models\Vendor;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,6 +30,9 @@ class PostController extends Controller
             'type' => ['required', 'string', Rule::in($allowedTypes)],
             'body' => ['required', 'string', 'min:10', 'max:1500'],
             'media' => ['nullable', 'array', 'max:6'],
+            'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('is_active', true)],
+            'community_ids' => ['nullable', 'array', 'max:25'],
+            'community_ids.*' => ['integer', 'distinct', Rule::exists('communities', 'id')->where('is_active', true)],
             'media.*' => ['file', 'mimetypes:image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm', 'max:51200'],
         ]);
 
@@ -59,6 +63,10 @@ class PostController extends Controller
 
                 $this->storeMedia($request, $post);
 
+                if ($post->jobRequest) {
+                    app(NotifyMatchingProviders::class)->handle($post->jobRequest);
+                }
+
                 return redirect()
                     ->route('dashboard')
                     ->with('status', 'Tu publicación ya está visible en la comunidad.');
@@ -82,12 +90,18 @@ class PostController extends Controller
                 'title' => $details['title'],
                 'description' => $postData['body'],
                 'budget_min_amount' => $this->toMinorUnits($details['budget_min'] ?? null),
+                'category_id' => $postData['category_id'] ?? null,
                 'budget_max_amount' => $this->toMinorUnits($details['budget_max'] ?? null),
                 'urgency' => $details['urgency'],
                 'status' => JobRequestStatus::Published->value,
                 'location_label' => $details['location_label'] ?? null,
                 'published_at' => now(),
             ]);
+
+            $communityIds = $postData['community_ids'] ?? array_filter([$request->user()->community_id]);
+            if ($communityIds !== []) {
+                $jobRequest->communities()->sync($communityIds);
+            }
 
             return Post::create([
                 ...$postData,
@@ -132,10 +146,15 @@ class PostController extends Controller
                 'slug' => $this->uniqueListingSlug($vendor, $details['title']),
                 'description' => $postData['body'],
                 'price_type' => $details['price_type'],
+                'category_id' => $postData['category_id'] ?? null,
                 'price_amount' => $this->toMinorUnits($details['price'] ?? null),
                 'stock' => $postData['type'] === 'product' ? ($details['stock'] ?? null) : null,
                 'is_active' => true,
             ]);
+
+            if ($listing->category_id) {
+                $vendor->categories()->syncWithoutDetaching([$listing->category_id]);
+            }
 
             return Post::create([
                 ...$postData,

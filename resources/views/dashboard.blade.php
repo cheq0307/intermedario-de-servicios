@@ -72,7 +72,7 @@
                 @foreach ([
                     ['Inicio', '#inicio', true],
                     ['Explorar', route('explore'), false],
-                    ['Publicar', $activeMode ? '#crear-publicacion' : route('admin.index'), false],
+                    ['Publicar', route('dashboard', ['publicar' => 'request']).'#crear-publicacion', false],
                     ['Mensajes', route('conversations.index'), false],
                     ['Notificaciones', route('notifications.index'), false],
                     ['Mis trabajos', route('orders.index'), false],
@@ -95,21 +95,6 @@
         </aside>
 
         <div id="inicio" class="min-w-0 space-y-5">
-            @if($currentUser->canActAsClient() && $currentUser->canActAsProvider())
-                <section class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#123B4A]/10 bg-white px-5 py-4 shadow-sm">
-                    <div><p class="text-xs font-black uppercase tracking-[.14em] text-[#F97316]">Usando Plaza Local como</p><p class="mt-1 text-sm font-bold text-[#6B7D83]">Cambia de contexto sin cerrar sesión.</p></div>
-                    <div class="flex rounded-full bg-[#E8F1EE] p-1">
-                        @foreach(['client' => 'Cliente', 'provider' => 'Proveedor'] as $mode => $label)
-                            <form method="POST" action="{{ route('capabilities.switch', $mode) }}">@csrf
-                                <button class="rounded-full px-4 py-2 text-xs font-black transition {{ $activeMode === $mode ? 'bg-[#123B4A] text-white shadow-sm' : 'text-[#536A72]' }}" type="submit" @disabled($activeMode === $mode)>{{ $label }}</button>
-                            </form>
-                        @endforeach
-                    </div>
-                </section>
-            @elseif($activeMode === null)
-                <section class="rounded-2xl border border-[#F97316]/20 bg-[#FFF1E8] px-5 py-4 text-sm font-bold text-[#A94708]">Esta cuenta es personal administrativo y no tiene capacidades comerciales. Puedes operar desde Administración.</section>
-            @endif
-
             @if (session('status'))
                 <div class="rounded-2xl border border-[#22A06B]/20 bg-[#E9F7F0] px-5 py-4 text-sm font-black text-[#14734A]" role="status">
                     {{ session('status') }}
@@ -143,17 +128,20 @@
                     <div>
                         <p class="text-xs font-black uppercase tracking-[.2em] text-[#F9B36B]">Hola, {{ explode(' ', trim($currentUser->name))[0] }}</p>
                         <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-                            {{ $activeMode === null ? 'Administra la operación local.' : ($isProvider ? 'Haz visible lo que sabes hacer.' : '¿Qué necesitas resolver hoy?') }}
+                            Compra, solicita, vende u ofrece desde una sola cuenta.
                         </h1>
                         <p class="mt-3 max-w-xl leading-7 text-white/65">
                             {{ $activeMode === null ? 'Revisa proveedores, usuarios, disputas y excepciones relevantes.' : ($isProvider ? 'Comparte productos, servicios, promociones y trabajos reales con personas cercanas.' : 'Publica lo que necesitas para que proveedores de tu comunidad puedan encontrarte.') }}
                         </p>
                     </div>
-                    <a class="shrink-0 rounded-full bg-[#F97316] px-6 py-3 text-center font-black text-white shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:bg-[#E8660C]" href="{{ $activeMode ? '#crear-publicacion' : route('admin.index') }}">{{ $activeMode ? 'Publicar ahora' : 'Abrir administración' }}</a>
+                    <div class="flex shrink-0 flex-col gap-2 sm:flex-row">
+                        <a class="rounded-full bg-[#F97316] px-6 py-3 text-center font-black text-white" href="{{ route('dashboard', ['publicar' => 'request']).'#crear-publicacion' }}">Solicitar algo</a>
+                        <a class="rounded-full bg-white px-6 py-3 text-center font-black text-[#123B4A]" href="{{ $currentUser->vendor?->status === 'active' ? route('dashboard', ['publicar' => 'offer']).'#crear-publicacion' : route('profile.edit', ['ofrecer' => 1]).'#servicios' }}">Ofrecer algo</a>
+                    </div>
                 </div>
             </section>
 
-            @if($activeMode)
+            @if($showComposer)
             <section id="crear-publicacion" class="scroll-mt-24 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-5 shadow-sm sm:p-6">
                 <div class="flex items-center gap-3">
                     <span class="grid size-11 place-items-center rounded-full bg-[#DCEAE6] font-black text-[#123B4A]">{{ mb_strtoupper(mb_substr($currentUser->name, 0, 1)) }}</span>
@@ -209,6 +197,7 @@
                             <label class="block" data-product-field>
                                 <span class="text-sm font-black">Existencias disponibles</span>
                                 <input class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3 text-sm font-semibold outline-none focus:border-[#F97316]/50" type="number" name="stock" value="{{ old('stock') }}" min="0" step="1" inputmode="numeric" placeholder="Opcional">
+
                                 @error('stock') <span class="mt-1 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
                             </label>
                         </div>
@@ -250,6 +239,16 @@
                         </div>
                     @endif
 
+                    <label class="block">
+                        <span class="text-sm font-black">Rubro o temática</span>
+                        <select class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3 text-sm font-semibold" name="category_id" required><option value="">Selecciona un rubro</option>@foreach($categories as $category)<option value="{{ $category->id }}" @selected((string) old('category_id') === (string) $category->id)>{{ $category->name }}</option>@endforeach</select>
+                        @error('category_id')<span class="mt-1 block text-sm font-bold text-red-600">{{ $message }}</span>@enderror
+                    </label>
+                    @unless($isProvider)
+                        <fieldset><legend class="text-sm font-black">Localidades donde quieres recibir propuestas</legend><p class="mt-1 text-xs font-semibold text-[#6B7D83]">Las personas del mismo rubro también podrán verla fuera de esta selección.</p><div class="mt-3 grid gap-2 sm:grid-cols-2">
+                            @foreach($communities as $community)<label class="cursor-pointer"><input class="peer sr-only" type="checkbox" name="community_ids[]" value="{{ $community->id }}" @checked(in_array($community->id, old('community_ids', [$currentUser->community_id])))><span class="block rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3 text-sm font-black peer-checked:border-[#14734A] peer-checked:bg-[#E9F7F0] peer-checked:text-[#14734A]">{{ $community->name }}<small class="mt-1 block font-semibold">{{ $community->municipality }}</small></span></label>@endforeach
+                        </div>@error('community_ids')<span class="mt-1 block text-sm font-bold text-red-600">{{ $message }}</span>@enderror</fieldset>
+                    @endunless
                     <textarea class="min-h-28 w-full resize-y rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3 text-sm font-semibold leading-6 outline-none transition placeholder:text-[#8A999E] focus:border-[#F97316]/50 focus:ring-4 focus:ring-[#F97316]/10" name="body" maxlength="1500" required placeholder="{{ $isProvider ? 'Describe lo que ofreces, disponibilidad, entrega y zona de atención…' : 'Explica los detalles necesarios para que los proveedores puedan responderte…' }}">{{ old('body') }}</textarea>
                     @error('body') <p class="text-sm font-bold text-red-600">{{ $message }}</p> @enderror
                     <label class="block rounded-2xl border border-dashed border-[#123B4A]/20 bg-[#FAF8F4] p-4">
@@ -285,7 +284,7 @@
                 </nav>
 
                 @if($feed === 'for_you')
-                    <p class="px-1 text-xs font-semibold leading-5 text-[#6B7D83]">{{ $activeMode === 'provider' ? 'Mostramos solicitudes de clientes y tus propias publicaciones.' : ($activeMode === 'client' ? 'Mostramos ofertas de proveedores y tus propias publicaciones.' : 'Mostramos la actividad general de la comunidad.') }}</p>
+                    <p class="px-1 text-xs font-semibold leading-5 text-[#6B7D83]">Mostramos solicitudes y ofertas de toda la comunidad; tus intereses y búsquedas ayudan a ordenar primero lo más relevante.</p>
                 @endif
 
                 @forelse ($posts as $post)
@@ -305,7 +304,7 @@
                                         <p class="mt-0.5 text-xs font-semibold text-[#6B7D83]">{{ $post->published_at->diffForHumans() }} · Tu comunidad</p>
                                     </div>
                                 </div>
-                                <span class="shrink-0 rounded-full bg-[#FFF1E8] px-3 py-1.5 text-[11px] font-black text-[#D85B0B]">{{ $typeLabels[$post->type] ?? 'Publicación' }}</span>
+                                <span class="shrink-0 rounded-full px-3 py-1.5 text-[11px] font-black {{ $post->type === 'job_request' ? 'bg-[#FFF1E8] text-[#D85B0B]' : 'bg-[#E9F7F0] text-[#14734A]' }}">{{ $post->type === 'job_request' ? 'SOLICITO · ' : 'OFREZCO · ' }}{{ $typeLabels[$post->type] ?? 'Publicación' }}</span>
                             </div>
 
                             <p class="mt-5 whitespace-pre-line text-[15px] font-medium leading-7 text-[#314B54]">{{ $post->body }}</p>
@@ -456,7 +455,7 @@
         <div class="mx-auto grid max-w-lg grid-cols-5">
             @foreach ([
                 ['Inicio', '#inicio'],
-                ['Publicar', $activeMode ? '#crear-publicacion' : route('admin.index')],
+                ['Publicar', route('dashboard', ['publicar' => 'request']).'#crear-publicacion'],
                 ['Trabajos', route('orders.index')],
                 ['Mensajes', route('conversations.index')],
                 ['Perfil', route('profile.show', $currentUser)],

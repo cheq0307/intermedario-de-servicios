@@ -55,10 +55,9 @@ class AuthenticationTest extends TestCase
         ]);
     }
 
-    public function test_provider_registration_creates_a_commercial_profile(): void
+    public function test_registration_creates_one_user_without_premature_commercial_approval(): void
     {
         $response = $this->post('/register', [
-            'account_type' => 'provider',
             'community_id' => Community::query()->value('id'),
             'name' => 'Carpintería Ramírez',
             'email' => 'carpinteria@example.test',
@@ -69,12 +68,9 @@ class AuthenticationTest extends TestCase
 
         $response->assertRedirect('/dashboard');
         $this->assertAuthenticated();
-        $this->assertDatabaseHas('vendors', [
-            'user_id' => auth()->id(),
-            'display_name' => 'Carpintería Ramírez',
-            'email' => 'carpinteria@example.test',
-            'status' => 'draft',
-        ]);
+        $this->assertDatabaseHas('users', ['email' => 'carpinteria@example.test', 'account_type' => 'client']);
+        $this->assertDatabaseMissing('vendors', ['user_id' => auth()->id()]);
+        $this->assertTrue(auth()->user()->hasRole('client'));
     }
 
     public function test_duplicate_email_error_is_clear_and_in_spanish(): void

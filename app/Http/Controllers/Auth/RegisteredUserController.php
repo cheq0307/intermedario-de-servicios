@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\Community;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
@@ -10,7 +11,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
@@ -21,23 +21,23 @@ class RegisteredUserController extends Controller
     public function create(): View
     {
         $communities = Community::query()->where('is_active', true)->orderBy('name')->get();
+        $categories = Category::query()->where('is_active', true)->orderBy('name')->get();
 
-        return view('auth.register', compact('communities'));
+        return view('auth.register', compact('communities', 'categories'));
     }
 
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'account_type' => ['required', 'string', 'in:client,provider'],
             'name' => ['required', 'string', 'max:120'],
             'community_id' => ['required', 'integer', Rule::exists('communities', 'id')->where('is_active', true)],
+            'interests' => ['nullable', 'array', 'max:10'],
+            'interests.*' => ['integer', 'distinct', Rule::exists('categories', 'id')->where('is_active', true)],
             'phone' => ['nullable', 'regex:/^\d{10}$/'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
         ], [
             'email.unique' => 'Este correo ya está registrado. Inicia sesión o recupera tu contraseña.',
-            'account_type.required' => 'Selecciona si comenzarás como cliente o proveedor.',
-            'account_type.in' => 'El tipo de cuenta seleccionado no es válido.',
             'name.required' => 'Escribe tu nombre completo.',
             'name.max' => 'El nombre no puede superar 120 caracteres.',
             'community_id.required' => 'Selecciona tu ciudad y comunidad.',
@@ -55,19 +55,14 @@ class RegisteredUserController extends Controller
 
         $user = DB::transaction(function () use ($validated): User {
             $community = Community::query()->where('is_active', true)->findOrFail($validated['community_id']);
-            $validated['city'] = $community->municipality;
-            $user = User::create($validated);
-            $user->assignRole(Role::findOrCreate($validated['account_type']));
-
-            if ($validated['account_type'] === 'provider') {
-                $user->vendor()->create([
-                    'display_name' => $user->name,
-                    'slug' => Str::slug($user->name).'-'.$user->id,
-                    'phone' => $user->phone,
-                    'email' => $user->email,
-                    'status' => 'draft',
-                ]);
-            }
+            $user = User::create(collect($validated)->except('interests')->all() + [
+                'account_type' => 'client',
+                'city' => $community->municipality,
+            ]);
+            $user->assignRole(Role::findOrCreate('client'));
+            $user->categoryPreferences()->sync(collect($validated['interests'] ?? [])->mapWithKeys(
+                fn (int $categoryId) => [$categoryId => ['interest_score' => 100, 'behavior_score' => 0]],
+            )->all());
 
             return $user;
         });

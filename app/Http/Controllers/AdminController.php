@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\AuditLog;
 use App\Models\Community;
 use App\Models\Dispute;
@@ -59,10 +60,11 @@ class AdminController extends Controller
         $auditLogs = AuditLog::with('user:id,name')->latest('created_at')->limit(30)->get();
         $communities = Community::query()->withCount('users')->orderBy('name')->get();
         $auditActions = ['admin.granted' => 'Administrador asignado', 'admin.revoked' => 'Permiso de administrador retirado', 'vendor.active' => 'Proveedor aprobado o reactivado', 'vendor.rejected' => 'Cambios solicitados al proveedor', 'vendor.suspended' => 'Proveedor suspendido', 'community.created' => 'Comunidad agregada', 'community.updated' => 'Centro comunitario actualizado'];
+        $categories = Category::query()->withCount(['users', 'vendors', 'listings', 'jobRequests'])->orderBy('name')->get();
         $auditSubjects = ['User' => 'Usuario', 'Vendor' => 'Proveedor', 'Community' => 'Comunidad'];
         $isSuperadmin = $request->user()->hasRole('superadmin');
 
-        return view('admin.index', compact('metrics', 'pendingVendors', 'vendors', 'administrators', 'adminCandidates', 'adminSearch', 'auditLogs', 'communities', 'auditActions', 'auditSubjects', 'isSuperadmin'));
+        return view('admin.index', compact('metrics', 'pendingVendors', 'vendors', 'administrators', 'adminCandidates', 'adminSearch', 'auditLogs', 'communities', 'categories', 'auditActions', 'auditSubjects', 'isSuperadmin'));
     }
 
     public function approveVendor(Request $request, Vendor $vendor): RedirectResponse
@@ -77,6 +79,7 @@ class AdminController extends Controller
         $vendor->loadMissing('user');
         abort_unless($vendor->user?->hasVerifiedEmail(), 422, 'El proveedor debe verificar su correo antes de ser aprobado.');
         abort_if($vendor->missingReviewRequirements() !== [], 422, 'El proveedor todavía debe completar: '.implode(', ', $vendor->missingReviewRequirements()).'.');
+        $vendor->user->assignRole(Role::findOrCreate('provider'));
         $this->changeVendorStatus($request, $vendor, 'active');
         $vendor->user->notify(new MarketplaceActivity('Tu perfil de proveedor fue aprobado', 'Ya puedes publicar ofertas y enviar propuestas en Plaza Local.', 'profile.show', ['user' => $vendor->user_id], 'vendor_approved'));
 
@@ -143,6 +146,33 @@ class AdminController extends Controller
 
         return back()->with('status', 'Centro y radio de la comunidad actualizados.');
     }
+    public function storeCategory(Request $request): RedirectResponse
+    {
+        $this->authorizeAdmin($request);
+        $validated = $request->validate(['name' => ['required', 'string', 'max:100']]);
+        $slug = \Illuminate\Support\Str::slug($validated['name']);
+        abort_if($slug === '', 422, 'El nombre del rubro no es válido.');
+        $category = Category::firstOrCreate(['slug' => $slug], ['name' => $validated['name'], 'is_active' => true]);
+        if (! $category->wasRecentlyCreated) {
+            $category->update(['name' => $validated['name'], 'is_active' => true]);
+        }
+        $this->audit($request, 'category.created', $category);
+
+        return back()->with('status', 'Rubro disponible para perfiles, publicaciones y búsquedas.');
+    }
+
+    public function toggleCategory(Request $request, Category $category): RedirectResponse
+    {
+        $this->authorizeAdmin($request);
+        if ($category->is_active && ($category->listings()->exists() || $category->jobRequests()->exists())) {
+            return back()->withErrors(['category' => 'No se puede desactivar un rubro que todavía tiene publicaciones asociadas.']);
+        }
+        $category->update(['is_active' => ! $category->is_active]);
+        $this->audit($request, 'category.updated', $category, ['is_active' => $category->is_active]);
+
+        return back()->with('status', $category->is_active ? 'Rubro reactivado.' : 'Rubro desactivado.');
+    }
+
 
 
     public function grantAdmin(Request $request, User $user): RedirectResponse

@@ -51,4 +51,9 @@ class Listing extends Model
     {
         return $this->hasMany(InventoryReservation::class);
     }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
+    }
 }

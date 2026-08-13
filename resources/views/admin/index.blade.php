@@ -86,6 +86,20 @@
         </section>
 
         <section class="mt-8 rounded-[1.75rem] border border-[#F97316]/20 bg-white p-5 shadow-sm sm:p-6" id="aprobaciones">
+        <section class="mt-8 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6" id="rubros">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Catálogo comercial</p><h2 class="mt-1 text-xl font-black">Rubros, servicios e intereses</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Este catálogo alimenta perfiles, publicaciones, filtros, notificaciones y recomendaciones.</p></div>
+                <form class="flex gap-2" method="POST" action="{{ route('admin.categories.store') }}">@csrf<input class="min-w-0 rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" name="name" required maxlength="100" placeholder="Ej. Taxi o comida local"><button class="rounded-full bg-[#123B4A] px-5 py-3 text-sm font-black text-white" type="submit">Agregar rubro</button></form>
+            </div>
+            <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                @foreach($categories as $category)
+                    <article class="rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] p-4">
+                        <div class="flex items-start justify-between gap-3"><div><h3 class="font-black">{{ $category->name }}</h3><p class="mt-1 text-xs font-bold text-[#6B7D83]">{{ $category->users_count }} interesados · {{ $category->vendors_count }} personas ofrecen · {{ $category->listings_count + $category->job_requests_count }} publicaciones</p></div><span class="rounded-full px-3 py-1 text-xs font-black {{ $category->is_active ? 'bg-[#E9F7F0] text-[#14734A]' : 'bg-[#E5E9E7] text-[#536A72]' }}">{{ $category->is_active ? 'Activo' : 'Inactivo' }}</span></div>
+                        <form class="mt-3" method="POST" action="{{ route('admin.categories.toggle', $category) }}">@csrf @method('PATCH')<button class="text-xs font-black {{ $category->is_active ? 'text-red-700' : 'text-[#14734A]' }}" type="submit">{{ $category->is_active ? 'Desactivar' : 'Reactivar' }}</button></form>
+                    </article>
+                @endforeach
+            </div>
+        </section>
+
             <div class="flex flex-wrap items-center justify-between gap-3"><div><p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Bandeja de revisión</p><h2 class="mt-1 text-xl font-black">Proveedores pendientes</h2></div><span class="rounded-full bg-[#FFF1E8] px-4 py-2 text-xs font-black text-[#D85B0B]">{{ $pendingVendors->count() }} pendientes</span></div>
             <div class="mt-5 grid gap-4 lg:grid-cols-2">
                 @forelse($pendingVendors as $vendor)

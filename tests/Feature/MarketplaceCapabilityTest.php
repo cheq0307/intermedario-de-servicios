@@ -11,7 +11,7 @@ class MarketplaceCapabilityTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_client_can_activate_provider_capability_without_creating_another_account(): void
+    public function test_user_can_start_commercial_profile_without_premature_permission(): void
     {
         $client = User::factory()->create(['account_type' => 'client']);
 
@@ -21,7 +21,7 @@ class MarketplaceCapabilityTest extends TestCase
 
         $client->refresh();
         $this->assertTrue($client->canActAsClient());
-        $this->assertTrue($client->canActAsProvider());
+        $this->assertFalse($client->canActAsProvider());
         $this->assertDatabaseCount('users', 1);
         $this->assertDatabaseHas('vendors', [
             'user_id' => $client->id,
@@ -92,7 +92,7 @@ class MarketplaceCapabilityTest extends TestCase
         $this->get(route('explore'))->assertRedirect(route('admin.index'));
     }
 
-    public function test_dual_account_dashboard_switches_the_publication_form(): void
+    public function test_unified_dashboard_opens_the_requested_composer_only(): void
     {
         $user = User::factory()->create(['account_type' => 'client']);
         $user->assignRole(Role::findOrCreate('provider'));
@@ -100,14 +100,13 @@ class MarketplaceCapabilityTest extends TestCase
         $this->actingAs($user)
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertSee('Cambia de contexto sin cerrar sesión.')
-            ->assertSee('Cliente y proveedor')
-            ->assertSee('¿Qué necesitas resolver hoy?');
-        $this->assertSame('client', session('marketplace_mode'));
+            ->assertSee('Solicitar algo')
+            ->assertSee('Ofrecer algo')
+            ->assertDontSee('data-publication-form', false);
 
-        $this->post(route('capabilities.switch', 'provider'))->assertRedirect();
-
-        $this->get(route('dashboard'))
+        $this->get(route('dashboard', ['publicar' => 'request']))
+            ->assertOk()->assertSee('¿Qué necesitas?');
+        $this->get(route('dashboard', ['publicar' => 'offer']))
             ->assertOk()
             ->assertSee('Nombre del producto o servicio');
     }

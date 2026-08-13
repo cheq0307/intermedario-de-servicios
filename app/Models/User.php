@@ -56,6 +56,15 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasRole('provider');
     }
+    public function canUseMarketplace(): bool
+    {
+        if ($this->hasRole('superadmin')) {
+            return false;
+        }
+
+        return ! $this->hasRole('admin') || $this->hasAnyRole(['client', 'provider']);
+    }
+
 
     public function supportsMarketplaceMode(string $mode): bool
     {
@@ -79,9 +88,7 @@ class User extends Authenticatable implements MustVerifyEmail
     public function commercialRoleLabel(): string
     {
         return match (true) {
-            $this->canActAsClient() && $this->canActAsProvider() => 'Cliente y proveedor',
-            $this->canActAsProvider() => 'Proveedor',
-            $this->canActAsClient() => 'Cliente',
+            $this->canUseMarketplace() => $this->hasRole('admin') ? 'Usuario y administrador' : 'Usuario',
             default => $this->hasRole('superadmin') ? 'Superadministrador' : 'Administración',
         };
     }
@@ -126,5 +133,17 @@ class User extends Authenticatable implements MustVerifyEmail
     public function purchases(): HasMany
     {
         return $this->hasMany(Order::class, 'buyer_id');
+    }
+
+    public function categoryPreferences(): BelongsToMany
+    {
+        return $this->belongsToMany(Category::class, 'user_category_preferences')
+            ->withPivot(['interest_score', 'behavior_score'])
+            ->withTimestamps();
+    }
+
+    public function interests(): BelongsToMany
+    {
+        return $this->categoryPreferences()->wherePivot('interest_score', '>', 0);
     }
 }

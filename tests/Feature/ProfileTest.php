@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
 use App\Models\Community;
 use App\Models\Post;
 use App\Models\User;
@@ -25,6 +26,7 @@ class ProfileTest extends TestCase
             'display_name' => 'Reparaciones Luna',
             'slug' => 'reparaciones-luna-'.$provider->id,
             'email' => $provider->email,
+            'status' => 'active',
             'phone' => $provider->phone,
             'specialty' => 'Plomería',
             'availability_status' => 'available',
@@ -73,6 +75,8 @@ class ProfileTest extends TestCase
         $community = Community::create(['name' => 'Centro', 'municipality' => 'Mi comunidad', 'default_radius_km' => 8, 'is_active' => true]);
 
         $this->actingAs($provider)->put(route('profile.update'), [
+            'offers_services' => 1,
+            'offered_categories' => [Category::query()->value('id')],
             'name' => 'Mario Hernández',
             'phone' => '5551234567',
             'bio' => 'Trabajo con atención y puntualidad.',
@@ -115,6 +119,7 @@ class ProfileTest extends TestCase
             'display_name' => 'Servicios Múltiples',
             'slug' => 'servicios-multiples-'.$provider->id,
             'availability_status' => 'busy',
+            'status' => 'active',
             'business_hours' => [
                 'days' => ['monday'],
                 'opens_at' => '09:00',
@@ -130,9 +135,7 @@ class ProfileTest extends TestCase
         $this->actingAs($provider)
             ->get(route('profile.show', $provider))
             ->assertOk()
-            ->assertSee('Cliente')
-            ->assertSee('Proveedor')
-            ->assertSee('Administrador')
+            ->assertSee('Usuario y administrador')
             ->assertSee('Realizando un trabajo')
             ->assertSee('Horario: Lun');
     }

@@ -8,7 +8,7 @@
 </head>
 <body class="min-h-screen bg-[#FAF8F4] text-[#17313A] antialiased">
     @php
-        $isProvider = $user->canActAsProvider();
+        $isProvider = $user->vendor !== null || request()->boolean('ofrecer');
         $businessHours = $user->vendor?->business_hours ?? [];
         $selectedBusinessDays = old('business_days', $businessHours['days'] ?? ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
         $dayLabels = ['monday' => 'Lun', 'tuesday' => 'Mar', 'wednesday' => 'Mié', 'thursday' => 'Jue', 'friday' => 'Vie', 'saturday' => 'Sáb', 'sunday' => 'Dom'];
@@ -30,38 +30,7 @@
                 <form method="POST" action="{{ route('verification.send') }}">@csrf<button class="shrink-0 rounded-full bg-[#F97316] px-5 py-2.5 text-sm font-black text-white" type="submit">Reenviar enlace</button></form>
             </section>
         @endif
-        <section class="mt-8 rounded-[2rem] border border-[#123B4A]/10 bg-white p-6 shadow-sm sm:p-8">
-            <div class="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                    <p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Una cuenta, varios usos</p>
-                    <h2 class="mt-2 text-xl font-black">Capacidades de tu cuenta</h2>
-                    <p class="mt-2 text-sm font-semibold text-[#6B7D83]">Puedes comprar y ofrecer servicios con la misma sesión. Los permisos administrativos son independientes.</p>
-                </div>
-                @if($user->hasAnyRole(['admin', 'superadmin']))<span class="rounded-full bg-[#FFF1E8] px-4 py-2 text-xs font-black text-[#D85B0B]">{{ $user->hasRole('superadmin') ? 'Superadministrador' : 'Administrador' }}</span>@endif
-            </div>
-            <div class="mt-6 grid gap-4 sm:grid-cols-2">
-                <article class="rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] p-5">
-                    <div class="flex items-start justify-between gap-3">
-                        <div><h3 class="font-black">Cliente</h3><p class="mt-1 text-sm font-semibold text-[#6B7D83]">Comprar productos y publicar solicitudes.</p></div>
-                        @if($user->canActAsClient())<span class="rounded-full bg-[#E9F7F0] px-3 py-1 text-xs font-black text-[#14734A]">Activa</span>@else<form method="POST" action="{{ route('capabilities.activate', 'client') }}">@csrf<button class="rounded-full bg-[#123B4A] px-4 py-2 text-xs font-black text-white">Activar cliente</button></form>@endif
-                    </div>
-                </article>
-                <article class="rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] p-5">
-                    <div class="flex items-start justify-between gap-3">
-                        <div><h3 class="font-black">Proveedor</h3><p class="mt-1 text-sm font-semibold text-[#6B7D83]">Vender productos, ofrecer servicios y enviar propuestas.</p></div>
-                        @if($user->canActAsProvider())
-                            <span class="rounded-full bg-[#E9F7F0] px-3 py-1 text-xs font-black text-[#14734A]">Activa</span>
-                        @else
-                            <form method="POST" action="{{ route('capabilities.activate', 'provider') }}">@csrf<button class="rounded-full bg-[#F97316] px-4 py-2 text-xs font-black text-white">Quiero ser proveedor</button></form>
-                        @endif
-                    </div>
-                    @if($user->canActAsProvider())
-                        <p class="mt-3 text-xs font-bold text-[#79551E]">{{ $vendorStatusLabels[$vendorStatus] ?? 'Perfil en borrador' }}</p>
-                        @if($vendorStatus === 'rejected' && $user->vendor?->rejection_reason)<p class="mt-2 rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-700">Cambios solicitados: {{ $user->vendor->rejection_reason }}</p>@endif
-                    @endif
-                </article>
-            </div>
-        </section>
+        <section class="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-[2rem] border border-[#123B4A]/10 bg-white p-6 shadow-sm"><div><p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Cuenta unificada</p><h2 class="mt-2 text-xl font-black">Eres usuario de Plaza Local</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Puedes solicitar y comprar. Si quieres ofrecer, completa y verifica tu información comercial en esta misma cuenta.</p></div>@if(! $isProvider)<a class="rounded-full bg-[#123B4A] px-5 py-3 text-sm font-black text-white" href="{{ route('profile.edit', ['ofrecer' => 1]).'#servicios' }}">Agregar mis servicios</a>@else<span class="rounded-full bg-[#E9F7F0] px-4 py-2 text-xs font-black text-[#14734A]">{{ $vendorStatusLabels[$vendorStatus] ?? 'Configurando servicios' }}</span>@endif</section>
 
         <form class="mt-8 space-y-6" method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">
             @csrf
@@ -78,12 +47,14 @@
             </section>
 
             @if ($isProvider)
-                <section class="rounded-[2rem] border border-[#123B4A]/10 bg-white p-6 shadow-sm sm:p-8">
-                    <h2 class="text-xl font-black">Perfil profesional o comercial</h2>
+                <section id="servicios" class="scroll-mt-24 rounded-[2rem] border border-[#123B4A]/10 bg-white p-6 shadow-sm sm:p-8">
+                    <input type="hidden" name="offers_services" value="1">
+                    <h2 class="text-xl font-black">Servicios, productos o actividades que ofreces</h2>
                     <div class="mt-5 grid gap-5 sm:grid-cols-2">
                         <label class="block sm:col-span-2"><span class="text-sm font-black">Nombre comercial</span><input class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" name="display_name" value="{{ old('display_name', $user->vendor?->display_name ?? $user->name) }}" required maxlength="120"></label>
                         <label class="block"><span class="text-sm font-black">Especialidad principal</span><input class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" name="specialty" value="{{ old('specialty', $user->vendor?->specialty) }}" placeholder="Ej. Plomería residencial"></label>
                         <label class="block"><span class="text-sm font-black">Zona de servicio</span><input class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" name="service_area" value="{{ old('service_area', $user->vendor?->service_area) }}" placeholder="Ej. Centro y colonias cercanas"></label>
+                    <fieldset class="sm:col-span-2"><legend class="text-sm font-black">Intereses y temáticas</legend><p class="mt-1 text-xs font-semibold text-[#6B7D83]">Se usan para ordenar la sección “Para ti”.</p><div class="mt-3 flex flex-wrap gap-2">@foreach($categories as $category)<label class="cursor-pointer"><input class="peer sr-only" type="checkbox" name="interests[]" value="{{ $category->id }}" @checked(in_array($category->id, old('interests', $user->categoryPreferences->where('pivot.interest_score', '>', 0)->pluck('id')->all())))><span class="block rounded-full border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-2 text-xs font-black peer-checked:border-[#14734A] peer-checked:bg-[#E9F7F0] peer-checked:text-[#14734A]">{{ $category->name }}</span></label>@endforeach</div></fieldset>
                         <label class="block"><span class="text-sm font-black">Años de experiencia</span><input class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" type="number" name="years_experience" value="{{ old('years_experience', $user->vendor?->years_experience) }}" min="0" max="80"></label>
                         <label class="block"><span class="text-sm font-black">Estado de trabajo</span><select class="mt-2 w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" name="availability_status" required><option value="available" @selected(old('availability_status', $user->vendor?->availability_status) === 'available')>Disponible para una nuevo trabajo</option><option value="busy" @selected(old('availability_status', $user->vendor?->availability_status) === 'busy')>Realizando un trabajo</option><option value="unavailable" @selected(old('availability_status', $user->vendor?->availability_status) === 'unavailable')>No disponible temporalmente</option></select><span class="mt-1 block text-xs font-bold text-[#8A999E]">Indica tu carga actual; es independiente de tu horario.</span></label>
                         <fieldset class="sm:col-span-2"><legend class="text-sm font-black">Días de atención</legend><div class="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-7">@foreach($dayLabels as $day => $label)<label class="cursor-pointer"><input class="peer sr-only" type="checkbox" name="business_days[]" value="{{ $day }}" @checked(in_array($day, $selectedBusinessDays, true))><span class="grid min-h-11 place-items-center rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-2 text-sm font-black transition peer-checked:border-[#14734A] peer-checked:bg-[#E9F7F0] peer-checked:text-[#14734A]">{{ $label }}</span></label>@endforeach</div>@error('business_days')<span class="mt-2 block text-sm font-bold text-red-600">{{ $message }}</span>@enderror</fieldset>
@@ -99,6 +70,7 @@
                         <h2 class="text-xl font-black">Cobros y depositos</h2>
                         <p class="mt-2 text-sm leading-6 text-[#6B7D83]">Stripe recopila y verifica identidad y cuenta bancaria. Plaza Local no almacena esos datos sensibles.</p>
                         @if($user->vendor->stripe_payouts_enabled)<p class="mt-4 rounded-2xl bg-[#E9F7F0] p-4 text-sm font-black text-[#14734A]">Cuenta verificada y habilitada para recibir depositos.</p>@else<form class="mt-4" method="POST" action="{{ route('stripe.connect') }}">@csrf<button class="rounded-full bg-[#635BFF] px-5 py-3 text-sm font-black text-white" type="submit">{{ $user->vendor->stripe_account_id ? 'Continuar verificacion con Stripe' : 'Configurar cobros con Stripe' }}</button></form>@endif
+                        <fieldset class="sm:col-span-2"><legend class="text-sm font-black">Rubros que puedes atender</legend><div class="mt-3 flex flex-wrap gap-2">@foreach($categories as $category)<label class="cursor-pointer"><input class="peer sr-only" type="checkbox" name="offered_categories[]" value="{{ $category->id }}" @checked(in_array($category->id, old('offered_categories', $user->vendor?->categories->pluck('id')->all() ?? [])))><span class="block rounded-full border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-2 text-xs font-black peer-checked:border-[#D85B0B] peer-checked:bg-[#FFF1E8] peer-checked:text-[#D85B0B]">{{ $category->name }}</span></label>@endforeach</div>@error('offered_categories')<span class="mt-2 block text-sm font-bold text-red-600">{{ $message }}</span>@enderror</fieldset>
                     </section>
                 @endif
             @endif

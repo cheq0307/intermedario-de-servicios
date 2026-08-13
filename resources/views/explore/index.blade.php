@@ -14,6 +14,7 @@
 
         <form class="mt-7 grid gap-3 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-4 shadow-sm md:grid-cols-[1fr_180px_130px_130px_auto]" method="GET" action="{{ route('explore') }}">
             <input class="rounded-2xl bg-[#FAF8F4] px-4 py-3 outline-none focus:ring-4 focus:ring-[#F97316]/10" type="search" name="q" value="{{ $filters['q'] ?? '' }}" maxlength="100" placeholder="Producto, servicio o persona">
+            <select class="rounded-2xl bg-[#FAF8F4] px-4 py-3" name="category_id"><option value="">Todos los rubros</option>@foreach($categories as $category)<option value="{{ $category->id }}" @selected($categoryId === $category->id)>{{ $category->name }}</option>@endforeach</select>
             <select class="rounded-2xl bg-[#FAF8F4] px-4 py-3" name="type"><option value="all">Todo</option><option value="product" @selected($type === 'product')>Productos</option><option value="service" @selected($type === 'service')>Servicios</option><option value="provider" @selected($type === 'provider')>Proveedores</option><option value="job_request" @selected($type === 'job_request')>Solicitudes</option></select>
             <input class="rounded-2xl bg-[#FAF8F4] px-4 py-3" type="number" name="min_price" value="{{ $filters['min_price'] ?? '' }}" min="0" step="0.01" placeholder="Precio mín.">
             <input class="rounded-2xl bg-[#FAF8F4] px-4 py-3" type="number" name="max_price" value="{{ $filters['max_price'] ?? '' }}" min="0" step="0.01" placeholder="Precio máx.">
@@ -22,7 +23,7 @@
             <label><span class="sr-only">Alcance territorial</span><select class="w-full rounded-2xl bg-[#FAF8F4] px-4 py-3" name="scope"><option value="community" @selected($scope === 'community')>Solo esta comunidad</option><option value="nearby" @selected($scope === 'nearby')>Comunidades cercanas</option><option value="all" @selected($scope === 'all')>Todas las comunidades</option></select></label>
             <label><span class="sr-only">Radio en kil&oacute;metros</span><input class="w-full rounded-2xl bg-[#FAF8F4] px-4 py-3" type="number" name="radius_km" value="{{ $radiusKm }}" min="1" max="100" step="0.5" placeholder="Radio en km"></label>
             <div class="self-center text-xs font-bold leading-5 text-[#6B7D83] md:col-span-2">El feed social es global. La b&uacute;squeda comercial parte de la comunidad elegida.@if($scope === 'nearby' && !$radiusSearchAvailable)<span class="mt-1 block text-[#D85B0B]">Esta comunidad a&uacute;n no tiene coordenadas; por seguridad mostramos solo resultados de la misma comunidad.</span>@endif</div>
-            @if(request()->hasAny(['q', 'type', 'min_price', 'max_price', 'community_id', 'scope', 'radius_km']))<a class="self-center text-center text-sm font-black text-[#D85B0B]" href="{{ route('explore') }}">Limpiar filtros</a>@endif
+            @if(request()->hasAny(['q', 'type', 'category_id', 'min_price', 'max_price', 'community_id', 'scope', 'radius_km']))<a class="self-center text-center text-sm font-black text-[#D85B0B]" href="{{ route('explore') }}">Limpiar filtros</a>@endif
         </form>
         @if($errors->any())<p class="mt-4 rounded-2xl bg-red-50 p-4 font-bold text-red-700">{{ $errors->first() }}</p>@endif
 

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -22,6 +23,11 @@ class Community extends Model
         ];
     }
 
+
+    public function jobRequests(): BelongsToMany
+    {
+        return $this->belongsToMany(JobRequest::class)->withTimestamps();
+    }
     public function users(): HasMany
     {
         return $this->hasMany(User::class);

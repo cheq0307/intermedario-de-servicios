@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Marketplace\Enums\JobRequestStatus;
+use App\Models\Category;
 use App\Models\Community;
 use App\Models\JobRequest;
 use App\Models\Listing;
@@ -30,6 +31,7 @@ class ExploreController extends Controller
             'community_id' => ['nullable', 'integer', Rule::exists('communities', 'id')->where('is_active', true)],
             'scope' => ['nullable', Rule::in(['community', 'nearby', 'all'])],
             'radius_km' => ['nullable', 'numeric', 'min:1', 'max:100'],
+            'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('is_active', true)],
         ]);
 
         if (isset($filters['min_price'], $filters['max_price']) && (float) $filters['max_price'] < (float) $filters['min_price']) {
@@ -41,6 +43,17 @@ class ExploreController extends Controller
         $minPrice = $this->minorUnits($filters['min_price'] ?? null);
         $maxPrice = $this->minorUnits($filters['max_price'] ?? null);
         $communities = Community::query()->where('is_active', true)->orderBy('name')->get();
+        $categories = Category::query()->where('is_active', true)->orderBy('name')->get();
+        $categoryId = isset($filters['category_id']) ? (int) $filters['category_id'] : null;
+        if ($request->user() && $categoryId) {
+            $preference = $request->user()->categoryPreferences()->whereKey($categoryId)->first();
+            $request->user()->categoryPreferences()->syncWithoutDetaching([
+                $categoryId => [
+                    'interest_score' => (int) ($preference?->pivot?->interest_score ?? 0),
+                    'behavior_score' => min(1000, (int) ($preference?->pivot?->behavior_score ?? 0) + 10),
+                ],
+            ]);
+        }
         $scope = $filters['scope'] ?? 'community';
         $communityId = isset($filters['community_id'])
             ? (int) $filters['community_id']
@@ -65,6 +78,7 @@ class ExploreController extends Controller
             ->with(['vendor.user:id,name,avatar_path,city'])
             ->where('is_active', true)
             ->whereHas('vendor', fn (Builder $query) => $query->where('status', 'active'))
+            ->when($categoryId, fn (Builder $query) => $query->where('category_id', $categoryId))
             ->when(in_array($type, ['product', 'service'], true), fn (Builder $query) => $query->where('type', $type))
             ->when(in_array($type, ['provider', 'job_request'], true), fn (Builder $query) => $query->whereRaw('1 = 0'))
             ->when($term !== '', function (Builder $query) use ($term): void {
@@ -84,6 +98,7 @@ class ExploreController extends Controller
         $providers = Vendor::query()
             ->with('user:id,name,avatar_path,city')
             ->where('status', 'active')
+            ->when($categoryId, fn (Builder $query) => $query->whereHas('categories', fn (Builder $category) => $category->whereKey($categoryId)))
             ->when(in_array($type, ['product', 'service', 'job_request'], true), fn (Builder $query) => $query->whereRaw('1 = 0'))
             ->when($term !== '', function (Builder $query) use ($term): void {
                 $query->where(function (Builder $query) use ($term): void {
@@ -98,16 +113,25 @@ class ExploreController extends Controller
             ->withQueryString();
 
         $jobRequests = JobRequest::query()
-            ->with('client:id,name,avatar_path,city')
+            ->with(['client:id,name,avatar_path,city', 'category:id,name', 'communities:id,name,municipality,state'])
             ->whereIn('status', [JobRequestStatus::Published, JobRequestStatus::InConversation])
+            ->when($categoryId, fn (Builder $query) => $query->where('category_id', $categoryId))
             ->when($type !== 'all' && $type !== 'job_request', fn (Builder $query) => $query->whereRaw('1 = 0'))
             ->when($term !== '', fn (Builder $query) => $query->where(fn (Builder $query) => $query->where('title', 'like', "%{$term}%")->orWhere('description', 'like', "%{$term}%")))
-            ->when($territoryCommunityIds !== null, fn (Builder $query) => $query->whereHas('client', fn (Builder $user) => $user->whereIn('community_id', $territoryCommunityIds)))
+            ->when($territoryCommunityIds !== null, function (Builder $query) use ($territoryCommunityIds): void {
+                $query->where(function (Builder $query) use ($territoryCommunityIds): void {
+                    $query->whereHas('communities', fn (Builder $community) => $community->whereIn('communities.id', $territoryCommunityIds))
+                        ->orWhere(function (Builder $legacy) use ($territoryCommunityIds): void {
+                            $legacy->whereDoesntHave('communities')
+                                ->whereHas('client', fn (Builder $user) => $user->whereIn('community_id', $territoryCommunityIds));
+                        });
+                });
+            })
             ->latest('published_at')
             ->paginate(12, ['*'], 'requests_page')
             ->withQueryString();
 
-        return view('explore.index', compact('filters', 'listings', 'providers', 'jobRequests', 'type', 'communities', 'scope', 'selectedCommunity', 'radiusKm', 'radiusSearchAvailable'));
+        return view('explore.index', compact('filters', 'listings', 'providers', 'jobRequests', 'type', 'communities', 'categories', 'categoryId', 'scope', 'selectedCommunity', 'radiusKm', 'radiusSearchAvailable'));
     }
 
     private function minorUnits(mixed $value): ?int

@@ -10,10 +10,9 @@
     @php
         $isOwner = auth()->id() === $user->id;
         $canViewPrivateContact = $isOwner || auth()->user()?->hasAnyRole(['admin', 'superadmin']);
-        $isProvider = $user->canActAsProvider();
+        $isProvider = $user->vendor?->status === 'active';
         $vendor = $user->vendor;
-        $roleLabels = ['client' => 'Cliente', 'provider' => 'Proveedor', 'admin' => 'Administrador', 'superadmin' => 'Superadministrador'];
-        $profileRoles = $user->getRoleNames()->map(fn ($role) => $roleLabels[$role] ?? null)->filter();
+        $profileRoles = collect([$user->commercialRoleLabel()]);
         $dayLabels = ['monday' => 'Lun', 'tuesday' => 'Mar', 'wednesday' => 'Mié', 'thursday' => 'Jue', 'friday' => 'Vie', 'saturday' => 'Sáb', 'sunday' => 'Dom'];
         $businessHours = $vendor?->business_hours ?? [];
         $withinBusinessHours = $vendor?->isWithinBusinessHours();
@@ -59,7 +58,7 @@
                                 @if ($vendor?->verified_at)<span class="rounded-full bg-[#E9F7F0] px-3 py-1 text-xs font-black text-[#14734A]">Verificado</span>@endif
                             </div>
                             @if($profileRoles->isNotEmpty())<div class="mt-2 flex flex-wrap gap-2">@foreach($profileRoles as $role)<span class="rounded-full border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-1 text-xs font-black text-[#536A72]">{{ $role }}</span>@endforeach</div>@endif
-                            <p class="mt-2 font-bold text-[#6B7D83]">{{ $isProvider ? ($vendor?->specialty ?: 'Proveedor local') : 'Cliente de la comunidad' }} @if($user->city) · {{ $user->city }} @endif</p>
+                            <p class="mt-2 font-bold text-[#536A72]">{{ $isProvider ? ($vendor?->specialty ?: 'Ofrece servicios en la comunidad') : 'Usuario de la comunidad' }} @if($user->community) · {{ $user->community->display_label }} @elseif($user->city) · {{ $user->city }} @endif</p>
                             @if ($canViewPrivateContact)
                                 <p class="mt-1 break-all text-sm font-bold text-[#314B54]">Correo: <a class="text-[#14734A] underline decoration-[#14734A]/30 underline-offset-2" href="mailto:{{ $user->email }}">{{ $user->email }}</a></p>
                             @elseif ($user->hasVerifiedEmail())
@@ -77,7 +76,7 @@
 
                 <div class="mt-7 grid gap-6 lg:grid-cols-[1fr_300px]">
                     <div>
-                        <p class="max-w-2xl whitespace-pre-line leading-7 text-[#536A72]">{{ $isProvider ? ($vendor?->description ?: $user->bio ?: 'Este proveedor todavía está completando su presentación.') : ($user->bio ?: 'Este cliente todavía está completando su presentación.') }}</p>
+                        <p class="max-w-2xl whitespace-pre-line leading-7 text-[#536A72]">{{ $isProvider ? ($vendor?->description ?: $user->bio ?: 'Esta persona todavía está completando su presentación comercial.') : ($user->bio ?: 'Esta persona todavía está completando su presentación.') }}</p>
                         @if ($isProvider)
                             <div class="mt-5 flex flex-wrap gap-2 text-sm font-bold text-[#536A72]">
                                 @if ($vendor?->service_area)<span class="rounded-full bg-[#FAF8F4] px-4 py-2">Zona: {{ $vendor->service_area }}</span>@endif
@@ -119,7 +118,7 @@
             <div class="mt-5 grid gap-4 md:grid-cols-2">
                 @forelse ($posts as $post)
                     <article class="rounded-3xl border border-[#123B4A]/10 bg-white p-6 shadow-sm">
-                        <div class="flex items-center justify-between gap-3"><span class="text-xs font-black uppercase tracking-[.12em] text-[#F97316]">{{ str_replace('_', ' ', $post->type) }}</span><time class="text-xs font-bold text-[#8A999E]">{{ $post->published_at->diffForHumans() }}</time></div>
+                        <div class="flex items-center justify-between gap-3"><span class="rounded-full px-3 py-1 text-xs font-black uppercase tracking-[.12em] {{ $post->jobRequest ? 'bg-[#FFF1E7] text-[#D85B0B]' : 'bg-[#E9F7F0] text-[#14734A]' }}">{{ $post->jobRequest ? 'SOLICITO' : 'OFREZCO' }}</span><time class="text-xs font-bold text-[#8A999E]">{{ $post->published_at->diffForHumans() }}</time></div>
                         <p class="mt-4 whitespace-pre-line leading-7 text-[#314B54]">{{ $post->body }}</p>
                         @if ($post->listing)<p class="mt-4 rounded-2xl bg-[#FAF8F4] px-4 py-3 font-black">{{ $post->listing->name }}</p>@endif
                         @if ($post->jobRequest)<p class="mt-4 rounded-2xl bg-[#FFF8F2] px-4 py-3 font-black">{{ $post->jobRequest->title }}</p>@endif

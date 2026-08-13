@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Models\Community;
 use App\Models\User;
@@ -14,7 +15,7 @@ class ProfileController extends Controller
 {
     public function show(User $user): View
     {
-        $user->load('vendor')->loadCount(['posts', 'jobRequests']);
+        $user->load(['vendor', 'community'])->loadCount(['posts', 'jobRequests']);
         $posts = $user->posts()
             ->with(['listing', 'jobRequest'])
             ->whereNotNull('published_at')
@@ -28,10 +29,11 @@ class ProfileController extends Controller
 
     public function edit(): View
     {
-        $user = request()->user()->load(['vendor', 'community']);
+        $user = request()->user()->load(['vendor.categories', 'community', 'categoryPreferences']);
         $communities = Community::query()->where('is_active', true)->orderBy('name')->get();
+        $categories = Category::query()->where('is_active', true)->orderBy('name')->get();
 
-        return view('profiles.edit', compact('user', 'communities'));
+        return view('profiles.edit', compact('user', 'communities', 'categories'));
     }
 
     public function update(UpdateProfileRequest $request): RedirectResponse
@@ -50,7 +52,11 @@ class ProfileController extends Controller
 
             $user->update($userData);
 
-            if ($user->canActAsProvider()) {
+            $user->categoryPreferences()->sync(collect($validated['interests'] ?? [])->mapWithKeys(
+                fn (int $categoryId) => [$categoryId => ['interest_score' => 100, 'behavior_score' => 0]],
+            )->all());
+
+            if ($request->boolean('offers_services') || $user->vendor) {
                 $vendorData = collect($validated)->only([
                     'display_name',
                     'description',
@@ -77,6 +83,8 @@ class ProfileController extends Controller
                         'status' => $user->vendor?->status ?? 'draft',
                     ]),
                 );
+
+                $vendor->categories()->sync($validated['offered_categories'] ?? []);
 
                 if ($vendor->status === 'pending') {
                     $vendor->update([

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateProfileRequest;
+use App\Models\Community;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -27,9 +28,10 @@ class ProfileController extends Controller
 
     public function edit(): View
     {
-        $user = request()->user()->load('vendor');
+        $user = request()->user()->load(['vendor', 'community']);
+        $communities = Community::query()->where('is_active', true)->orderBy('distance_km')->orderBy('name')->get();
 
-        return view('profiles.edit', compact('user'));
+        return view('profiles.edit', compact('user', 'communities'));
     }
 
     public function update(UpdateProfileRequest $request): RedirectResponse
@@ -38,7 +40,9 @@ class ProfileController extends Controller
         $validated = $request->validated();
 
         DB::transaction(function () use ($request, $user, $validated): void {
-            $userData = collect($validated)->only(['name', 'phone', 'bio', 'city'])->all();
+            $community = Community::query()->where('is_active', true)->findOrFail($validated['community_id']);
+            $userData = collect($validated)->only(['name', 'phone', 'bio', 'community_id'])->all();
+            $userData['city'] = $community->municipality;
 
             if ($request->hasFile('avatar')) {
                 $userData['avatar_path'] = $request->file('avatar')->store('avatars', 'public');

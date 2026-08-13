@@ -87,6 +87,7 @@ Route::middleware('auth')->group(function () {
         Route::patch('/administracion/proveedores/{vendor}/aprobar', [AdminController::class, 'approveVendor'])->name('admin.vendors.approve');
         Route::patch('/administracion/proveedores/{vendor}/rechazar', [AdminController::class, 'rejectVendor'])->name('admin.vendors.reject');
         Route::patch('/administracion/proveedores/{vendor}/suspender', [AdminController::class, 'suspendVendor'])->name('admin.vendors.suspend');
+        Route::post('/administracion/comunidades', [AdminController::class, 'storeCommunity'])->name('admin.communities.store');
         Route::post('/administracion/usuarios/{user}/administrador', [AdminController::class, 'grantAdmin'])->name('admin.users.grant');
         Route::delete('/administracion/usuarios/{user}/administrador', [AdminController::class, 'revokeAdmin'])->name('admin.users.revoke');
     });

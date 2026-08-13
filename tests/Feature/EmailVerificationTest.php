@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Community;
 use App\Models\User;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,6 +20,7 @@ class EmailVerificationTest extends TestCase
 
         $response = $this->post('/register', [
             'account_type' => 'client',
+            'community_id' => Community::query()->value('id'),
             'name' => 'Persona Nueva',
             'email' => 'persona@example.test',
             'password' => 'Seguro123',

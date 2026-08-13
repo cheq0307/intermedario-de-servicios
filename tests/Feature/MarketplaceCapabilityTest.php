@@ -101,6 +101,7 @@ class MarketplaceCapabilityTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Cambia de contexto sin cerrar sesión.')
+            ->assertSee('Cliente y proveedor')
             ->assertSee('¿Qué necesitas resolver hoy?');
         $this->assertSame('client', session('marketplace_mode'));
 

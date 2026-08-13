@@ -36,6 +36,15 @@
             @error('name') <span class="mt-2 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
         </label>
 
+        <label class="block">
+            <span class="text-sm font-black">Ciudad y comunidad</span>
+            <select class="mt-2 w-full rounded-2xl border border-[#17352b]/15 bg-white px-4 py-3.5 outline-none focus:border-[#1f6b4f] focus:ring-4 focus:ring-[#1f6b4f]/10" name="community_id" required>
+                <option value="">Selecciona tu comunidad</option>
+                @foreach($communities as $community)<option value="{{ $community->id }}" @selected((string) old('community_id') === (string) $community->id)>{{ $community->display_label }}</option>@endforeach
+            </select>
+            @error('community_id') <span class="mt-2 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
+        </label>
+
         <div class="grid gap-4 sm:grid-cols-2">
             <label class="block sm:col-span-2">
                 <span class="text-sm font-black">Correo electrónico</span>

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Domain\Marketplace\Enums\AccountType;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -24,6 +25,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'avatar_path',
         'bio',
         'city',
+        'community_id',
         'password',
     ];
 
@@ -67,6 +69,21 @@ class User extends Authenticatable implements MustVerifyEmail
     public function defaultMarketplaceMode(): ?string
     {
         return $this->canActAsClient() ? 'client' : ($this->canActAsProvider() ? 'provider' : null);
+    }
+
+    public function community(): BelongsTo
+    {
+        return $this->belongsTo(Community::class);
+    }
+
+    public function commercialRoleLabel(): string
+    {
+        return match (true) {
+            $this->canActAsClient() && $this->canActAsProvider() => 'Cliente y proveedor',
+            $this->canActAsProvider() => 'Proveedor',
+            $this->canActAsClient() => 'Cliente',
+            default => $this->hasRole('superadmin') ? 'Superadministrador' : 'Administración',
+        };
     }
 
     public function conversations(): BelongsToMany

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Community;
 use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -57,7 +58,7 @@ class VendorApplicationWorkflowTest extends TestCase
         $vendor = Vendor::create(['user_id' => $provider->id, 'display_name' => 'Servicios Luna', 'slug' => 'servicios-luna-edicion', 'status' => 'pending', 'submitted_at' => now()]);
 
         $this->actingAs($provider)->put(route('profile.update'), [
-            'name' => $provider->name, 'display_name' => 'Servicios Luna Actualizados', 'specialty' => 'Plomería',
+            'name' => $provider->name, 'community_id' => Community::query()->value('id'), 'display_name' => 'Servicios Luna Actualizados', 'specialty' => 'Plomería',
             'service_area' => 'Centro', 'description' => 'Descripción actualizada y completa.', 'availability_status' => 'available',
             'business_days' => ['monday'], 'business_opens_at' => '09:00', 'business_closes_at' => '18:00',
         ])->assertRedirect();

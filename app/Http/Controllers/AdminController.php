@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\Community;
 use App\Models\Dispute;
 use App\Models\Order;
 use App\Models\User;
@@ -33,9 +34,12 @@ class AdminController extends Controller
             ->latest()->limit(30)->get();
         $users = User::with('roles:id,name')->whereKeyNot($request->user()->id)->latest()->limit(30)->get();
         $auditLogs = AuditLog::with('user:id,name')->latest('created_at')->limit(30)->get();
+        $communities = Community::query()->withCount('users')->orderBy('distance_km')->orderBy('name')->get();
+        $auditActions = ['admin.granted' => 'Administrador asignado', 'admin.revoked' => 'Permiso de administrador retirado', 'vendor.active' => 'Proveedor aprobado o reactivado', 'vendor.rejected' => 'Cambios solicitados al proveedor', 'vendor.suspended' => 'Proveedor suspendido', 'community.created' => 'Comunidad agregada'];
+        $auditSubjects = ['User' => 'Usuario', 'Vendor' => 'Proveedor', 'Community' => 'Comunidad'];
         $isSuperadmin = $request->user()->hasRole('superadmin');
 
-        return view('admin.index', compact('metrics', 'pendingVendors', 'vendors', 'users', 'auditLogs', 'isSuperadmin'));
+        return view('admin.index', compact('metrics', 'pendingVendors', 'vendors', 'users', 'auditLogs', 'communities', 'auditActions', 'auditSubjects', 'isSuperadmin'));
     }
 
     public function approveVendor(Request $request, Vendor $vendor): RedirectResponse
@@ -80,6 +84,22 @@ class AdminController extends Controller
         $vendor->user?->notify(new MarketplaceActivity('Tu perfil de proveedor fue suspendido', 'Motivo: '.$validated['reason'], 'profile.show', ['user' => $vendor->user_id], 'vendor_suspended'));
 
         return back()->with('status', 'Proveedor suspendido y notificado.');
+    }
+
+    public function storeCommunity(Request $request): RedirectResponse
+    {
+        $this->authorizeAdmin($request);
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:120', 'unique:communities,name'],
+            'municipality' => ['required', 'string', 'max:120'],
+            'state' => ['nullable', 'string', 'max:120'],
+            'distance_km' => ['required', 'numeric', 'min:0', 'max:9999.99'],
+        ]);
+
+        $community = Community::create($validated + ['is_active' => true]);
+        $this->audit($request, 'community.created', $community);
+
+        return back()->with('status', 'Comunidad agregada al catálogo territorial.');
     }
 
     public function grantAdmin(Request $request, User $user): RedirectResponse

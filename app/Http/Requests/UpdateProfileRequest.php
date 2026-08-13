@@ -16,9 +16,9 @@ class UpdateProfileRequest extends FormRequest
     {
         $rules = [
             'name' => ['required', 'string', 'max:120'],
-            'phone' => ['nullable', 'string', 'max:30'],
+            'phone' => ['nullable', 'regex:/^\d{10}$/'],
             'bio' => ['nullable', 'string', 'max:800'],
-            'city' => ['nullable', 'string', 'max:120'],
+            'community_id' => ['required', 'integer', Rule::exists('communities', 'id')->where('is_active', true)],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ];
 
@@ -40,5 +40,14 @@ class UpdateProfileRequest extends FormRequest
         }
 
         return $rules;
+    }
+
+    public function messages(): array
+    {
+        return [
+            'phone.regex' => 'El teléfono debe contener exactamente 10 dígitos.',
+            'community_id.required' => 'Selecciona tu ciudad y comunidad.',
+            'community_id.exists' => 'La comunidad seleccionada no está disponible.',
+        ];
     }
 }

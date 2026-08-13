@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Community;
 use App\Models\Post;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -69,11 +70,13 @@ class ProfileTest extends TestCase
             'email' => $provider->email,
         ]);
 
+        $community = Community::create(['name' => 'Centro', 'municipality' => 'Mi comunidad', 'distance_km' => 0, 'is_active' => true]);
+
         $this->actingAs($provider)->put(route('profile.update'), [
             'name' => 'Mario Hernández',
             'phone' => '5551234567',
             'bio' => 'Trabajo con atención y puntualidad.',
-            'city' => 'Mi comunidad',
+            'community_id' => $community->id,
             'display_name' => 'Servicios Mario',
             'description' => 'Reparaciones para el hogar.',
             'specialty' => 'Electricidad',
@@ -87,7 +90,7 @@ class ProfileTest extends TestCase
             'tools' => 'Multímetro y herramienta profesional.',
         ])->assertRedirect(route('profile.show', $provider));
 
-        $this->assertDatabaseHas('users', ['id' => $provider->id, 'name' => 'Mario Hernández', 'city' => 'Mi comunidad']);
+        $this->assertDatabaseHas('users', ['id' => $provider->id, 'name' => 'Mario Hernández', 'city' => 'Mi comunidad', 'community_id' => $community->id]);
         $this->assertDatabaseHas('vendors', [
             'user_id' => $provider->id,
             'display_name' => 'Servicios Mario',
@@ -130,7 +133,7 @@ class ProfileTest extends TestCase
             ->assertSee('Cliente')
             ->assertSee('Proveedor')
             ->assertSee('Administrador')
-            ->assertSee('Realizando una chamba')
+            ->assertSee('Realizando un trabajo')
             ->assertSee('Horario: Lun');
     }
 

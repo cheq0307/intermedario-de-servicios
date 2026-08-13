@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Community;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -39,6 +40,7 @@ class AuthenticationTest extends TestCase
     {
         $response = $this->post('/register', [
             'account_type' => 'client',
+            'community_id' => Community::query()->value('id'),
             'name' => 'Cliente Ejemplo',
             'email' => 'cliente@example.test',
             'password' => 'Seguro123',
@@ -57,6 +59,7 @@ class AuthenticationTest extends TestCase
     {
         $response = $this->post('/register', [
             'account_type' => 'provider',
+            'community_id' => Community::query()->value('id'),
             'name' => 'Carpintería Ramírez',
             'email' => 'carpinteria@example.test',
             'phone' => '5551234567',
@@ -80,6 +83,7 @@ class AuthenticationTest extends TestCase
 
         $response = $this->from('/register')->post('/register', [
             'account_type' => 'client',
+            'community_id' => Community::query()->value('id'),
             'name' => 'Cuenta duplicada',
             'email' => 'registrado@example.test',
             'password' => 'Seguro123',

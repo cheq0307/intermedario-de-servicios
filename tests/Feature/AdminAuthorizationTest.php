@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AuditLog;
+use App\Models\Community;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Notifications\MarketplaceActivity;
@@ -186,6 +187,31 @@ class AdminAuthorizationTest extends TestCase
 
         $this->assertDatabaseHas('vendors', ['id' => $vendor->id, 'status' => 'rejected', 'rejection_reason' => 'Necesitamos una descripción más precisa.']);
         Notification::assertSentTo($provider, MarketplaceActivity::class);
+    }
+
+    public function test_admin_can_create_a_community_and_audit_is_human_readable(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::findOrCreate('admin'));
+
+        $this->actingAs($admin)
+            ->post(route('admin.communities.store'), [
+                'name' => 'San Miguel',
+                'municipality' => 'Municipio Ejemplo',
+                'state' => 'Puebla',
+                'distance_km' => 42.5,
+            ])
+            ->assertRedirect();
+
+        $community = Community::where('name', 'San Miguel')->firstOrFail();
+        $this->assertSame('42.50', $community->distance_km);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'community.created', 'subject_id' => $community->id]);
+
+        $this->get(route('admin.index'))
+            ->assertOk()
+            ->assertSee('¿Qué puede hacer cada administrador?')
+            ->assertSee('Comunidad agregada')
+            ->assertDontSee('community.created');
     }
 
     public function test_regular_user_cannot_access_administration(): void

@@ -9,16 +9,28 @@
 <body class="min-h-screen bg-[#FAF8F4] text-[#17313A] antialiased">
     <header class="border-b border-[#123B4A]/10 bg-white"><div class="mx-auto flex max-w-4xl items-center justify-between px-5 py-4"><a class="font-black" href="{{ route('dashboard') }}">Plaza Local</a><a class="rounded-full border border-[#123B4A]/10 px-4 py-2 text-sm font-black" href="{{ route('dashboard') }}">Volver</a></div></header>
     <main class="mx-auto max-w-4xl px-5 py-9">
-        <div class="flex flex-wrap items-end justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Actividad importante</p><h1 class="mt-2 text-3xl font-black">Notificaciones</h1></div>@if(auth()->user()->unreadNotifications()->exists())<form method="POST" action="{{ route('notifications.read-all') }}">@csrf @method('PATCH')<button class="rounded-full border border-[#123B4A]/10 bg-white px-5 py-2.5 text-sm font-black" type="submit">Marcar todas como leídas</button></form>@endif</div>
+        <div class="flex flex-wrap items-end justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Actividad importante</p><h1 class="mt-2 text-3xl font-black">Notificaciones</h1><p class="mt-2 text-sm font-bold text-[#6B7D83]">{{ $unreadCount ? $unreadCount.' sin leer' : 'No tienes avisos pendientes' }} · Abrir un aviso lo marca como leído.</p></div>@if($unreadCount)<form method="POST" action="{{ route('notifications.read-all') }}">@csrf @method('PATCH')<button class="rounded-full border border-[#123B4A]/10 bg-white px-5 py-2.5 text-sm font-black" type="submit">Marcar todas como leídas</button></form>@endif</div>
         @if(session('status'))<p class="mt-5 rounded-2xl bg-[#E9F7F0] p-4 text-sm font-black text-[#14734A]">{{ session('status') }}</p>@endif
         <div class="mt-7 space-y-3">
             @forelse($notifications as $notification)
-                <form method="POST" action="{{ route('notifications.open', $notification->id) }}">@csrf @method('PATCH')<button class="flex w-full items-start gap-4 rounded-[1.5rem] border p-5 text-left shadow-sm transition hover:-translate-y-0.5 {{ $notification->read_at ? 'border-[#123B4A]/8 bg-white/70' : 'border-[#F97316]/20 bg-white' }}" type="submit"><span class="mt-1 grid size-10 shrink-0 place-items-center rounded-full {{ $notification->read_at ? 'bg-[#E8F1EE]' : 'bg-[#FFF1E8] text-[#D85B0B]' }}">{{ $notification->read_at ? '✓' : '•' }}</span><span class="min-w-0 flex-1"><strong class="block">{{ $notification->data['title'] ?? 'Actividad nueva' }}</strong><span class="mt-1 block text-sm font-semibold leading-6 text-[#6B7D83]">{{ $notification->data['body'] ?? '' }}</span><time class="mt-2 block text-xs font-bold text-[#8A999E]">{{ $notification->created_at->diffForHumans() }}</time></span><span class="mt-2 text-[#F97316]">→</span></button></form>
+                <form method="POST" action="{{ route('notifications.open', $notification->id) }}">@csrf @method('PATCH')
+                    <button class="relative flex w-full items-start gap-4 overflow-hidden rounded-[1.5rem] border p-5 text-left shadow-sm transition hover:-translate-y-0.5 {{ $notification->read_at ? 'border-[#123B4A]/10 bg-[#F0F2F1] text-[#536A72]' : 'border-[#22A06B]/30 bg-[#E9F7F0] text-[#17313A]' }}" type="submit">
+                        <span class="absolute inset-y-0 left-0 w-1.5 {{ $notification->read_at ? 'bg-[#AAB5B1]' : 'bg-[#22A06B]' }}"></span>
+                        <span class="mt-1 grid size-10 shrink-0 place-items-center rounded-full {{ $notification->read_at ? 'bg-white text-[#6B7D83]' : 'bg-[#14734A] text-white' }}">{{ $notification->read_at ? '✓' : '•' }}</span>
+                        <span class="min-w-0 flex-1">
+                            <span class="flex flex-wrap items-center gap-2"><strong class="block {{ $notification->read_at ? 'font-bold' : 'font-black' }}">{{ $notification->data['title'] ?? 'Actividad nueva' }}</strong><span class="rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide {{ $notification->read_at ? 'bg-white text-[#6B7D83]' : 'bg-[#14734A] text-white' }}">{{ $notification->read_at ? 'Leída' : 'Nueva' }}</span></span>
+                            <span class="mt-1 block text-sm font-semibold leading-6 {{ $notification->read_at ? 'text-[#75857F]' : 'text-[#536A72]' }}">{{ $notification->data['body'] ?? '' }}</span>
+                            <time class="mt-2 block text-xs font-bold text-[#8A999E]">{{ $notification->created_at->diffForHumans() }}</time>
+                        </span>
+                        <span class="mt-2 font-black {{ $notification->read_at ? 'text-[#8A999E]' : 'text-[#14734A]' }}">Abrir →</span>
+                    </button>
+                </form>
             @empty
                 <div class="rounded-[1.75rem] border border-dashed border-[#123B4A]/20 bg-white/60 p-12 text-center"><h2 class="text-xl font-black">Todo tranquilo por aquí</h2><p class="mt-2 text-sm font-bold text-[#6B7D83]">Los cambios importantes de propuestas, pedidos y disputas aparecerán aquí.</p></div>
             @endforelse
         </div>
         @if($notifications->hasPages())<div class="mt-6">{{ $notifications->links() }}</div>@endif
+        <div class="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-[1.5rem] border border-[#123B4A]/10 bg-white p-5"><div><h2 class="font-black">¿Necesitas ayuda?</h2><p class="mt-1 text-sm font-semibold text-[#6B7D83]">Abre un caso y conserva toda la conversación con soporte.</p></div><a class="rounded-full bg-[#123B4A] px-5 py-3 text-sm font-black text-white" href="{{ route('support.create') }}">Contactar soporte</a></div>
     </main>
 </body>
 </html>

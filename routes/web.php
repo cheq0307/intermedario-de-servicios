@@ -22,6 +22,7 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ServiceOrderController;
 use App\Http\Controllers\StripeConnectController;
 use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\SupportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -42,6 +43,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/perfiles/{user}', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/mi-perfil/editar', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/mi-perfil', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/soporte', [SupportController::class, 'index'])->name('support.index');
+    Route::get('/soporte/nueva', [SupportController::class, 'create'])->name('support.create');
+    Route::post('/soporte', [SupportController::class, 'store'])->name('support.store');
+    Route::get('/soporte/{ticket}', [SupportController::class, 'show'])->name('support.show');
+    Route::post('/soporte/{ticket}/respuestas', [SupportController::class, 'reply'])->name('support.reply');
     Route::middleware('verified')->group(function () {
         Route::post('/mi-cuenta/capacidades/{capability}', [MarketplaceCapabilityController::class, 'activate'])->name('capabilities.activate');
         Route::post('/mi-perfil/solicitar-verificacion', [MarketplaceCapabilityController::class, 'submitProviderApplication'])->name('provider-applications.submit');
@@ -87,6 +93,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/administracion/disputas', [DisputeController::class, 'adminIndex'])->name('disputes.admin-index');
         Route::post('/trabajos/{order}/calificaciones', [ReviewController::class, 'store'])->name('reviews.store');
         Route::get('/administracion', [AdminController::class, 'index'])->name('admin.index');
+        Route::get('/administracion/soporte', [SupportController::class, 'adminIndex'])->name('admin.support.index');
+        Route::get('/administracion/soporte/{ticket}', [SupportController::class, 'show'])->name('admin.support.show');
+        Route::patch('/administracion/soporte/{ticket}/estado', [SupportController::class, 'updateStatus'])->name('admin.support.status');
         Route::get('/administracion/usuarios', [AdminDirectoryController::class, 'users'])->name('admin.users.index');
         Route::get('/administracion/proveedores/{vendor}', [AdminDirectoryController::class, 'showVendor'])->name('admin.vendors.show');
         Route::get('/administracion/proveedores', [AdminDirectoryController::class, 'vendors'])->name('admin.vendors.index');

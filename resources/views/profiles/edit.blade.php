@@ -91,6 +91,7 @@
                 @elseif($vendorStatus === 'suspended')
                     <h2 class="mt-2 text-xl font-black">Perfil suspendido</h2>
                     <p class="mt-2 text-sm font-semibold text-[#6B7D83]">Contacta a soporte para conocer el motivo y solicitar una revisión administrativa.</p>
+                    <a class="mt-5 inline-flex rounded-full bg-[#123B4A] px-5 py-3 text-sm font-black text-white" href="{{ route('support.create', ['category' => 'provider_suspension']) }}">Contactar soporte</a>
                 @else
                     <h2 class="mt-2 text-xl font-black">Envía tu perfil cuando esté listo</h2>
                     <p class="mt-2 text-sm font-semibold text-[#6B7D83]">Guardar el perfil no lo envía automáticamente. Tú decides cuándo solicitar la revisión.</p>

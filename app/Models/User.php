@@ -56,6 +56,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasRole('provider');
     }
+
     public function canUseMarketplace(): bool
     {
         if ($this->hasRole('superadmin')) {
@@ -64,7 +65,6 @@ class User extends Authenticatable implements MustVerifyEmail
 
         return ! $this->hasRole('admin') || $this->hasAnyRole(['client', 'provider']);
     }
-
 
     public function supportsMarketplaceMode(string $mode): bool
     {
@@ -145,5 +145,10 @@ class User extends Authenticatable implements MustVerifyEmail
     public function interests(): BelongsToMany
     {
         return $this->categoryPreferences()->wherePivot('interest_score', '>', 0);
+    }
+
+    public function supportTickets(): HasMany
+    {
+        return $this->hasMany(SupportTicket::class);
     }
 }

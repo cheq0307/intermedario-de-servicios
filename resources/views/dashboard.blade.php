@@ -76,6 +76,7 @@
                     ['Mensajes', route('conversations.index'), false],
                     ['Notificaciones', route('notifications.index'), false],
                     ['Mis trabajos', route('orders.index'), false],
+                    ['Soporte', route('support.index'), false],
                     ['Mi perfil', route('profile.show', $currentUser), false],
                 ] as [$label, $href, $active])
                     <a class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black transition {{ $active ? 'bg-[#123B4A] text-white shadow-lg shadow-[#123B4A]/10' : 'text-[#536A72] hover:bg-white hover:text-[#123B4A]' }}" href="{{ $href }}">
@@ -116,7 +117,7 @@
                         @case('draft') Tu perfil está en borrador. Complétalo y envía la solicitud de verificación desde “Editar perfil”. @break
                         @case('pending') Tu solicitud de proveedor está en revisión. Publicar ofertas y enviar propuestas permanecerá bloqueado hasta que sea aprobada. @break
                         @case('rejected') Tu solicitud necesita cambios: {{ $currentUser->vendor?->rejection_reason }} @break
-                        @case('suspended') Tu perfil comercial está suspendido. Contacta a soporte para solicitar una revisión. @break
+                        @case('suspended') Tu perfil comercial está suspendido. <a class="ml-1 font-black underline" href="{{ route('support.create', ['category' => 'provider_suspension']) }}">Contactar soporte y solicitar revisión</a>. @break
                         @default Completa y envía tu perfil comercial para solicitar la verificación. @break
                     @endswitch
                     <a class="ml-1 underline" href="{{ route('profile.edit') }}">Editar perfil</a>

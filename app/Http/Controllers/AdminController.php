@@ -8,6 +8,7 @@ use App\Models\Community;
 use App\Models\Dispute;
 use App\Models\Order;
 use App\Models\PostalCode;
+use App\Models\SupportTicket;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Notifications\MarketplaceActivity;
@@ -29,6 +30,7 @@ class AdminController extends Controller
             'users' => User::count(),
             'vendors' => Vendor::count(),
             'postal_codes' => PostalCode::count(),
+            'open_support_tickets' => SupportTicket::whereIn('status', ['open', 'in_progress', 'waiting_user'])->count(),
             'pending_vendors' => Vendor::where('status', 'pending')->where('user_id', '!=', $request->user()->id)->count(),
             'open_disputes' => Dispute::where('status', 'open')->count(),
             'active_orders' => Order::whereIn('status', ['accepted', 'awaiting_payment', 'paid', 'in_progress', 'ready', 'delivered', 'disputed'])->count(),

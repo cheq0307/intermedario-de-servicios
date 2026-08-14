@@ -20,9 +20,18 @@ class NotificationCenterTest extends TestCase
         $user->notify(new MarketplaceActivity('Pedido listo', 'Ya puedes recogerlo.', 'dashboard'));
         $notification = $user->notifications()->firstOrFail();
 
-        $this->actingAs($user)->get(route('notifications.index'))->assertOk()->assertSee('Pedido listo');
+        $this->actingAs($user)->get(route('notifications.index'))
+            ->assertOk()
+            ->assertSee('Pedido listo')
+            ->assertSee('1 sin leer')
+            ->assertSee('Nueva');
         $this->actingAs($user)->patch(route('notifications.open', $notification->id))->assertRedirect(route('dashboard'));
         $this->assertNotNull($notification->fresh()->read_at);
+
+        $this->actingAs($user)->get(route('notifications.index'))
+            ->assertOk()
+            ->assertSee('No tienes avisos pendientes')
+            ->assertSee('Leída');
     }
 
     public function test_user_cannot_open_another_users_notification(): void

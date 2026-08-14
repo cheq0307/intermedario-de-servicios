@@ -55,6 +55,7 @@
                 <section class="rounded-[1.75rem] border border-red-200 bg-white p-6 shadow-sm"><h2 class="text-xl font-black">Moderación</h2><form class="mt-4" method="POST" action="{{ route('admin.vendors.suspend', $vendor) }}">@csrf @method('PATCH')<textarea class="min-h-24 w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm" name="reason" minlength="10" maxlength="1000" required placeholder="Motivo documentado de la suspensión"></textarea><button class="mt-3 w-full rounded-full bg-red-700 px-5 py-3 font-black text-white" type="submit">Suspender proveedor</button></form></section>
             @elseif($vendor->status === 'suspended' && $ready)
                 <section class="rounded-[1.75rem] bg-white p-6 shadow-sm"><p class="text-sm font-semibold">Motivo de suspensión: {{ $vendor->suspension_reason }}</p><form class="mt-4" method="POST" action="{{ route('admin.vendors.approve', $vendor) }}">@csrf @method('PATCH')<button class="w-full rounded-full bg-[#14734A] px-5 py-3 font-black text-white" type="submit">Reactivar proveedor</button></form></section>
+                <a class="inline-flex rounded-full border border-[#123B4A]/10 bg-white px-5 py-3 text-sm font-black" href="{{ route('admin.support.index', ['q' => $vendor->user->email]) }}">Buscar casos de soporte de esta cuenta</a>
             @endif
         </aside>
     </div>

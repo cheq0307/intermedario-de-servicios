@@ -12,8 +12,9 @@ class NotificationController extends Controller
     public function index(Request $request): View
     {
         $notifications = $request->user()->notifications()->paginate(20);
+        $unreadCount = $request->user()->unreadNotifications()->count();
 
-        return view('notifications.index', compact('notifications'));
+        return view('notifications.index', compact('notifications', 'unreadCount'));
     }
 
     public function open(Request $request, string $notification): RedirectResponse

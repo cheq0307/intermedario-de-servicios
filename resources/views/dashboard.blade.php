@@ -376,12 +376,10 @@
                                 </div>
                             @endif
                         </div>
-                        <div class="flex flex-wrap gap-4 border-t border-[#123B4A]/8 px-5 py-3 text-xs font-bold text-[#6B7D83]">
-                            <span>{{ $post->reactions_count }} Me gusta</span><span>{{ $post->comments_count }} comentarios</span><span>{{ $post->shares_count }} compartidos</span>
-                        </div>
-                        <div class="grid grid-cols-3 border-t border-[#123B4A]/8 px-3 py-2 text-xs font-black text-[#6B7D83]">
+                        <div class="border-t border-[#123B4A]/8 px-4 pt-2">
+                            <div class="flex min-h-11 items-center justify-end text-xs font-black text-[#536A72]">
                             @if ($post->user_id === $currentUser->id)
-                                <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-[#FAF8F4] hover:text-[#F97316]" href="{{ route('posts.edit', $post) }}">Editar</a>
+                                <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-[#FAF8F4] hover:text-[#F97316]" href="{{ route('posts.edit', $post) }}">Editar publicación</a>
                                 @if ($post->jobRequest)
                                     <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-[#FAF8F4] hover:text-[#F97316]" href="{{ route('job-proposals.index', $post->jobRequest) }}">Ver propuestas</a>
                                 @else
@@ -391,7 +389,9 @@
                                 @if ($post->jobRequest && $isProvider)
                                     <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-[#FAF8F4] hover:text-[#F97316]" href="{{ route('job-proposals.index', $post->jobRequest) }}">Enviar propuesta</a>
                                 @elseif ($post->jobRequest)
-                                    <span class="rounded-xl px-3 py-2.5 text-center text-[#A4B0B4]">Solo proveedores</span>
+                                    <span class="grid size-10 place-items-center rounded-full text-[#8A999E]" title="Disponible para personas que ofrecen este servicio" aria-label="Disponible para personas que ofrecen este servicio">
+                                        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7V5.8A1.8 1.8 0 0 1 10.8 4h2.4A1.8 1.8 0 0 1 15 5.8V7m-9 0h12a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Zm-2 5h16M10 12v2h4v-2"/></svg>
+                                    </span>
                                 @elseif ($post->listing?->type?->value === 'product' && $post->listing?->price_type?->value === 'fixed')
                                     <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-[#FAF8F4] hover:text-[#F97316]" href="{{ route('products.checkout', $post->listing) }}">
                                         Comprar
@@ -402,9 +402,31 @@
                                     </button>
                                 @endif
                             @endif
-                            <form method="POST" action="{{ route('posts.reactions.toggle', $post) }}">@csrf<button class="w-full rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316] {{ $post->reacted_by_user ? 'bg-[#FFF1E8] text-[#D85B0B]' : '' }}" type="submit" aria-pressed="{{ $post->reacted_by_user ? 'true' : 'false' }}" title="{{ $post->reacted_by_user ? 'Retirar Me gusta' : 'Marcar con Me gusta' }}">{{ $post->reacted_by_user ? 'Quitar Me gusta' : 'Me gusta' }}</button></form>
-                            <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button" data-comment-toggle="comment-{{ $post->id }}">Comentar</button>
-                            <form method="POST" action="{{ route('posts.shares.store', $post) }}" data-share-form data-share-url="{{ route('dashboard').'#post-'.$post->id }}" data-share-title="{{ $post->user->name }} en Plaza Local">@csrf<input type="hidden" name="channel" value="native"><button class="w-full rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="submit">Compartir</button></form>
+                            </div>
+                            <div class="flex items-center gap-1 border-t border-[#123B4A]/8 py-2 text-[#123B4A]">
+                                <form method="POST" action="{{ route('posts.reactions.toggle', $post) }}">
+                                    @csrf
+                                    <button class="group flex min-h-11 items-center gap-2 rounded-full px-3 transition hover:bg-[#FFF1E8] hover:text-[#D85B0B] {{ $post->reacted_by_user ? 'text-[#E24B35]' : '' }}" type="submit" aria-pressed="{{ $post->reacted_by_user ? 'true' : 'false' }}" title="{{ $post->reacted_by_user ? 'Retirar Me gusta' : 'Marcar con Me gusta' }}">
+                                        <svg class="size-6 transition group-hover:scale-110" viewBox="0 0 24 24" fill="{{ $post->reacted_by_user ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></svg>
+                                        <span class="text-sm font-black">{{ $post->reactions_count }}</span>
+                                        <span class="sr-only">{{ $post->reacted_by_user ? 'Quitar Me gusta' : 'Me gusta' }}</span>
+                                    </button>
+                                </form>
+                                <button class="group flex min-h-11 items-center gap-2 rounded-full px-3 transition hover:bg-[#E9F7F0] hover:text-[#14734A]" type="button" data-comment-toggle="comment-{{ $post->id }}" title="Comentar">
+                                    <svg class="size-6 transition group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21 11.5a8.4 8.4 0 0 1-9 8.5 9.7 9.7 0 0 1-4-.9L3 21l1.7-4.5A8.3 8.3 0 1 1 21 11.5Z"/></svg>
+                                    <span class="text-sm font-black">{{ $post->comments_count }}</span>
+                                    <span class="sr-only">Comentar</span>
+                                </button>
+                                <form method="POST" action="{{ route('posts.shares.store', $post) }}" data-share-form data-share-url="{{ route('dashboard').'#post-'.$post->id }}" data-share-title="{{ $post->user->name }} en Plaza Local">
+                                    @csrf
+                                    <input type="hidden" name="channel" value="native">
+                                    <button class="group flex min-h-11 items-center gap-2 rounded-full px-3 transition hover:bg-[#EAF3F7] hover:text-[#123B4A]" type="submit" title="Compartir">
+                                        <svg class="size-6 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m22 2-7 20-4-9-9-4 20-7Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M22 2 11 13"/></svg>
+                                        <span class="text-sm font-black">{{ $post->shares_count }}</span>
+                                        <span class="sr-only">Compartir</span>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                         <section id="comment-{{ $post->id }}" class="border-t border-[#123B4A]/8 bg-[#FAF8F4]/60 p-4" data-comment-panel>
                             @foreach($post->comments->take(5) as $comment)

@@ -62,7 +62,7 @@
         <section class="mt-8 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6" id="comunidades">
             <div><p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Cobertura territorial</p><h2 class="mt-1 text-xl font-black">Comunidades disponibles</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Cada comunidad es un centro local independiente. Sus coordenadas permiten encontrar otras comunidades dentro del radio elegido.</p></div>
             <form class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4" method="POST" action="{{ route('admin.communities.store') }}">@csrf
-                <label><span class="text-xs font-black">Código postal</span><span class="mt-2 flex gap-2"><input id="community-postal-code" class="min-w-0 flex-1 rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" name="postal_code" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="5 dígitos"><button id="lookup-postal-code" class="rounded-xl bg-[#123B4A] px-3 text-xs font-black text-white" type="button">Consultar</button></span><span id="postal-code-status" class="mt-1 block text-xs font-bold text-[#6B7D83]">Completa municipio, estado y asentamiento.</span></label>
+                <label><span class="text-xs font-black">Código postal</span><span class="mt-2 flex gap-2"><input id="community-postal-code" class="min-w-0 flex-1 rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" name="postal_code" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" autocomplete="postal-code" placeholder="5 dígitos"><button id="lookup-postal-code" class="rounded-xl bg-[#123B4A] px-3 text-xs font-black text-white disabled:cursor-wait disabled:opacity-60" type="button">Consultar</button></span><span id="postal-code-status" class="mt-1 block text-xs font-bold text-[#6B7D83]">Al escribir 5 dígitos consultaremos el catálogo postal.</span></label>
                 <label><span class="text-xs font-black">Nombre de la comunidad</span><input id="community-name" class="mt-2 w-full rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" name="name" list="postal-settlements" required maxlength="120" placeholder="Ej. San Miguel"><datalist id="postal-settlements"></datalist></label>
                 <label><span class="text-xs font-black">Municipio o ciudad</span><input id="community-municipality" class="mt-2 w-full rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" name="municipality" required maxlength="120"></label>
                 <label><span class="text-xs font-black">Estado</span><input id="community-state" class="mt-2 w-full rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" name="state" maxlength="120"></label>
@@ -182,36 +182,64 @@
         <section class="mt-6 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6"><h2 class="text-xl font-black">Auditoría reciente</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Registro de quién realizó cada cambio administrativo y sobre qué elemento.</p><div class="mt-4 overflow-x-auto"><table class="w-full min-w-[650px] text-left text-sm"><thead><tr class="text-[#6B7D83]"><th class="p-3">Fecha</th><th class="p-3">Responsable</th><th class="p-3">Qué ocurrió</th><th class="p-3">Elemento afectado</th></tr></thead><tbody>@forelse($auditLogs as $log)<tr class="border-t border-[#123B4A]/10"><td class="p-3">{{ $log->created_at->format('d/m/Y H:i') }}</td><td class="p-3">{{ $log->user?->name ?? 'Sistema' }}</td><td class="p-3 font-black">{{ $auditActions[$log->action] ?? str_replace(['.', '_'], ' ', ucfirst($log->action)) }}</td><td class="p-3">{{ $auditSubjects[class_basename($log->subject_type)] ?? class_basename($log->subject_type) }} #{{ $log->subject_id }}</td></tr>@empty<tr><td class="p-6 text-center font-bold text-[#6B7D83]" colspan="4">Todavía no hay acciones administrativas registradas.</td></tr>@endforelse</tbody></table></div></section>
     </main>
     <script>
-        document.getElementById('lookup-postal-code')?.addEventListener('click', async () => {
-            const postalCode = document.getElementById('community-postal-code').value.trim();
-            const status = document.getElementById('postal-code-status');
+        const postalInput = document.getElementById('community-postal-code');
+        const postalButton = document.getElementById('lookup-postal-code');
+        const postalStatus = document.getElementById('postal-code-status');
+        let postalLookupTimer;
+
+        const lookupPostalCode = async () => {
+            const postalCode = postalInput?.value.trim() ?? '';
             if (!/^\d{5}$/.test(postalCode)) {
-                status.textContent = 'Escribe exactamente 5 dígitos.';
-                status.className = 'mt-1 block text-xs font-bold text-red-600';
+                postalStatus.textContent = 'Escribe exactamente 5 dígitos.';
+                postalStatus.className = 'mt-1 block text-xs font-bold text-red-600';
                 return;
             }
-            status.textContent = 'Consultando catálogo postal…';
+            postalButton.disabled = true;
+            postalStatus.textContent = 'Consultando catálogo postal…';
+            postalStatus.className = 'mt-1 block text-xs font-bold text-[#6B7D83]';
             try {
-                const response = await fetch(`/codigos-postales/${postalCode}`, {headers: {'Accept': 'application/json'}});
+                const url = @json(route('postal-codes.show', ['postalCode' => '00000'])).replace('00000', postalCode);
+                const response = await fetch(url, {headers: {'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'}});
+                if (!response.ok) throw new Error('lookup-failed');
                 const data = await response.json();
-                if (!data.found) throw new Error('not-found');
+                if (!data.found || !Array.isArray(data.places) || data.places.length === 0) {
+                    throw new Error(data.catalog_available
+                        ? 'Ese CP no aparece en el catálogo cargado. Puedes completar los datos manualmente.'
+                        : 'El catálogo postal aún está vacío. Importa arriba el TXT oficial de Correos de México y vuelve a consultar.');
+                }
                 const first = data.places[0];
-                document.getElementById('community-municipality').value = first.municipality;
-                document.getElementById('community-state').value = first.state;
-                document.getElementById('community-name').value = first.settlement;
+                document.getElementById('community-municipality').value = first.municipality ?? '';
+                document.getElementById('community-state').value = first.state ?? '';
+                document.getElementById('community-name').value = data.places.length === 1 ? (first.settlement ?? '') : '';
                 const options = document.getElementById('postal-settlements');
                 options.replaceChildren(...data.places.map(place => {
                     const option = document.createElement('option');
                     option.value = place.settlement;
-                    option.label = place.settlement_type || 'Asentamiento';
+                    option.label = [place.settlement_type, place.municipality, place.state].filter(Boolean).join(' · ');
                     return option;
                 }));
-                status.textContent = `${data.places.length} asentamiento(s) encontrado(s). Puedes elegir otro en “Nombre de la comunidad”.`;
-                status.className = 'mt-1 block text-xs font-bold text-[#14734A]';
+                postalStatus.textContent = data.places.length === 1
+                    ? `${first.settlement}, ${first.municipality}, ${first.state}. Datos completados.`
+                    : `${data.places.length} asentamientos encontrados. Elige uno en “Nombre de la comunidad”; municipio y estado ya fueron completados.`;
+                postalStatus.className = 'mt-1 block text-xs font-bold text-[#14734A]';
             } catch (error) {
-                status.textContent = 'Ese CP no está en el catálogo actual. Completa manualmente comunidad, municipio y estado; al guardar quedará disponible para futuras consultas.';
-                status.className = 'mt-1 block text-xs font-bold text-red-600';
+                postalStatus.textContent = error.message === 'lookup-failed'
+                    ? 'No pudimos consultar el CP. Revisa la conexión y vuelve a intentarlo.'
+                    : error.message;
+                postalStatus.className = 'mt-1 block text-xs font-bold text-red-600';
+            } finally {
+                postalButton.disabled = false;
             }
+        };
+
+        postalButton?.addEventListener('click', lookupPostalCode);
+        postalInput?.addEventListener('input', () => {
+            postalInput.value = postalInput.value.replace(/\D/g, '').slice(0, 5);
+            clearTimeout(postalLookupTimer);
+            if (postalInput.value.length === 5) postalLookupTimer = setTimeout(lookupPostalCode, 250);
+        });
+        postalInput?.addEventListener('keydown', event => {
+            if (event.key === 'Enter') { event.preventDefault(); lookupPostalCode(); }
         });
     </script>
 </body>

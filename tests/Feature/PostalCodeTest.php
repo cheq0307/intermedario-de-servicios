@@ -32,6 +32,7 @@ class PostalCodeTest extends TestCase
         $this->getJson(route('postal-codes.show', '72000'))
             ->assertOk()
             ->assertJsonPath('found', true)
+            ->assertJsonPath('catalog_available', true)
             ->assertJsonCount(2, 'places')
             ->assertJsonPath('places.0.settlement', 'Centro')
             ->assertJsonPath('places.0.municipality', 'Puebla');
@@ -73,7 +74,7 @@ class PostalCodeTest extends TestCase
     {
         $this->getJson(route('postal-codes.show', '99999'))
             ->assertOk()
-            ->assertJson(['found' => false, 'postal_code' => '99999', 'places' => []]);
+            ->assertJson(['found' => false, 'catalog_available' => false, 'postal_code' => '99999', 'places' => []]);
     }
 
     public function test_official_pipe_delimited_catalog_can_be_imported(): void

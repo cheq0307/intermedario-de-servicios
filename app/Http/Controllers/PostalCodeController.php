@@ -36,6 +36,7 @@ class PostalCodeController extends Controller
 
         return response()->json([
             'found' => $places->isNotEmpty(),
+            'catalog_available' => PostalCode::query()->exists(),
             'postal_code' => $postalCode,
             'places' => $places,
             'communities' => $communities,

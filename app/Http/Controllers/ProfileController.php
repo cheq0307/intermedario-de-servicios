@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Category;
 use App\Http\Requests\UpdateProfileRequest;
+use App\Models\Category;
 use App\Models\Community;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -15,10 +15,14 @@ class ProfileController extends Controller
 {
     public function show(User $user): View
     {
-        $user->load(['vendor', 'community'])->loadCount(['posts', 'jobRequests']);
+        $user->load(['vendor', 'community'])->loadCount([
+            'posts' => fn ($query) => $query->whereNull('removed_at'),
+            'jobRequests' => fn ($query) => $query->whereHas('post', fn ($post) => $post->whereNull('removed_at')),
+        ]);
         $posts = $user->posts()
             ->with(['listing', 'jobRequest'])
             ->whereNotNull('published_at')
+            ->whereNull('removed_at')
             ->latest('published_at')
             ->paginate(9);
         $rating = $user->reviewsReceived()->where('is_visible', true)->avg('rating');

@@ -11,6 +11,7 @@ class PostEngagementController extends Controller
 {
     public function toggleReaction(Request $request, Post $post): RedirectResponse
     {
+        abort_if($post->removed_at !== null, 404);
         $reaction = $post->reactions()->where('user_id', $request->user()->id)->first();
 
         if ($reaction) {
@@ -26,6 +27,7 @@ class PostEngagementController extends Controller
 
     public function comment(Request $request, Post $post): RedirectResponse
     {
+        abort_if($post->removed_at !== null, 404);
         abort_unless($post->comments_enabled, 403);
         $validated = $request->validate(['body' => ['required', 'string', 'min:2', 'max:1000']]);
         $post->comments()->create(['user_id' => $request->user()->id, 'body' => $validated['body']]);
@@ -44,6 +46,7 @@ class PostEngagementController extends Controller
 
     public function share(Request $request, Post $post): RedirectResponse
     {
+        abort_if($post->removed_at !== null, 404);
         $validated = $request->validate(['channel' => ['nullable', 'string', 'in:native,clipboard,whatsapp,facebook']]);
         $post->shares()->create(['user_id' => $request->user()->id, 'channel' => $validated['channel'] ?? 'native']);
 

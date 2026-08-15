@@ -97,6 +97,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/administracion/soporte/{ticket}', [SupportController::class, 'show'])->name('admin.support.show');
         Route::patch('/administracion/soporte/{ticket}/estado', [SupportController::class, 'updateStatus'])->name('admin.support.status');
         Route::get('/administracion/usuarios', [AdminDirectoryController::class, 'users'])->name('admin.users.index');
+        Route::get('/administracion/publicaciones', [AdminDirectoryController::class, 'posts'])->name('admin.posts.index');
+        Route::patch('/administracion/publicaciones/{post}/retirar', [AdminController::class, 'removePost'])->name('admin.posts.remove');
         Route::get('/administracion/proveedores/{vendor}', [AdminDirectoryController::class, 'showVendor'])->name('admin.vendors.show');
         Route::get('/administracion/proveedores', [AdminDirectoryController::class, 'vendors'])->name('admin.vendors.index');
         Route::patch('/administracion/proveedores/{vendor}/aprobar', [AdminController::class, 'approveVendor'])->name('admin.vendors.approve');

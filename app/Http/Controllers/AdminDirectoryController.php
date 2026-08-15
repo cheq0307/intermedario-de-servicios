@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Community;
+use App\Models\Post;
 use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Database\Eloquent\Builder;
@@ -12,6 +13,36 @@ use Illuminate\View\View;
 
 class AdminDirectoryController extends Controller
 {
+    public function posts(Request $request): View
+    {
+        $this->authorizeAdmin($request);
+        $filters = $request->validate([
+            'q' => ['nullable', 'string', 'max:100'],
+            'kind' => ['nullable', Rule::in(['offer', 'request'])],
+            'status' => ['nullable', Rule::in(['active', 'removed'])],
+            'community_id' => ['nullable', 'integer', Rule::exists('communities', 'id')],
+        ]);
+        $term = trim($filters['q'] ?? '');
+        $posts = Post::query()
+            ->with(['user.community:id,name,municipality', 'listing.category:id,name', 'jobRequest.category:id,name', 'removedBy:id,name'])
+            ->when($term !== '', fn (Builder $query) => $query->where(fn (Builder $query) => $query
+                ->where('body', 'like', "%{$term}%")
+                ->orWhereHas('user', fn (Builder $user) => $user->where('name', 'like', "%{$term}%")->orWhere('email', 'like', "%{$term}%"))
+                ->orWhereHas('listing', fn (Builder $listing) => $listing->where('name', 'like', "%{$term}%"))
+                ->orWhereHas('jobRequest', fn (Builder $job) => $job->where('title', 'like', "%{$term}%"))))
+            ->when(($filters['kind'] ?? null) === 'offer', fn (Builder $query) => $query->whereNotNull('listing_id'))
+            ->when(($filters['kind'] ?? null) === 'request', fn (Builder $query) => $query->whereNotNull('job_request_id'))
+            ->when(($filters['status'] ?? null) === 'active', fn (Builder $query) => $query->whereNull('removed_at'))
+            ->when(($filters['status'] ?? null) === 'removed', fn (Builder $query) => $query->whereNotNull('removed_at'))
+            ->when($filters['community_id'] ?? null, fn (Builder $query, int|string $community) => $query->whereHas('user', fn (Builder $user) => $user->where('community_id', $community)))
+            ->latest('published_at')
+            ->paginate(24)
+            ->withQueryString();
+        $communities = Community::query()->orderBy('name')->get(['id', 'name', 'municipality']);
+
+        return view('admin.posts', compact('posts', 'communities', 'filters'));
+    }
+
     public function users(Request $request): View
     {
         $this->authorizeAdmin($request);

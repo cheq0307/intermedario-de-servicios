@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Community;
 use App\Models\Dispute;
 use App\Models\Order;
+use App\Models\Post;
 use App\Models\PostalCode;
 use App\Models\SupportTicket;
 use App\Models\User;
@@ -34,6 +35,7 @@ class AdminController extends Controller
             'pending_vendors' => Vendor::where('status', 'pending')->where('user_id', '!=', $request->user()->id)->count(),
             'open_disputes' => Dispute::where('status', 'open')->count(),
             'active_orders' => Order::whereIn('status', ['accepted', 'awaiting_payment', 'paid', 'in_progress', 'ready', 'delivered', 'disputed'])->count(),
+            'active_posts' => Post::whereNull('removed_at')->count(),
         ];
         $pendingVendors = Vendor::with('user:id,name,email,email_verified_at')
             ->where('status', 'pending')->where('user_id', '!=', $request->user()->id)
@@ -65,9 +67,9 @@ class AdminController extends Controller
         }
         $auditLogs = AuditLog::with('user:id,name')->latest('created_at')->limit(30)->get();
         $communities = Community::query()->withCount('users')->orderBy('name')->get();
-        $auditActions = ['admin.granted' => 'Administrador asignado', 'admin.revoked' => 'Permiso de administrador retirado', 'vendor.active' => 'Proveedor aprobado o reactivado', 'vendor.rejected' => 'Cambios solicitados al proveedor', 'vendor.suspended' => 'Proveedor suspendido', 'community.created' => 'Comunidad agregada', 'community.updated' => 'Centro comunitario actualizado'];
+        $auditActions = ['admin.granted' => 'Administrador asignado', 'admin.revoked' => 'Permiso de administrador retirado', 'vendor.active' => 'Proveedor aprobado o reactivado', 'vendor.rejected' => 'Cambios solicitados al proveedor', 'vendor.suspended' => 'Proveedor suspendido', 'post.removed' => 'Publicación retirada', 'community.created' => 'Comunidad agregada', 'community.updated' => 'Centro comunitario actualizado'];
         $categories = Category::query()->withCount(['users', 'vendors', 'listings', 'jobRequests'])->orderBy('name')->get();
-        $auditSubjects = ['User' => 'Usuario', 'Vendor' => 'Proveedor', 'Community' => 'Comunidad'];
+        $auditSubjects = ['User' => 'Usuario', 'Vendor' => 'Proveedor', 'Post' => 'Publicación', 'Community' => 'Comunidad'];
         $isSuperadmin = $request->user()->hasRole('superadmin');
 
         return view('admin.index', compact('metrics', 'pendingVendors', 'vendors', 'administrators', 'adminCandidates', 'adminSearch', 'auditLogs', 'communities', 'categories', 'auditActions', 'auditSubjects', 'isSuperadmin'));
@@ -116,6 +118,36 @@ class AdminController extends Controller
         $vendor->user?->notify(new MarketplaceActivity('Tu perfil de proveedor fue suspendido', 'Motivo: '.$validated['reason'], 'profile.show', ['user' => $vendor->user_id], 'vendor_suspended'));
 
         return back()->with('status', 'Proveedor suspendido y notificado.');
+    }
+
+    public function removePost(Request $request, Post $post): RedirectResponse
+    {
+        $this->authorizeAdmin($request);
+        abort_if($post->removed_at !== null, 422, 'Esta publicación ya fue retirada.');
+        $validated = $request->validate(['reason' => ['required', 'string', 'min:10', 'max:1000']]);
+
+        DB::transaction(function () use ($request, $post, $validated): void {
+            $post->update([
+                'removed_at' => now(),
+                'removed_by_user_id' => $request->user()->id,
+                'removal_reason' => $validated['reason'],
+            ]);
+            $this->audit($request, 'post.removed', $post, [
+                'reason' => $validated['reason'],
+                'type' => $post->type,
+            ]);
+        });
+
+        $post->loadMissing('user');
+        $post->user?->notify(new MarketplaceActivity(
+            'Una publicación fue retirada',
+            'Motivo: '.$validated['reason'].' Si necesitas una revisión, contacta a soporte.',
+            'support.create',
+            ['category' => 'moderation', 'subject' => 'Revisión de publicación #'.$post->id],
+            'post_removed',
+        ));
+
+        return back()->with('status', 'Publicación retirada y autor notificado.');
     }
 
     public function storeCommunity(Request $request): RedirectResponse

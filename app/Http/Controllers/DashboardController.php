@@ -53,6 +53,7 @@ class DashboardController extends Controller
             ->withCount(['reactions', 'comments', 'shares'])
             ->withExists(['reactions as reacted_by_user' => fn ($query) => $query->where('user_id', $user->id)])
             ->whereNotNull('published_at')
+            ->whereNull('removed_at')
             ->whereHas('user')
             ->where(function ($query): void {
                 $query->whereNotIn('type', ['portfolio', 'business_update', 'product', 'service', 'promotion'])
@@ -77,6 +78,7 @@ class DashboardController extends Controller
 
         $categories = Category::query()->where('is_active', true)->orderBy('name')->get();
         $communities = Community::query()->where('is_active', true)->orderBy('name')->get();
+
         return view('dashboard', compact('posts', 'activeMode', 'feed', 'showComposer', 'publishAs', 'categories', 'communities'));
     }
 }

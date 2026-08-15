@@ -27,6 +27,8 @@ class JobProposalController extends Controller
 
     public function index(Request $request, JobRequest $jobRequest): View
     {
+        $jobRequest->loadMissing('post');
+        abort_if($jobRequest->post?->removed_at !== null, 404, 'Esta publicación ya no está disponible.');
         $isOwner = $jobRequest->client_id === $request->user()->id;
         $isProvider = $request->user()->canActAsProvider();
         abort_unless($isOwner || $isProvider, 403);
@@ -44,6 +46,8 @@ class JobProposalController extends Controller
 
     public function store(Request $request, JobRequest $jobRequest): RedirectResponse
     {
+        $jobRequest->loadMissing('post');
+        abort_if($jobRequest->post?->removed_at !== null, 404, 'Esta publicación ya no está disponible.');
         abort_unless($request->user()->canActAsProvider(), 403);
         if ($request->user()->vendor?->status !== 'active') {
             throw ValidationException::withMessages(['proposal' => 'Tu perfil comercial debe estar aprobado antes de enviar propuestas.']);

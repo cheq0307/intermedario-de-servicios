@@ -79,6 +79,7 @@ class PostManagementController extends Controller
 
     private function ensureEditable(Post $post): void
     {
+        abort_if($post->removed_at !== null, 422, 'Una publicación retirada no puede editarse. Contacta a soporte para solicitar una revisión.');
         if ($post->listing) {
             abort_unless($post->listing->vendor->status === 'active', 422, 'El perfil comercial debe estar activo para editar esta oferta.');
         }

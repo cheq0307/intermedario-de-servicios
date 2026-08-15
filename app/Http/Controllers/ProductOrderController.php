@@ -182,7 +182,9 @@ class ProductOrderController extends Controller
 
     private function ensurePurchasable(Request $request, Listing $listing): void
     {
+        $listing->loadMissing('post');
         abort_unless($request->user()->canActAsClient(), 403);
+        abort_if($listing->post?->removed_at !== null, 404, 'Esta publicación ya no está disponible.');
         abort_unless($listing->type === ListingType::Product, 404);
         abort_unless($listing->is_active && $listing->price_type === PriceType::Fixed && $listing->price_amount !== null, 422, 'Este producto no admite compra directa.');
         abort_unless($listing->vendor->status === 'active', 422, 'El comercio no está disponible en este momento.');

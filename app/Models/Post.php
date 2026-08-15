@@ -21,6 +21,9 @@ class Post extends Model
         'body',
         'comments_enabled',
         'published_at',
+        'removed_at',
+        'removed_by_user_id',
+        'removal_reason',
     ];
 
     protected function casts(): array
@@ -28,12 +31,18 @@ class Post extends Model
         return [
             'comments_enabled' => 'boolean',
             'published_at' => 'datetime',
+            'removed_at' => 'datetime',
         ];
     }
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function removedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'removed_by_user_id');
     }
 
     public function vendor(): BelongsTo

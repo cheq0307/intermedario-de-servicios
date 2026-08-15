@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Community;
+use App\Models\Post;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Notifications\MarketplaceActivity;
@@ -250,5 +251,54 @@ class AdminAuthorizationTest extends TestCase
     {
         $client = User::factory()->create();
         $this->actingAs($client)->get(route('admin.index'))->assertForbidden();
+    }
+
+    public function test_admin_can_remove_a_post_with_reason_audit_and_author_notification(): void
+    {
+        Notification::fake();
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::findOrCreate('admin'));
+        $author = User::factory()->create();
+        $author->assignRole(Role::findOrCreate('client'));
+        $post = Post::create([
+            'user_id' => $author->id,
+            'type' => 'business_update',
+            'body' => 'Contenido que necesita moderación administrativa.',
+            'published_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->patch(route('admin.posts.remove', $post), ['reason' => 'Incumple las reglas de publicación de la comunidad.'])
+            ->assertRedirect();
+
+        $post->refresh();
+        $this->assertNotNull($post->removed_at);
+        $this->assertSame($admin->id, $post->removed_by_user_id);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'post.removed', 'subject_id' => $post->id]);
+        Notification::assertSentTo($author, MarketplaceActivity::class);
+
+        $this->actingAs($author)->get(route('dashboard'))->assertDontSee($post->body);
+        $this->get(route('profile.show', $author))->assertDontSee($post->body);
+        $this->actingAs($admin)->get(route('admin.posts.index', ['status' => 'removed']))
+            ->assertOk()
+            ->assertSee('Incumple las reglas de publicación de la comunidad.');
+    }
+
+    public function test_regular_user_cannot_remove_a_post(): void
+    {
+        $author = User::factory()->create();
+        $author->assignRole(Role::findOrCreate('client'));
+        $post = Post::create([
+            'user_id' => $author->id,
+            'type' => 'business_update',
+            'body' => 'Publicación válida y visible para la comunidad.',
+            'published_at' => now(),
+        ]);
+
+        $this->actingAs($author)
+            ->patch(route('admin.posts.remove', $post), ['reason' => 'Intento no autorizado de retirar contenido.'])
+            ->assertForbidden();
+
+        $this->assertNull($post->fresh()->removed_at);
     }
 }

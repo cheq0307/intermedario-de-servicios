@@ -201,19 +201,24 @@ const marketMenuClose = document.querySelector('[data-market-menu-close]');
 
 if (marketMenu && marketMenuOverlay && marketMenuOpen) {
     const setMenuOpen = (open) => {
+        marketMenu.classList.toggle('invisible', !open);
+        marketMenu.classList.toggle('pointer-events-none', !open);
         marketMenu.classList.toggle('-translate-x-full', !open);
+        marketMenuOverlay.classList.toggle('invisible', !open);
         marketMenuOverlay.classList.toggle('pointer-events-none', !open);
         marketMenuOverlay.classList.toggle('opacity-0', !open);
         marketMenu.setAttribute('aria-hidden', open ? 'false' : 'true');
         marketMenuOverlay.setAttribute('aria-hidden', open ? 'false' : 'true');
         marketMenuOpen.setAttribute('aria-expanded', open ? 'true' : 'false');
         document.documentElement.classList.toggle('overflow-hidden', open);
+        document.body.classList.toggle('overflow-hidden', open);
         if (open) marketMenuClose?.focus(); else marketMenuOpen.focus();
     };
 
     marketMenuOpen.addEventListener('click', () => setMenuOpen(true));
     marketMenuClose?.addEventListener('click', () => setMenuOpen(false));
     marketMenuOverlay.addEventListener('click', () => setMenuOpen(false));
+    marketMenu.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => setMenuOpen(false)));
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && marketMenu.getAttribute('aria-hidden') === 'false') setMenuOpen(false);
     });

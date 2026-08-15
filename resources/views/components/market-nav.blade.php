@@ -25,8 +25,8 @@
         </a>
     </div>
 </header>
-<div class="pointer-events-none fixed inset-0 z-[70] bg-[#071D24]/45 opacity-0 transition-opacity" data-market-menu-overlay aria-hidden="true"></div>
-<aside class="fixed inset-y-0 left-0 z-[80] flex w-[min(86vw,340px)] -translate-x-full flex-col bg-white shadow-2xl transition-transform duration-300" data-market-menu aria-hidden="true">
+<div class="pointer-events-none invisible fixed inset-0 z-[70] bg-[#071D24]/55 opacity-0 backdrop-blur-[2px] transition-opacity duration-300" data-market-menu-overlay aria-hidden="true"></div>
+<aside class="pointer-events-none invisible fixed inset-y-0 left-0 z-[80] flex h-[100dvh] max-h-[100dvh] w-[min(86vw,340px)] -translate-x-full flex-col overflow-hidden bg-white shadow-2xl transition-transform duration-300" style="background-color:#ffffff;opacity:1" data-market-menu role="dialog" aria-modal="true" aria-label="Menú principal" aria-hidden="true">
     <div class="flex items-center justify-between border-b border-[#123B4A]/10 px-5 py-4">
         <a class="flex items-center gap-3 font-black" href="{{ $startUrl }}"><span class="grid size-10 place-items-center rounded-2xl bg-[#123B4A] text-white">P</span><span>Plaza Local</span></a>
         <button class="grid size-10 place-items-center rounded-full hover:bg-[#FAF8F4]" type="button" data-market-menu-close aria-label="Cerrar menú"><svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" d="m6 6 12 12M18 6 6 18"/></svg></button>

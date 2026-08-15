@@ -8,44 +8,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen w-full overflow-x-clip bg-[#f7f5ef] text-[#17352b] antialiased selection:bg-[#f2c66d] selection:text-[#17352b]">
-    <header class="sticky top-0 z-50 border-b border-[#17352b]/10 bg-[#f7f5ef]/90 backdrop-blur-xl">
-        <div class="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-4 sm:gap-4 sm:px-5 lg:px-8">
-            <a href="{{ route('home') }}" class="flex min-w-0 items-center gap-2 sm:gap-3" aria-label="Ir al inicio">
-                <span class="grid size-10 shrink-0 place-items-center rounded-2xl bg-[#1f6b4f] text-lg font-black text-white shadow-[0_8px_24px_rgba(31,107,79,.22)] sm:size-11 sm:text-xl">P</span>
-                <span class="min-w-0">
-                    <span class="block text-base font-black leading-none tracking-tight sm:text-lg">Plaza Local</span>
-                    <span class="mt-1 block text-[8px] font-bold uppercase leading-3 tracking-[.14em] text-[#d2693c] sm:text-[10px] sm:tracking-[.22em]">Tu comunidad, conectada</span>
-                </span>
-            </a>
-
-            <nav class="hidden items-center gap-8 text-sm font-bold lg:flex" aria-label="Navegación principal">
-                <a class="transition hover:text-[#d2693c]" href="#categorias">Categorías</a>
-                <a class="transition hover:text-[#d2693c]" href="#como-funciona">Cómo funciona</a>
-                <a class="transition hover:text-[#d2693c]" href="#proveedores">Para negocios</a>
-            </nav>
-
-            <div class="flex shrink-0 items-center gap-1 sm:gap-2">
-                @auth
-                    @php
-                        $homeUser = auth()->user();
-                        $administrativeOnly = $homeUser->hasRole('superadmin') || ($homeUser->hasRole('admin') && ! $homeUser->canActAsClient() && ! $homeUser->canActAsProvider());
-                        $accountUrl = $administrativeOnly ? route('admin.index') : route('dashboard');
-                    @endphp
-                    <a class="inline-flex shrink-0 whitespace-nowrap rounded-full bg-[#17352b] px-3 py-2.5 text-xs font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#244b3e] sm:px-4 sm:text-sm" href="{{ $accountUrl }}">
-                        <span class="sm:hidden">{{ $administrativeOnly ? 'Admin' : 'Mi cuenta' }}</span>
-                        <span class="hidden sm:inline">{{ $administrativeOnly ? 'Administración' : 'Ir a mi cuenta' }}</span>
-                    </a>
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button class="inline-flex rounded-full px-2.5 py-2 text-xs font-extrabold transition hover:bg-white sm:px-4 sm:text-sm" type="submit"><span class="sm:hidden">Salir</span><span class="hidden sm:inline">Cerrar sesión</span></button>
-                    </form>
-                @else
-                    <a class="inline-flex rounded-full px-2.5 py-2 text-xs font-extrabold transition hover:bg-white sm:px-4 sm:text-sm" href="{{ route('login') }}"><span class="sm:hidden">Entrar</span><span class="hidden sm:inline">Ingresar</span></a>
-                    <a class="inline-flex shrink-0 whitespace-nowrap rounded-full bg-[#17352b] px-3 py-2.5 text-xs font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#244b3e] sm:px-4 sm:text-sm" href="{{ route('register') }}"><span class="sm:hidden">Crear</span><span class="hidden sm:inline">Crear cuenta</span></a>
-                @endauth
-            </div>
-        </div>
-    </header>
+    <x-market-nav />
 
     <main>
         <section class="relative overflow-hidden">

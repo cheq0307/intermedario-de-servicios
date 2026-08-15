@@ -161,6 +161,7 @@ document.querySelectorAll('[data-postal-assistant]').forEach((assistant) => {
                 status.textContent = 'No encontramos ese CP en el catálogo cargado. Puedes seleccionar tu comunidad manualmente.';
                 status.className = 'mt-2 text-xs font-bold text-red-600';
                 return;
+
             }
 
             const place = data.places[0];
@@ -192,3 +193,28 @@ document.querySelectorAll('[data-postal-assistant]').forEach((assistant) => {
     button.addEventListener('click', lookup);
     input.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); lookup(); } });
 });
+
+const marketMenu = document.querySelector('[data-market-menu]');
+const marketMenuOverlay = document.querySelector('[data-market-menu-overlay]');
+const marketMenuOpen = document.querySelector('[data-market-menu-open]');
+const marketMenuClose = document.querySelector('[data-market-menu-close]');
+
+if (marketMenu && marketMenuOverlay && marketMenuOpen) {
+    const setMenuOpen = (open) => {
+        marketMenu.classList.toggle('-translate-x-full', !open);
+        marketMenuOverlay.classList.toggle('pointer-events-none', !open);
+        marketMenuOverlay.classList.toggle('opacity-0', !open);
+        marketMenu.setAttribute('aria-hidden', open ? 'false' : 'true');
+        marketMenuOverlay.setAttribute('aria-hidden', open ? 'false' : 'true');
+        marketMenuOpen.setAttribute('aria-expanded', open ? 'true' : 'false');
+        document.documentElement.classList.toggle('overflow-hidden', open);
+        if (open) marketMenuClose?.focus(); else marketMenuOpen.focus();
+    };
+
+    marketMenuOpen.addEventListener('click', () => setMenuOpen(true));
+    marketMenuClose?.addEventListener('click', () => setMenuOpen(false));
+    marketMenuOverlay.addEventListener('click', () => setMenuOpen(false));
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && marketMenu.getAttribute('aria-hidden') === 'false') setMenuOpen(false);
+    });
+}

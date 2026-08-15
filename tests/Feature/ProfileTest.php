@@ -15,6 +15,22 @@ class ProfileTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_guest_can_view_public_profile_but_must_register_to_contact(): void
+    {
+        $provider = User::factory()->create(['email_verified_at' => now()]);
+        $provider->vendor()->create([
+            'display_name' => 'Proveedor público',
+            'slug' => 'proveedor-publico',
+            'status' => 'active',
+        ]);
+
+        $this->get(route('profile.show', $provider))
+            ->assertOk()
+            ->assertSee('Proveedor público')
+            ->assertSee('Regístrate para contactar')
+            ->assertSee(route('register'), false);
+    }
+
     public function test_authenticated_user_can_view_a_public_profile_without_private_contact_data(): void
     {
         $viewer = User::factory()->create(['account_type' => 'client']);

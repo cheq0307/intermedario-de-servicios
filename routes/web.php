@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', HomeController::class)->name('home');
 Route::get('/explorar', ExploreController::class)->name('explore');
 Route::get('/codigos-postales/{postalCode}', [PostalCodeController::class, 'show'])->whereNumber('postalCode')->middleware('throttle:60,1')->name('postal-codes.show');
+Route::get('/perfiles/{user}', [ProfileController::class, 'show'])->name('profile.show');
 Route::post('/webhooks/stripe', StripeWebhookController::class)->name('stripe.webhook');
 
 Route::middleware('guest')->group(function () {
@@ -40,7 +41,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     Route::post('/mi-cuenta/modo/{mode}', [MarketplaceCapabilityController::class, 'switchMode'])->name('capabilities.switch');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
-    Route::get('/perfiles/{user}', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/mi-perfil/editar', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/mi-perfil', [ProfileController::class, 'update'])->name('profile.update');
     Route::get('/soporte', [SupportController::class, 'index'])->name('support.index');

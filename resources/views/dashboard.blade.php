@@ -28,43 +28,7 @@
         ];
     @endphp
 
-    <header class="sticky top-0 z-40 border-b border-[#123B4A]/10 bg-[#FAF8F4]/90 backdrop-blur-xl">
-        <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:flex-nowrap sm:gap-4 sm:px-6">
-            <a href="{{ route('dashboard') }}" class="flex shrink-0 items-center gap-3">
-                <span class="grid size-10 place-items-center rounded-2xl bg-[#123B4A] text-lg font-black text-white shadow-[0_8px_24px_rgba(18,59,74,.2)]">P</span>
-                <span class="hidden sm:block">
-                    <span class="block font-black leading-none">Plaza Local</span>
-                    <span class="mt-1 block text-[9px] font-black uppercase tracking-[.2em] text-[#F97316]">Cerca y confiable</span>
-                </span>
-            </a>
-
-            <form class="order-last flex w-full items-center gap-3 rounded-full border border-[#123B4A]/10 bg-white px-4 py-2.5 shadow-sm sm:order-none sm:max-w-xl sm:flex-1" method="GET" action="{{ route('explore') }}">
-                <svg class="size-5 shrink-0 text-[#6B7D83]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-                <input id="global-search" class="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none placeholder:text-[#8A999E]" type="search" name="q" maxlength="100" placeholder="Buscar productos, servicios o personas">
-                <button class="sr-only" type="submit">Buscar</button>
-            </form>
-
-            <div class="flex shrink-0 items-center gap-2">
-                @if($currentUser->hasAnyRole(['admin', 'superadmin']))
-                    <a class="inline-flex min-h-10 items-center gap-2 rounded-full bg-[#FFF1E8] px-3 text-xs font-black text-[#D85B0B] transition hover:bg-[#FFE4D2]" href="{{ route('admin.index') }}" aria-label="Abrir administración">
-                        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3 4.5 6v5.5c0 4.5 3 7.8 7.5 9.5 4.5-1.7 7.5-5 7.5-9.5V6L12 3Z"/><path d="M9 12l2 2 4-4"/></svg>
-                        <span class="hidden sm:inline">Administración</span>
-                    </a>
-                @endif
-                <a class="relative grid size-10 place-items-center rounded-full border border-[#123B4A]/10 bg-white font-black" href="{{ route('notifications.index') }}" aria-label="Notificaciones">🔔@if($currentUser->unreadNotifications()->count())<span class="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-[#F97316] px-1 text-[10px] text-white">{{ min(99, $currentUser->unreadNotifications()->count()) }}</span>@endif</a>
-                <div class="max-w-28 text-right leading-tight sm:max-w-40">
-                    <span class="block truncate text-xs font-black text-[#17313A] sm:text-sm">{{ $currentUser->name }}</span>
-                    <span class="mt-0.5 block truncate text-[10px] font-black uppercase tracking-[.08em] text-[#D85B0B]">{{ $currentUser->commercialRoleLabel() }}</span>
-                </div>
-                <a class="grid size-10 place-items-center rounded-full bg-[#DCEAE6] font-black text-[#123B4A] transition hover:ring-4 hover:ring-[#22A06B]/15" href="{{ route('profile.show', $currentUser) }}" aria-label="Ver mi perfil">{{ mb_strtoupper(mb_substr($currentUser->name, 0, 1)) }}</a>
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button class="grid size-10 place-items-center rounded-full border border-[#123B4A]/10 bg-white text-[#536A72] transition hover:border-[#F97316]/30 hover:text-[#F97316] sm:hidden" type="submit" aria-label="Cerrar sesión" title="Cerrar sesión"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M14 3h4a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3h-4"/></svg></button>
-                    <button class="hidden rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black transition hover:border-[#F97316]/30 hover:text-[#F97316] sm:block" type="submit">Salir</button>
-                </form>
-            </div>
-        </div>
-    </header>
+    <x-market-nav />
 
     <main class="mx-auto grid max-w-7xl gap-6 px-4 py-6 pb-28 sm:px-6 lg:grid-cols-[230px_minmax(0,640px)_280px]">
         <aside class="hidden lg:block">

@@ -3,6 +3,8 @@
     $navUser = auth()->user();
     $administrativeOnly = $navUser?->hasRole('superadmin') || ($navUser?->hasRole('admin') && ! $navUser?->canActAsClient() && ! $navUser?->canActAsProvider());
     $accountUrl = $navUser ? ($administrativeOnly ? route('admin.index') : route('profile.show', $navUser)) : route('login');
+    $itemClass = 'flex items-center gap-3 rounded-2xl px-4 py-3 transition hover:bg-[#E9F7F0]';
+    $activeClass = 'bg-[#123B4A] text-white shadow-sm hover:bg-[#123B4A]';
     $startUrl = $navUser ? ($administrativeOnly ? route('admin.index') : route('dashboard')) : route('home');
 @endphp
 <header class="sticky top-0 z-50 border-b border-[#123B4A]/10 bg-white/95 backdrop-blur-xl">
@@ -32,18 +34,19 @@
         <button class="grid size-10 place-items-center rounded-full hover:bg-[#FAF8F4]" type="button" data-market-menu-close aria-label="Cerrar menú"><svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" d="m6 6 12 12M18 6 6 18"/></svg></button>
     </div>
     <nav class="flex-1 space-y-1 overflow-y-auto p-4 text-sm font-black" aria-label="Menú principal">
-        <a class="flex items-center gap-3 rounded-2xl px-4 py-3 hover:bg-[#E9F7F0]" href="{{ $startUrl }}"><span aria-hidden="true">⌂</span> Inicio</a>
-        <a class="flex items-center gap-3 rounded-2xl px-4 py-3 hover:bg-[#E9F7F0]" href="{{ route('explore') }}"><span aria-hidden="true">⌕</span> Explorar productos y servicios</a>
+        <a class="{{ $itemClass }} {{ request()->routeIs('dashboard', 'home') ? $activeClass : '' }}" href="{{ $startUrl }}"><span aria-hidden="true">⌂</span> Inicio</a>
+        <a class="{{ $itemClass }} {{ request()->routeIs('explore') ? $activeClass : '' }}" href="{{ route('explore') }}"><span aria-hidden="true">⌕</span> Explorar productos y servicios</a>
         @auth
             @unless($administrativeOnly)
-                <a class="flex items-center gap-3 rounded-2xl px-4 py-3 hover:bg-[#E9F7F0]" href="{{ route('dashboard', ['publicar' => 'request']).'#crear-publicacion' }}"><span aria-hidden="true">＋</span> Publicar</a>
-                <a class="flex items-center gap-3 rounded-2xl px-4 py-3 hover:bg-[#E9F7F0]" href="{{ route('orders.index') }}"><span aria-hidden="true">▣</span> Mis trabajos</a>
-                <a class="flex items-center gap-3 rounded-2xl px-4 py-3 hover:bg-[#E9F7F0]" href="{{ route('conversations.index') }}"><span aria-hidden="true">◇</span> Mensajes</a>
-                <a class="flex items-center gap-3 rounded-2xl px-4 py-3 hover:bg-[#E9F7F0]" href="{{ route('notifications.index') }}"><span aria-hidden="true">♢</span> Notificaciones</a>
-                <a class="flex items-center gap-3 rounded-2xl px-4 py-3 hover:bg-[#E9F7F0]" href="{{ route('support.index') }}"><span aria-hidden="true">?</span> Soporte</a>
+                <a class="{{ $itemClass }}" href="{{ route('dashboard', ['publicar' => 'request']).'#crear-publicacion' }}"><span aria-hidden="true">＋</span> Publicar</a>
+                <a class="{{ $itemClass }} {{ request()->routeIs('orders.*') ? $activeClass : '' }}" href="{{ route('orders.index') }}"><span aria-hidden="true">▣</span> Mis trabajos</a>
+                <a class="{{ $itemClass }} {{ request()->routeIs('conversations.*') ? $activeClass : '' }}" href="{{ route('conversations.index') }}"><span aria-hidden="true">◇</span> Mensajes</a>
+                <a class="{{ $itemClass }} {{ request()->routeIs('notifications.*') ? $activeClass : '' }}" href="{{ route('notifications.index') }}"><span aria-hidden="true">♢</span> Notificaciones</a>
+                <a class="{{ $itemClass }} {{ request()->routeIs('support.*') ? $activeClass : '' }}" href="{{ route('support.index') }}"><span aria-hidden="true">?</span> Soporte</a>
+                <a class="{{ $itemClass }} {{ request()->routeIs('profile.*') ? $activeClass : '' }}" href="{{ route('profile.show', $navUser) }}"><span aria-hidden="true">●</span> Mi perfil</a>
             @endunless
             @if($navUser->hasAnyRole(['admin', 'superadmin']))
-                <a class="flex items-center gap-3 rounded-2xl bg-[#FFF1E8] px-4 py-3 text-[#D85B0B]" href="{{ route('admin.index') }}" aria-label="Abrir administración"><span aria-hidden="true">⚙</span> Administración</a>
+                <a class="{{ $itemClass }} {{ request()->routeIs('admin.*') ? $activeClass : 'bg-[#FFF1E8] text-[#D85B0B]' }}" href="{{ route('admin.index') }}" aria-label="Abrir administración"><span aria-hidden="true">⚙</span> Administración</a>
             @endif
         @else
             <div class="my-3 border-t border-[#123B4A]/10"></div>

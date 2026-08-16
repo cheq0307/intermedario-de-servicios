@@ -30,35 +30,7 @@
 
     <x-market-nav />
 
-    <main class="mx-auto grid max-w-7xl gap-6 px-4 py-6 pb-28 sm:px-6 lg:grid-cols-[230px_minmax(0,640px)_280px]">
-        <aside class="hidden lg:block">
-            <nav class="sticky top-24 space-y-1" aria-label="Navegación principal">
-                @foreach ([
-                    ['Inicio', '#inicio', true],
-                    ['Explorar', route('explore'), false],
-                    ['Publicar', route('dashboard', ['publicar' => 'request']).'#crear-publicacion', false],
-                    ['Mensajes', route('conversations.index'), false],
-                    ['Notificaciones', route('notifications.index'), false],
-                    ['Mis trabajos', route('orders.index'), false],
-                    ['Soporte', route('support.index'), false],
-                    ['Mi perfil', route('profile.show', $currentUser), false],
-                ] as [$label, $href, $active])
-                    <a class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black transition {{ $active ? 'bg-[#123B4A] text-white shadow-lg shadow-[#123B4A]/10' : 'text-[#536A72] hover:bg-white hover:text-[#123B4A]' }}" href="{{ $href }}">
-                        <span class="size-2 rounded-full {{ $active ? 'bg-[#F97316]' : 'bg-[#B8C4C7]' }}"></span>{{ $label }}
-                    </a>
-                @endforeach
-                @if($currentUser->hasAnyRole(['admin', 'superadmin']))
-                    <a class="mt-3 flex items-center gap-3 rounded-2xl bg-[#FFF1E8] px-4 py-3 text-sm font-black text-[#D85B0B]" href="{{ route('admin.index') }}">
-                        <span class="size-2 rounded-full bg-[#F97316]"></span>Administración
-                    </a>
-                @endif
-                <div class="mt-6 rounded-3xl bg-[#E8F1EE] p-5">
-                    <p class="text-xs font-black uppercase tracking-[.16em] text-[#22A06B]">Tu comunidad</p>
-                    <p class="mt-2 text-sm font-bold leading-6 text-[#536A72]">Compra y contrata dentro de la plataforma para conservar respaldo y reputación.</p>
-                </div>
-            </nav>
-        </aside>
-
+    <main class="mx-auto grid max-w-5xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,680px)_280px]">
         <div id="inicio" class="min-w-0 space-y-5">
             @if (session('status'))
                 <div class="rounded-2xl border border-[#22A06B]/20 bg-[#E9F7F0] px-5 py-4 text-sm font-black text-[#14734A]" role="status">
@@ -438,21 +410,5 @@
         </aside>
     </main>
 
-    <nav class="fixed inset-x-0 bottom-0 z-50 border-t border-[#123B4A]/10 bg-white/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl lg:hidden" aria-label="Navegación móvil">
-        <div class="mx-auto grid max-w-lg grid-cols-5">
-            @foreach ([
-                ['Inicio', '#inicio'],
-                ['Publicar', route('dashboard', ['publicar' => 'request']).'#crear-publicacion'],
-                ['Trabajos', route('orders.index')],
-                ['Mensajes', route('conversations.index')],
-                ['Perfil', route('profile.show', $currentUser)],
-            ] as [$label, $href])
-                <a class="flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[11px] font-black {{ $label === 'Publicar' ? 'text-[#F97316]' : 'text-[#6B7D83]' }}" href="{{ $href }}">
-                    <span class="grid size-6 place-items-center rounded-lg {{ $label === 'Publicar' ? 'bg-[#FFF1E8] text-lg' : 'bg-transparent' }}">{{ $label === 'Publicar' ? '+' : '•' }}</span>
-                    {{ $label }}
-                </a>
-            @endforeach
-        </div>
-    </nav>
 </body>
 </html>

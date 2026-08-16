@@ -168,6 +168,53 @@ document.querySelectorAll('[data-postal-assistant]').forEach((assistant) => {
             const exactOptions = communitySelect instanceof HTMLSelectElement
                 ? [...communitySelect.options].filter((option) => option.dataset.postalCode === postalCode)
                 : [];
+document.querySelectorAll('[data-market-carousel]').forEach((carousel) => {
+    const track = carousel.querySelector('[data-carousel-track]');
+    const previous = carousel.querySelector('[data-carousel-prev]');
+    const next = carousel.querySelector('[data-carousel-next]');
+    if (!(track instanceof HTMLElement)) return;
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let timer = null;
+
+    const distance = () => Math.max(track.clientWidth * 0.82, 240);
+    const move = (direction) => track.scrollBy({ left: distance() * direction, behavior: reducedMotion ? 'auto' : 'smooth' });
+    const stop = () => {
+        if (timer !== null) window.clearInterval(timer);
+        timer = null;
+    };
+    const start = () => {
+        stop();
+        if (reducedMotion || track.scrollWidth <= track.clientWidth) return;
+        timer = window.setInterval(() => {
+            const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 8;
+            if (atEnd) track.scrollTo({ left: 0, behavior: 'smooth' });
+            else move(1);
+        }, 5500);
+    };
+
+    previous?.addEventListener('click', () => {
+        stop();
+        move(-1);
+        window.setTimeout(start, 7000);
+    });
+    next?.addEventListener('click', () => {
+        stop();
+        move(1);
+        window.setTimeout(start, 7000);
+    });
+    carousel.addEventListener('pointerenter', stop);
+    carousel.addEventListener('pointerleave', start);
+    carousel.addEventListener('focusin', stop);
+    carousel.addEventListener('focusout', start);
+    carousel.addEventListener('touchstart', stop, { passive: true });
+    carousel.addEventListener('touchend', () => window.setTimeout(start, 7000), { passive: true });
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) stop(); else start();
+    });
+    start();
+});
+
             if (exactOptions.length === 1 && communitySelect instanceof HTMLSelectElement) {
                 communitySelect.value = exactOptions[0].value;
                 communitySelect.dispatchEvent(new Event('change', { bubbles: true }));

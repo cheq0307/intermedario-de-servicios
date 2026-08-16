@@ -78,6 +78,66 @@
                 </div>
             </section>
 
+            @if($showcaseSections->isNotEmpty())
+                <section class="space-y-7 rounded-[2rem] border border-[#123B4A]/10 bg-white p-5 shadow-sm sm:p-6" aria-labelledby="escaparate-local">
+                    <div class="flex items-end justify-between gap-4">
+                        <div>
+                            <p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Escaparate local</p>
+                            <h2 id="escaparate-local" class="mt-1 text-2xl font-black">Descubre algo cerca de ti</h2>
+                        </div>
+                        <a class="shrink-0 text-sm font-black text-[#14734A]" href="{{ route('explore') }}">Ver todo →</a>
+                    </div>
+
+                    @foreach($showcaseSections as $section)
+                        @php
+                            $categoryText = mb_strtolower($section['category']->name);
+                            $categoryIcon = str_contains($categoryText, 'comida') || str_contains($categoryText, 'bebida') ? '🍽️' : (str_contains($categoryText, 'transporte') || str_contains($categoryText, 'taxi') ? '🚕' : (str_contains($categoryText, 'hogar') || str_contains($categoryText, 'constru') ? '🛠️' : (str_contains($categoryText, 'belleza') ? '✨' : '🛍️')));
+                            $carouselId = 'escaparate-'.$section['category']->id;
+                        @endphp
+                        <div data-market-carousel>
+                            <div class="mb-3 flex items-center justify-between gap-3">
+                                <div class="flex min-w-0 items-center gap-2">
+                                    <span class="grid size-9 shrink-0 place-items-center rounded-xl bg-[#FFF1E8]" aria-hidden="true">{{ $categoryIcon }}</span>
+                                    <h3 class="truncate text-lg font-black">{{ $section['category']->name }}</h3>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <a class="mr-1 hidden text-xs font-black text-[#14734A] sm:inline" href="{{ route('explore', ['category_id' => $section['category']->id]) }}">Ver categoría</a>
+                                    <button class="hidden size-9 place-items-center rounded-full border border-[#123B4A]/10 text-lg font-black transition hover:bg-[#E9F7F0] sm:grid" type="button" data-carousel-prev aria-label="Ver ofertas anteriores de {{ $section['category']->name }}">‹</button>
+                                    <button class="hidden size-9 place-items-center rounded-full border border-[#123B4A]/10 text-lg font-black transition hover:bg-[#E9F7F0] sm:grid" type="button" data-carousel-next aria-label="Ver más ofertas de {{ $section['category']->name }}">›</button>
+                                </div>
+                            </div>
+                            <div id="{{ $carouselId }}" class="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" data-carousel-track tabindex="0" aria-label="Ofertas de {{ $section['category']->name }}">
+                                @foreach($section['listings'] as $listing)
+                                    @php
+                                        $image = $listing->post?->media?->firstWhere('type', 'image');
+                                        $canBuy = $listing->type->value === 'product' && $listing->price_type->value === 'fixed' && $listing->price_amount !== null;
+                                        $destination = $canBuy ? route('products.checkout', $listing) : route('profile.show', $listing->vendor->user);
+                                    @endphp
+                                    <a class="group w-[72vw] max-w-[17rem] shrink-0 snap-start overflow-hidden rounded-[1.4rem] border border-[#123B4A]/10 bg-[#FAF8F4] transition hover:-translate-y-1 hover:shadow-lg sm:w-[15rem]" href="{{ $destination }}">
+                                        <div class="relative h-36 overflow-hidden bg-gradient-to-br from-[#E9F7F0] via-[#FFF7E9] to-[#F9D889]">
+                                            @if($image)
+                                                <img class="size-full object-cover transition duration-500 group-hover:scale-105" src="{{ $image->url }}" alt="{{ $image->alt_text ?: $listing->name }}" loading="lazy">
+                                            @else
+                                                <span class="grid size-full place-items-center text-5xl" aria-hidden="true">{{ $listing->type->value === 'service' ? '🛠️' : $categoryIcon }}</span>
+                                            @endif
+                                            <span class="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-[#123B4A] shadow-sm">{{ $listing->type->value === 'product' ? 'Producto' : 'Servicio' }}</span>
+                                        </div>
+                                        <div class="p-4">
+                                            <h4 class="line-clamp-2 min-h-12 font-black leading-6">{{ $listing->name }}</h4>
+                                            <p class="mt-1 truncate text-xs font-bold text-[#6B7D83]">{{ $listing->vendor->display_name }} · {{ $listing->vendor->user->community?->name ?? 'Tu comunidad' }}</p>
+                                            <div class="mt-3 flex items-center justify-between gap-2">
+                                                <strong class="truncate text-sm text-[#14734A]">@if($listing->price_amount === null)Cotizar @else{{ $listing->price_type->value === 'starting_at' ? 'Desde ' : '' }}${{ number_format($listing->price_amount / 100, 2) }}@endif</strong>
+                                                <span class="shrink-0 rounded-full bg-[#123B4A] px-3 py-1.5 text-[11px] font-black text-white">{{ $canBuy ? 'Comprar' : 'Ver' }}</span>
+                                            </div>
+                                        </div>
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
+                </section>
+            @endif
+
             @if($showComposer)
             <section id="crear-publicacion" class="scroll-mt-24 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-5 shadow-sm sm:p-6">
                 <div class="flex items-center gap-3">

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Community;
+use App\Models\Listing;
 use App\Models\Post;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -47,6 +48,31 @@ class DashboardController extends Controller
             ->limit(20)
             ->pluck('categories.id')
             ->all();
+        $showcaseListings = Listing::query()
+            ->with(['category', 'vendor.user.community', 'post.media'])
+            ->where('is_active', true)
+            ->whereHas('category', fn ($query) => $query->where('is_active', true))
+            ->whereHas('vendor', fn ($query) => $query->where('status', 'active'))
+            ->whereHas('post', fn ($query) => $query->whereNotNull('published_at')->whereNull('removed_at'))
+            ->when($preferredCategoryIds !== [], fn ($query) => $query->orderByRaw(
+                'CASE WHEN listings.category_id IN ('.implode(',', array_map('intval', $preferredCategoryIds)).') THEN 0 ELSE 1 END'
+            ))
+            ->when($user->community_id, fn ($query) => $query->orderByRaw(
+                'CASE WHEN EXISTS (SELECT 1 FROM vendors INNER JOIN users ON users.id = vendors.user_id WHERE vendors.id = listings.vendor_id AND users.community_id = ?) THEN 0 ELSE 1 END',
+                [$user->community_id]
+            ))
+            ->latest('listings.id')
+            ->limit(48)
+            ->get();
+
+        $showcaseSections = $showcaseListings
+            ->groupBy('category_id')
+            ->map(fn ($listings) => [
+                'category' => $listings->first()->category,
+                'listings' => $listings->take(10)->values(),
+            ])
+            ->take(5)
+            ->values();
 
         $posts = Post::query()
             ->with(['user.community', 'listing.category', 'jobRequest.category', 'jobRequest.communities', 'media', 'comments.user'])
@@ -79,6 +105,6 @@ class DashboardController extends Controller
         $categories = Category::query()->where('is_active', true)->orderBy('name')->get();
         $communities = Community::query()->where('is_active', true)->orderBy('name')->get();
 
-        return view('dashboard', compact('posts', 'activeMode', 'feed', 'showComposer', 'publishAs', 'categories', 'communities'));
+        return view('dashboard', compact('posts', 'activeMode', 'feed', 'showComposer', 'publishAs', 'categories', 'communities', 'showcaseSections'));
     }
 }

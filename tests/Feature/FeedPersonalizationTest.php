@@ -2,8 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
+use App\Models\Listing;
 use App\Models\Post;
+use App\Models\PostMedia;
 use App\Models\User;
+use App\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -115,8 +119,59 @@ class FeedPersonalizationTest extends TestCase
             ->assertDontSee('Oferta comercial que debe ocultarse por suspensión.')
             ->assertSee('Solicitud como cliente que debe permanecer visible.');
     }
+
+    public function test_dashboard_showcase_groups_real_approved_offers_by_category(): void
+    {
+        $viewer = User::factory()->create(['account_type' => 'client']);
+        $provider = User::factory()->create(['account_type' => 'provider']);
+        $category = Category::query()->firstOrCreate(['slug' => 'comida-bebidas'], ['name' => 'Comida y bebidas', 'is_active' => true]);
+        $vendor = Vendor::create([
+            'user_id' => $provider->id,
+            'display_name' => 'Cocina La Esquina',
+            'slug' => 'cocina-la-esquina',
+            'status' => 'active',
+        ]);
+        $listing = Listing::create([
+            'vendor_id' => $vendor->id,
+            'category_id' => $category->id,
+            'type' => 'product',
+            'name' => 'Tacos dorados familiares',
+            'slug' => 'tacos-dorados-familiares',
+            'description' => 'Comida preparada en la comunidad.',
+            'price_type' => 'fixed',
+            'price_amount' => 18000,
+            'stock' => 20,
+            'is_active' => true,
+        ]);
+        $post = Post::create([
+            'user_id' => $provider->id,
+            'vendor_id' => $vendor->id,
+            'listing_id' => $listing->id,
+            'type' => 'product',
+            'body' => $listing->description,
+            'published_at' => now(),
+        ]);
+        PostMedia::create([
+            'post_id' => $post->id,
+            'type' => 'image',
+            'path' => 'posts/tacos.webp',
+            'position' => 0,
+            'alt_text' => 'Orden de tacos dorados',
+        ]);
+
+        $this->actingAs($viewer)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Escaparate local')
+            ->assertSee('Comida y bebidas')
+            ->assertSee('Tacos dorados familiares')
+            ->assertSee('data-market-carousel', false)
+            ->assertSee('storage/posts/tacos.webp', false);
+    }
+
     private function createPost(User $user, string $type, string $body): Post
     {
+
         return Post::create([
             'user_id' => $user->id,
             'type' => $type,

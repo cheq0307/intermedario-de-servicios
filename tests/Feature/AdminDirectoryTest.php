@@ -110,10 +110,10 @@ class AdminDirectoryTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_import_the_official_postal_catalog_from_the_dashboard(): void
+    public function test_superadmin_can_import_the_official_postal_catalog_from_the_dashboard(): void
     {
         $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin->assignRole(Role::findOrCreate('superadmin'));
         $contents = implode("\n", [
             'd_codigo|d_asenta|d_tipo_asenta|D_mnpio|d_estado|d_ciudad|d_CP|c_estado|c_oficina|c_CP|c_tipo_asenta|c_mnpio|id_asenta_cpcons|d_zona|c_cve_ciudad',
             '74140|San Matías Tlalancaleca|Pueblo|San Matías Tlalancaleca|Puebla||74141|21|74141||28|134|0001|Rural|',
@@ -132,6 +132,21 @@ class AdminDirectoryTest extends TestCase
                 'municipality' => 'San Matías Tlalancaleca',
                 'state' => 'Puebla',
             ]);
+        } finally {
+            File::delete($upload->getPathname());
+        }
+    }
+
+    public function test_delegated_admin_cannot_import_the_global_postal_catalog(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::findOrCreate('admin'));
+        $upload = UploadedFile::fake()->createWithContent('CPdescarga.txt', "d_codigo|d_asenta|d_tipo_asenta|D_mnpio|d_estado\n74140|Centro|Pueblo|Municipio|Puebla");
+
+        try {
+            $this->actingAs($admin)
+                ->post(route('admin.postal-codes.import'), ['catalog' => $upload])
+                ->assertForbidden();
         } finally {
             File::delete($upload->getPathname());
         }

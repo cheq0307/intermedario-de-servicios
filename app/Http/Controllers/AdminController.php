@@ -160,8 +160,9 @@ class AdminController extends Controller
             'postal_code' => ['nullable', 'regex:/^\d{5}$/'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
-            'default_radius_km' => ['required', 'numeric', 'min:1', 'max:100'],
+            'default_radius_km' => ['nullable', 'numeric', 'min:1', 'max:100'],
         ]);
+        $validated['default_radius_km'] ??= 8;
 
         $community = DB::transaction(function () use ($validated): Community {
             $community = Community::create($validated + ['is_active' => true]);
@@ -187,7 +188,7 @@ class AdminController extends Controller
 
     public function importPostalCodes(Request $request): RedirectResponse
     {
-        $this->authorizeAdmin($request);
+        $this->authorizeSuperadmin($request);
         $validated = $request->validate([
             'catalog' => ['required', 'file', 'max:51200', 'mimetypes:text/plain,text/csv,application/octet-stream'],
         ], [

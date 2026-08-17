@@ -52,24 +52,29 @@
             </div>
         </section>
 
-            <div class="mt-5 flex flex-col gap-4 rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] p-4 lg:flex-row lg:items-end lg:justify-between">
-                <div><p class="text-sm font-black">Catálogo oficial de códigos postales</p><p class="mt-1 text-xs font-semibold text-[#6B7D83]">{{ number_format($metrics['postal_codes']) }} asentamientos cargados. Importa el TXT del estado que habilitarás; los registros existentes se actualizan sin duplicarse. <a class="font-black text-[#14734A] underline" href="https://www.correosdemexico.gob.mx/SSLServicios/ConsultaCP/CodigoPostal_Exportar.aspx" target="_blank" rel="noopener noreferrer">Descargar catálogo oficial</a>.</p></div>
-                <form class="flex flex-col gap-2 sm:flex-row" method="POST" action="{{ route('admin.postal-codes.import') }}" enctype="multipart/form-data">@csrf
-                    <input class="max-w-sm rounded-xl border border-[#123B4A]/10 bg-white px-3 py-2 text-sm" type="file" name="catalog" accept=".txt,text/plain" required>
-                    <button class="rounded-full bg-[#14734A] px-5 py-2.5 text-sm font-black text-white" type="submit">Importar TXT oficial</button>
-                </form>
+            <div class="mt-5 rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] p-4">
+                <div class="flex flex-wrap items-center justify-between gap-3"><div><p class="text-sm font-black">Catálogo postal listo</p><p class="mt-1 text-xs font-semibold text-[#6B7D83]">{{ number_format($metrics['postal_codes']) }} asentamientos disponibles para autocompletar comunidades.</p></div><span class="rounded-full bg-[#E9F7F0] px-3 py-1 text-xs font-black text-[#14734A]">Mantenimiento global</span></div>
+                @if($isSuperadmin)
+                    <details class="mt-3 border-t border-[#123B4A]/10 pt-3">
+                        <summary class="cursor-pointer text-xs font-black text-[#123B4A]">Actualizar catálogo postal</summary>
+                        <p class="mt-2 text-xs font-semibold leading-5 text-[#6B7D83]">Solo es necesario cuando Correos de México publique un catálogo nuevo. Los registros se actualizan sin duplicarse.</p>
+                        <form class="mt-3 flex flex-col gap-2 sm:flex-row" method="POST" action="{{ route('admin.postal-codes.import') }}" enctype="multipart/form-data">@csrf
+                            <input class="max-w-sm rounded-xl border border-[#123B4A]/10 bg-white px-3 py-2 text-sm" type="file" name="catalog" accept=".txt,text/plain" required>
+                            <button class="rounded-full bg-[#14734A] px-5 py-2.5 text-sm font-black text-white" type="submit">Importar actualización</button>
+                            <a class="self-center text-xs font-black text-[#14734A] underline" href="https://www.correosdemexico.gob.mx/SSLServicios/ConsultaCP/CodigoPostal_Exportar.aspx" target="_blank" rel="noopener noreferrer">Descargar catálogo oficial</a>
+                        </form>
+                        @error('catalog')<p class="mt-2 text-sm font-bold text-red-700">{{ $message }}</p>@enderror
+                    </details>
+                @endif
             </div>
-            @error('catalog')<p class="mt-2 text-sm font-bold text-red-700">{{ $message }}</p>@enderror
         <section class="mt-8 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6" id="comunidades">
-            <div><p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Cobertura territorial</p><h2 class="mt-1 text-xl font-black">Comunidades disponibles</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Cada comunidad es un centro local independiente. Sus coordenadas permiten encontrar otras comunidades dentro del radio elegido.</p></div>
-            <form class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4" method="POST" action="{{ route('admin.communities.store') }}">@csrf
-                <label><span class="text-xs font-black">Código postal</span><span class="mt-2 flex gap-2"><input id="community-postal-code" class="min-w-0 flex-1 rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" name="postal_code" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" autocomplete="postal-code" placeholder="5 dígitos"><button id="lookup-postal-code" class="rounded-xl bg-[#123B4A] px-3 text-xs font-black text-white disabled:cursor-wait disabled:opacity-60" type="button">Consultar</button></span><span id="postal-code-status" class="mt-1 block text-xs font-bold text-[#6B7D83]">Al escribir 5 dígitos consultaremos el catálogo postal.</span></label>
+            <div><p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Cobertura territorial</p><h2 class="mt-1 text-xl font-black">Comunidades disponibles</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">El código postal completa los datos oficiales. Las personas elegirán comunidades concretas al solicitar u ofrecer; las coordenadas y el radio son opcionales y solo mejoran “cerca de mí”.</p></div>
+            <form class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5" method="POST" action="{{ route('admin.communities.store') }}">@csrf
+                <label><span class="text-xs font-black">Código postal</span><input id="community-postal-code" class="mt-2 w-full rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" name="postal_code" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" autocomplete="postal-code" placeholder="5 dígitos"><span id="postal-code-status" class="mt-1 block text-xs font-bold text-[#6B7D83]">Al completar 5 dígitos buscaremos automáticamente.</span></label>
                 <label><span class="text-xs font-black">Nombre de la comunidad</span><input id="community-name" class="mt-2 w-full rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" name="name" list="postal-settlements" required maxlength="120" placeholder="Ej. San Miguel"><datalist id="postal-settlements"></datalist></label>
                 <label><span class="text-xs font-black">Municipio o ciudad</span><input id="community-municipality" class="mt-2 w-full rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" name="municipality" required maxlength="120"></label>
                 <label><span class="text-xs font-black">Estado</span><input id="community-state" class="mt-2 w-full rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" name="state" maxlength="120"></label>
-                <label><span class="text-xs font-black">Latitud del centro</span><input class="mt-2 w-full rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" type="number" name="latitude" min="-90" max="90" step="0.0000001" placeholder="Ej. 19.4326077"></label>
-                <label><span class="text-xs font-black">Longitud del centro</span><input class="mt-2 w-full rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" type="number" name="longitude" min="-180" max="180" step="0.0000001" placeholder="Ej. -99.1332080"></label>
-                <label><span class="text-xs font-black">Radio local predeterminado</span><input class="mt-2 w-full rounded-xl border border-[#123B4A]/10 bg-[#FAF8F4] px-3 py-2.5" type="number" name="default_radius_km" required min="1" max="100" step="0.5" value="8"></label>
+
                 <button class="self-end rounded-full bg-[#123B4A] px-5 py-3 text-sm font-black text-white" type="submit">Agregar comunidad</button>
             </form>
             <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -184,7 +189,6 @@
     </main>
     <script>
         const postalInput = document.getElementById('community-postal-code');
-        const postalButton = document.getElementById('lookup-postal-code');
         const postalStatus = document.getElementById('postal-code-status');
         let postalLookupTimer;
 
@@ -195,7 +199,6 @@
                 postalStatus.className = 'mt-1 block text-xs font-bold text-red-600';
                 return;
             }
-            postalButton.disabled = true;
             postalStatus.textContent = 'Consultando catálogo postal…';
             postalStatus.className = 'mt-1 block text-xs font-bold text-[#6B7D83]';
             try {
@@ -228,12 +231,9 @@
                     ? 'No pudimos consultar el CP. Revisa la conexión y vuelve a intentarlo.'
                     : error.message;
                 postalStatus.className = 'mt-1 block text-xs font-bold text-red-600';
-            } finally {
-                postalButton.disabled = false;
             }
         };
 
-        postalButton?.addEventListener('click', lookupPostalCode);
         postalInput?.addEventListener('input', () => {
             postalInput.value = postalInput.value.replace(/\D/g, '').slice(0, 5);
             clearTimeout(postalLookupTimer);

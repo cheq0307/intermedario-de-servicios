@@ -42,9 +42,9 @@ Abrir una nueva plaza significará crear y configurar una comunidad dentro del m
 
 Los códigos postales mexicanos se importan desde el Catálogo Nacional de Códigos Postales de Correos de México. Plaza Local conserva una copia local para consultar sin depender de una API externa durante el registro.
 
-El código postal se utiliza al registrar una comunidad administrada: propone estado, municipio y asentamientos oficiales. No reemplaza la comunidad ni define por sí solo el radio comercial; las coordenadas y el radio continúan perteneciendo a cada comunidad.
+El código postal se utiliza al registrar una comunidad administrada: propone estado, municipio y asentamientos oficiales. El catálogo conserva también el tipo de asentamiento, pero no se solicita en la interfaz porque no modifica el flujo comercial. No contiene coordenadas y no define distancias.
 
-La importación se ejecuta con `php artisan plaza:import-postal-codes RUTA_AL_TXT`. Puede repetirse cuando Correos de México publique una actualización; el proceso actualiza registros coincidentes sin duplicarlos.
+La importación es mantenimiento global reservado al `superadmin`: normalmente se realiza una sola vez y solo se repite cuando Correos de México publica una actualización. Se ejecuta con `php artisan plaza:import-postal-codes RUTA_AL_TXT`; el proceso actualiza registros coincidentes sin duplicarlos.
 
 ## Gestión administrativa
 
@@ -56,7 +56,7 @@ La administración mantiene superficies separadas para comunidades, solicitudes 
 
 El feed social mantiene visibles las publicaciones y solicitudes de todas las comunidades activas para favorecer descubrimiento e interacción. La exploración comercial es independiente: el usuario puede delimitar productos, proveedores y solicitudes seleccionando una comunidad administrada.
 
-No existe una sede geográfica para las búsquedas. Cada comunidad es su propio centro local y define coordenadas y un radio predeterminado. El alcance comercial puede limitarse a esa comunidad, ampliarse a comunidades cuyos centros estén dentro del radio elegido o abrirse a toda la plataforma. Si faltan coordenadas, el sistema conserva únicamente la comunidad seleccionada y nunca inventa distancias.
+No existe una sede geográfica para las búsquedas. La cobertura de una solicitud se expresa primero mediante comunidades elegidas explícitamente por la persona. Las coordenadas del centro y el radio son configuración avanzada y auxiliar para “cerca de mí”, sugerencias y expansión automática; nunca sustituyen la selección de pueblos. Si faltan coordenadas, el sistema conserva las comunidades seleccionadas y nunca inventa distancias.
 
 ## Superficies principales
 

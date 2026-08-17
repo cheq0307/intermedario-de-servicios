@@ -168,6 +168,33 @@ document.querySelectorAll('[data-postal-assistant]').forEach((assistant) => {
             const exactOptions = communitySelect instanceof HTMLSelectElement
                 ? [...communitySelect.options].filter((option) => option.dataset.postalCode === postalCode)
                 : [];
+
+            if (exactOptions.length === 1 && communitySelect instanceof HTMLSelectElement) {
+                communitySelect.value = exactOptions[0].value;
+                communitySelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            const location = [place.municipality, place.state].filter(Boolean).join(', ');
+            if (exactOptions.length === 1) {
+                status.textContent = `${location}. Seleccionamos ${exactOptions[0].textContent.trim()}.`;
+            } else if (exactOptions.length > 1) {
+                status.textContent = `${location}. Hay ${exactOptions.length} comunidades habilitadas con este CP; elige una en la lista.`;
+            } else {
+                status.textContent = `${location}. El CP existe, pero todavía no hay una comunidad habilitada exactamente ahí; selecciona la más cercana.`;
+            }
+            status.className = 'mt-2 text-xs font-bold text-[#14734A]';
+        } catch (_) {
+            status.textContent = 'No pudimos consultar el CP en este momento. Selecciona tu comunidad manualmente.';
+            status.className = 'mt-2 text-xs font-bold text-red-600';
+        } finally {
+            button.disabled = false;
+        }
+    };
+
+    button.addEventListener('click', lookup);
+    input.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); lookup(); } });
+});
+
 document.querySelectorAll('[data-market-carousel]').forEach((carousel) => {
     const track = carousel.querySelector('[data-carousel-track]');
     const previous = carousel.querySelector('[data-carousel-prev]');
@@ -213,32 +240,6 @@ document.querySelectorAll('[data-market-carousel]').forEach((carousel) => {
         if (document.hidden) stop(); else start();
     });
     start();
-});
-
-            if (exactOptions.length === 1 && communitySelect instanceof HTMLSelectElement) {
-                communitySelect.value = exactOptions[0].value;
-                communitySelect.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-
-            const location = [place.municipality, place.state].filter(Boolean).join(', ');
-            if (exactOptions.length === 1) {
-                status.textContent = `${location}. Seleccionamos ${exactOptions[0].textContent.trim()}.`;
-            } else if (exactOptions.length > 1) {
-                status.textContent = `${location}. Hay ${exactOptions.length} comunidades habilitadas con este CP; elige una en la lista.`;
-            } else {
-                status.textContent = `${location}. El CP existe, pero todavía no hay una comunidad habilitada exactamente ahí; selecciona la más cercana.`;
-            }
-            status.className = 'mt-2 text-xs font-bold text-[#14734A]';
-        } catch (_) {
-            status.textContent = 'No pudimos consultar el CP en este momento. Selecciona tu comunidad manualmente.';
-            status.className = 'mt-2 text-xs font-bold text-red-600';
-        } finally {
-            button.disabled = false;
-        }
-    };
-
-    button.addEventListener('click', lookup);
-    input.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); lookup(); } });
 });
 
 const marketMenu = document.querySelector('[data-market-menu]');

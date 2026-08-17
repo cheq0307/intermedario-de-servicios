@@ -27,7 +27,13 @@ class ImportPostalCodes extends Command
             throw new RuntimeException('No fue posible abrir el catálogo.');
         }
 
-        $header = $this->readColumns($stream);
+        $header = $this->findHeader($stream);
+        if ($header === []) {
+            fclose($stream);
+            $this->error('No encontramos el encabezado del catálogo oficial en el TXT.');
+
+            return self::FAILURE;
+        }
         $indexes = array_flip(array_map(fn (string $value) => mb_strtolower(trim($value)), $header));
         foreach (['d_codigo', 'd_asenta', 'd_mnpio', 'd_estado'] as $required) {
             if (! array_key_exists($required, $indexes)) {
@@ -83,6 +89,18 @@ class ImportPostalCodes extends Command
         $line = preg_replace('/^\xEF\xBB\xBF/', '', $line) ?? $line;
 
         return array_map('trim', explode('|', trim($line)));
+    }
+
+    private function findHeader(mixed $stream): array
+    {
+        while (($columns = $this->readColumns($stream)) !== []) {
+            $normalized = array_map(fn (string $value): string => mb_strtolower(trim($value)), $columns);
+            if (in_array('d_codigo', $normalized, true) && in_array('d_asenta', $normalized, true)) {
+                return $columns;
+            }
+        }
+
+        return [];
     }
 
     private function store(array $rows): int

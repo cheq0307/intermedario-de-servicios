@@ -82,6 +82,7 @@ class PostalCodeTest extends TestCase
         $path = storage_path('framework/testing/postal-codes-test.txt');
         File::ensureDirectoryExists(dirname($path));
         File::put($path, implode("\n", [
+            'El Catálogo Nacional de Códigos Postales es proporcionado para uso particular.',
             'd_codigo|d_asenta|d_tipo_asenta|D_mnpio|d_estado|d_ciudad|d_CP|c_estado|c_oficina|c_CP|c_tipo_asenta|c_mnpio|id_asenta_cpcons|d_zona|c_cve_ciudad',
             '72000|Centro|Colonia|Puebla|Puebla|Puebla|72001|21|72001||09|114|0001|Urbano|01',
         ]));

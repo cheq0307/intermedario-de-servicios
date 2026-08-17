@@ -66,8 +66,8 @@ class AdminController extends Controller
                 ->get();
         }
         $auditLogs = AuditLog::with('user:id,name')->latest('created_at')->limit(30)->get();
-        $communities = Community::query()->withCount('users')->orderBy('name')->get();
-        $auditActions = ['admin.granted' => 'Administrador asignado', 'admin.revoked' => 'Permiso de administrador retirado', 'vendor.active' => 'Proveedor aprobado o reactivado', 'vendor.rejected' => 'Cambios solicitados al proveedor', 'vendor.suspended' => 'Proveedor suspendido', 'post.removed' => 'Publicación retirada', 'community.created' => 'Comunidad agregada', 'community.updated' => 'Centro comunitario actualizado'];
+        $communities = Community::query()->withCount(['users', 'jobRequests'])->orderBy('name')->get();
+        $auditActions = ['admin.granted' => 'Administrador asignado', 'admin.revoked' => 'Permiso de administrador retirado', 'vendor.active' => 'Proveedor aprobado o reactivado', 'vendor.rejected' => 'Cambios solicitados al proveedor', 'vendor.suspended' => 'Proveedor suspendido', 'post.removed' => 'Publicación retirada', 'community.created' => 'Comunidad agregada', 'community.updated' => 'Comunidad actualizada', 'community.suspended' => 'Comunidad suspendida', 'community.reactivated' => 'Comunidad reactivada', 'community.deleted' => 'Comunidad eliminada'];
         $categories = Category::query()->withCount(['users', 'vendors', 'listings', 'jobRequests'])->orderBy('name')->get();
         $auditSubjects = ['User' => 'Usuario', 'Vendor' => 'Proveedor', 'Post' => 'Publicación', 'Community' => 'Comunidad'];
         $isSuperadmin = $request->user()->hasRole('superadmin');
@@ -212,17 +212,62 @@ class AdminController extends Controller
     {
         $this->authorizeAdmin($request);
         $validated = $request->validate([
-            'latitude' => ['required', 'numeric', 'between:-90,90'],
-            'longitude' => ['required', 'numeric', 'between:-180,180'],
-            'default_radius_km' => ['required', 'numeric', 'min:1', 'max:100'],
+            'name' => ['sometimes', 'required', 'string', 'max:120', Rule::unique('communities', 'name')->ignore($community->id)->where(fn ($query) => $query->where('municipality', $request->input('municipality', $community->municipality)))],
+            'municipality' => ['sometimes', 'required', 'string', 'max:120'],
+            'state' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'postal_code' => ['sometimes', 'nullable', 'regex:/^\d{5}$/'],
+            'latitude' => ['sometimes', 'nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
+            'longitude' => ['sometimes', 'nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
+            'default_radius_km' => ['sometimes', 'required', 'numeric', 'min:1', 'max:100'],
         ]);
 
         $community->update($validated);
-        $this->audit($request, 'community.updated', $community, [
-            'default_radius_km' => $validated['default_radius_km'],
-        ]);
+        if ($community->postal_code) {
+            PostalCode::query()->updateOrCreate([
+                'postal_code' => $community->postal_code,
+                'settlement' => $community->name,
+                'municipality' => $community->municipality,
+            ], [
+                'settlement_type' => 'Comunidad registrada',
+                'state' => $community->state,
+                'city' => $community->municipality,
+            ]);
+        }
+        $this->audit($request, 'community.updated', $community, ['changes' => array_keys($validated)]);
 
-        return back()->with('status', 'Centro y radio de la comunidad actualizados.');
+        return back()->with('status', 'Información de la comunidad actualizada.');
+    }
+
+    public function toggleCommunity(Request $request, Community $community): RedirectResponse
+    {
+        $this->authorizeAdmin($request);
+        if ($community->is_active && Community::query()->where('is_active', true)->count() <= 1) {
+            return back()->withErrors(['community' => 'Debe permanecer al menos una comunidad activa en Plaza Local.']);
+        }
+
+        $community->update(['is_active' => ! $community->is_active]);
+        $action = $community->is_active ? 'community.reactivated' : 'community.suspended';
+        $this->audit($request, $action, $community, ['is_active' => $community->is_active]);
+
+        return back()->with('status', $community->is_active ? 'Comunidad reactivada.' : 'Comunidad suspendida. Ya no aparecerá en registros, publicaciones ni búsquedas nuevas.');
+    }
+
+    public function destroyCommunity(Request $request, Community $community): RedirectResponse
+    {
+        $this->authorizeSuperadmin($request);
+        if ($community->is_active) {
+            return back()->withErrors(['community' => 'Primero suspende la comunidad antes de eliminarla.']);
+        }
+
+        $community->loadCount(['users', 'jobRequests']);
+        if ($community->users_count > 0 || $community->job_requests_count > 0) {
+            return back()->withErrors(['community' => 'No se puede eliminar porque conserva usuarios o solicitudes asociadas. Déjala suspendida para preservar el historial.']);
+        }
+
+        $this->audit($request, 'community.deleted', $community, ['name' => $community->name]);
+        $community->delete();
+
+        return back()->with('status', 'Comunidad vacía eliminada definitivamente.');
     }
 
     public function storeCategory(Request $request): RedirectResponse

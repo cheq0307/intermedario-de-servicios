@@ -247,6 +247,93 @@ class AdminAuthorizationTest extends TestCase
             ->assertSee('Hacer administrador');
     }
 
+    public function test_admin_can_edit_suspend_and_reactivate_a_community_but_cannot_delete_it(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::findOrCreate('admin'));
+        $community = Community::create([
+            'name' => 'Pueblo operativo',
+            'municipality' => 'Municipio original',
+            'state' => 'Puebla',
+            'default_radius_km' => 8,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)->patch(route('admin.communities.update', $community), [
+            'name' => 'Pueblo actualizado',
+            'municipality' => 'Municipio actualizado',
+            'state' => 'Puebla',
+            'postal_code' => '74140',
+            'latitude' => 19.233,
+            'longitude' => -98.5,
+            'default_radius_km' => 12,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('communities', ['id' => $community->id, 'name' => 'Pueblo actualizado', 'postal_code' => '74140']);
+        $this->patch(route('admin.communities.toggle', $community))->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertFalse($community->fresh()->is_active);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'community.suspended', 'subject_id' => $community->id]);
+
+        $this->patch(route('admin.communities.toggle', $community))->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertTrue($community->fresh()->is_active);
+        $this->delete(route('admin.communities.destroy', $community))->assertForbidden();
+    }
+
+    public function test_superadmin_can_delete_only_an_empty_suspended_community(): void
+    {
+        $superadmin = User::factory()->create();
+        $superadmin->assignRole(Role::findOrCreate('superadmin'));
+        $community = Community::create([
+            'name' => 'Comunidad temporal',
+            'municipality' => 'Municipio temporal',
+            'default_radius_km' => 8,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($superadmin)
+            ->delete(route('admin.communities.destroy', $community))
+            ->assertRedirect()
+            ->assertSessionHasErrors('community');
+        $this->assertDatabaseHas('communities', ['id' => $community->id]);
+
+        $this->patch(route('admin.communities.toggle', $community))->assertRedirect()->assertSessionHasNoErrors();
+        $this->delete(route('admin.communities.destroy', $community))->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertDatabaseMissing('communities', ['id' => $community->id]);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'community.deleted', 'subject_id' => $community->id]);
+    }
+
+    public function test_used_community_is_preserved_as_suspended_history(): void
+    {
+        $superadmin = User::factory()->create();
+        $superadmin->assignRole(Role::findOrCreate('superadmin'));
+        $community = Community::create([
+            'name' => 'Comunidad con historial',
+            'municipality' => 'Municipio histórico',
+            'default_radius_km' => 8,
+            'is_active' => false,
+        ]);
+        User::factory()->create(['community_id' => $community->id]);
+
+        $this->actingAs($superadmin)
+            ->delete(route('admin.communities.destroy', $community))
+            ->assertRedirect()
+            ->assertSessionHasErrors('community');
+        $this->assertDatabaseHas('communities', ['id' => $community->id, 'is_active' => false]);
+    }
+
+    public function test_last_active_community_cannot_be_suspended(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::findOrCreate('admin'));
+        $community = Community::query()->where('is_active', true)->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patch(route('admin.communities.toggle', $community))
+            ->assertRedirect()
+            ->assertSessionHasErrors('community');
+        $this->assertTrue($community->fresh()->is_active);
+    }
+
     public function test_regular_user_cannot_access_administration(): void
     {
         $client = User::factory()->create();

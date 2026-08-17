@@ -50,7 +50,7 @@ La importación es mantenimiento global reservado al `superadmin`: normalmente s
 
 El panel administrativo no debe limitarse a contadores. Cada indicador operativo enlaza a una superficie de gestión. Los directorios de usuarios y proveedores son paginados y permiten buscar o filtrar por identidad, capacidad, comunidad, verificación y estado del proveedor.
 
-La administración mantiene superficies separadas para comunidades, solicitudes de proveedor, moderación, disputas, delegación de administradores y auditoría. El `superadmin` conserva visibilidad global; la futura restricción territorial de administradores se resolverá mediante asignaciones explícitas, no ocultando datos únicamente en la interfaz.
+La administración mantiene superficies separadas para comunidades, solicitudes de proveedor, moderación, disputas, delegación de administradores y auditoría. Un administrador puede crear, editar, suspender y reactivar comunidades. Solo el `superadmin` puede eliminarlas, y únicamente cuando estén suspendidas y no conserven usuarios ni solicitudes asociadas; en los demás casos se preservan como historial. El `superadmin` conserva visibilidad global; la futura restricción territorial de administradores se resolverá mediante asignaciones explícitas, no ocultando datos únicamente en la interfaz.
 
 ## Visibilidad social y alcance comercial
 

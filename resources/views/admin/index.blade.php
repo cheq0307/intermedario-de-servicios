@@ -79,21 +79,34 @@
             </form>
             <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach($communities as $community)
-                    <article class="rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] p-4">
+                    <article class="rounded-2xl border p-4 {{ $community->is_active ? 'border-[#123B4A]/10 bg-[#FAF8F4]' : 'border-[#D85B0B]/20 bg-orange-50/40' }}">
                         <div class="flex items-start justify-between gap-3">
                             <div><h3 class="font-black">{{ $community->name }}</h3><p class="mt-1 text-xs font-bold text-[#6B7D83]">{{ $community->municipality }}{{ $community->state ? ', '.$community->state : '' }}</p></div>
-                            <span class="rounded-full bg-white px-3 py-1 text-xs font-black">{{ $community->postal_code ? 'CP '.$community->postal_code.' · ' : '' }}Radio {{ number_format((float) $community->default_radius_km, 1) }} km</span>
+                            <span class="rounded-full px-3 py-1 text-xs font-black {{ $community->is_active ? 'bg-[#E9F7F0] text-[#14734A]' : 'bg-orange-100 text-[#D85B0B]' }}">{{ $community->is_active ? 'Activa' : 'Suspendida' }}</span>
                         </div>
-                        <p class="mt-3 text-xs font-bold text-[#536A72]">{{ $community->users_count }} usuarios · {{ $community->is_active ? 'Activa' : 'Inactiva' }}</p>
-                        <p class="mt-1 text-xs font-bold {{ $community->hasCoordinates() ? 'text-[#14734A]' : 'text-[#D85B0B]' }}">{{ $community->hasCoordinates() ? 'Centro geográfico configurado' : 'Faltan coordenadas para búsquedas cercanas' }}</p>
-                        <details class="mt-3"><summary class="cursor-pointer text-xs font-black text-[#123B4A]">Configurar centro y radio</summary>
+                        <p class="mt-3 text-xs font-bold text-[#536A72]">{{ $community->users_count }} usuarios · {{ $community->job_requests_count }} solicitudes · {{ $community->postal_code ? 'CP '.$community->postal_code : 'Sin CP' }}</p>
+                        <p class="mt-1 text-xs font-bold {{ $community->hasCoordinates() ? 'text-[#14734A]' : 'text-[#D85B0B]' }}">{{ $community->hasCoordinates() ? 'Centro configurado · radio '.number_format((float) $community->default_radius_km, 1).' km' : 'Sin coordenadas: funciona por selección explícita de comunidad' }}</p>
+                        <details class="mt-3"><summary class="cursor-pointer text-xs font-black text-[#123B4A]">Editar comunidad y ubicación</summary>
                             <form class="mt-3 grid gap-2" method="POST" action="{{ route('admin.communities.update', $community) }}">@csrf @method('PATCH')
-                                <input class="rounded-xl border border-[#123B4A]/10 bg-white px-3 py-2 text-sm" type="number" name="latitude" value="{{ $community->latitude }}" min="-90" max="90" step="0.0000001" required placeholder="Latitud">
-                                <input class="rounded-xl border border-[#123B4A]/10 bg-white px-3 py-2 text-sm" type="number" name="longitude" value="{{ $community->longitude }}" min="-180" max="180" step="0.0000001" required placeholder="Longitud">
-                                <input class="rounded-xl border border-[#123B4A]/10 bg-white px-3 py-2 text-sm" type="number" name="default_radius_km" value="{{ $community->default_radius_km }}" min="1" max="100" step="0.5" required placeholder="Radio local en km">
-                                <button class="rounded-full bg-[#123B4A] px-4 py-2 text-xs font-black text-white" type="submit">Guardar centro local</button>
+                                <label class="text-xs font-black">Nombre completo<input class="mt-1 w-full rounded-xl border border-[#123B4A]/10 bg-white px-3 py-2 text-sm font-normal" name="name" value="{{ $community->name }}" required maxlength="120"></label>
+                                <label class="text-xs font-black">Municipio o ciudad<input class="mt-1 w-full rounded-xl border border-[#123B4A]/10 bg-white px-3 py-2 text-sm font-normal" name="municipality" value="{{ $community->municipality }}" required maxlength="120"></label>
+                                <label class="text-xs font-black">Estado<input class="mt-1 w-full rounded-xl border border-[#123B4A]/10 bg-white px-3 py-2 text-sm font-normal" name="state" value="{{ $community->state }}" maxlength="120"></label>
+                                <label class="text-xs font-black">Código postal<input class="mt-1 w-full rounded-xl border border-[#123B4A]/10 bg-white px-3 py-2 text-sm font-normal" name="postal_code" value="{{ $community->postal_code }}" inputmode="numeric" pattern="[0-9]{5}" maxlength="5"></label>
+                                <div class="grid grid-cols-2 gap-2"><label class="text-xs font-black">Latitud<input class="mt-1 w-full rounded-xl border border-[#123B4A]/10 bg-white px-3 py-2 text-sm font-normal" type="number" name="latitude" value="{{ $community->latitude }}" min="-90" max="90" step="0.0000001" placeholder="Opcional"></label><label class="text-xs font-black">Longitud<input class="mt-1 w-full rounded-xl border border-[#123B4A]/10 bg-white px-3 py-2 text-sm font-normal" type="number" name="longitude" value="{{ $community->longitude }}" min="-180" max="180" step="0.0000001" placeholder="Opcional"></label></div>
+                                <label class="text-xs font-black">Radio auxiliar en km<input class="mt-1 w-full rounded-xl border border-[#123B4A]/10 bg-white px-3 py-2 text-sm font-normal" type="number" name="default_radius_km" value="{{ $community->default_radius_km }}" min="1" max="100" step="0.5" required></label>
+                                <button class="rounded-full bg-[#123B4A] px-4 py-2 text-xs font-black text-white" type="submit">Guardar cambios</button>
                             </form>
                         </details>
+                        <div class="mt-4 flex flex-wrap items-center gap-3 border-t border-[#123B4A]/10 pt-3">
+                            <form method="POST" action="{{ route('admin.communities.toggle', $community) }}">@csrf @method('PATCH')<button class="text-xs font-black {{ $community->is_active ? 'text-[#D85B0B]' : 'text-[#14734A]' }}" type="submit">{{ $community->is_active ? 'Suspender comunidad' : 'Reactivar comunidad' }}</button></form>
+                            @if($isSuperadmin)
+                                @if(!$community->is_active && $community->users_count === 0 && $community->job_requests_count === 0)
+                                    <form method="POST" action="{{ route('admin.communities.destroy', $community) }}" onsubmit="return confirm('¿Eliminar definitivamente esta comunidad vacía?')">@csrf @method('DELETE')<button class="text-xs font-black text-red-700" type="submit">Eliminar definitivamente</button></form>
+                                @else
+                                    <span class="text-[.68rem] font-bold text-[#6B7D83]">Para eliminar: debe estar suspendida y sin historial asociado.</span>
+                                @endif
+                            @endif
+                        </div>
                     </article>
                 @endforeach
             </div>

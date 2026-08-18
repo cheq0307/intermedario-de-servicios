@@ -29,7 +29,7 @@ class DashboardController extends Controller
         $showComposer = in_array($publishAs, ['request', 'offer'], true);
         $activeMode = $publishAs === 'offer' ? 'provider' : 'client';
 
-        $feed = (string) $request->query('feed', 'all');
+        $feed = (string) $request->query('feed', 'for_you');
         if (! in_array($feed, ['for_you', 'offers', 'requests', 'community', 'all'], true)) {
             $feed = 'all';
         }

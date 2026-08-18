@@ -37,6 +37,8 @@ class PostEngagementAndMediaTest extends TestCase
 
         $this->actingAs($viewer)->post(route('posts.shares.store', $post), ['channel' => 'clipboard'])->assertRedirect();
         $this->assertDatabaseHas('post_shares', ['post_id' => $post->id, 'channel' => 'clipboard']);
+        $this->assertSame(3, $author->notifications()->count());
+        $this->assertEqualsCanonicalizing(['social_like', 'social_comment', 'social_share'], $author->notifications()->get()->pluck('data.kind')->all());
     }
 
     public function test_client_can_publish_images_and_the_feed_renders_them(): void

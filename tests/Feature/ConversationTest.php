@@ -36,12 +36,15 @@ class ConversationTest extends TestCase
             'conversation_id' => $conversation->id,
             'sender_id' => $sender->id,
             'body' => 'Hola, ¿sigues disponible?',
-        ]);
+        ]);        $this->assertSame(1, $recipient->unreadConversationsCount());
+
 
         $this->actingAs($recipient)
             ->get(route('conversations.show', $conversation))
             ->assertOk()
-            ->assertSee('Hola, ¿sigues disponible?');
+            ->assertSee('Hola, ¿sigues disponible?');        $this->assertSame(0, $recipient->unreadConversationsCount());
+        $this->actingAs($sender)->get(route('conversations.show', $conversation))->assertOk()->assertSee('Visto');
+
     }
 
     public function test_outsider_cannot_read_or_write_conversation(): void

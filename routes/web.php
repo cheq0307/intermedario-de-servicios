@@ -12,6 +12,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\JobProposalController;
 use App\Http\Controllers\JobVacancyController;
 use App\Http\Controllers\MarketplaceCapabilityController;
+use App\Http\Controllers\MoreController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PostalCodeController;
 use App\Http\Controllers\PostController;
@@ -45,6 +46,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     Route::post('/mi-cuenta/modo/{mode}', [MarketplaceCapabilityController::class, 'switchMode'])->name('capabilities.switch');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/mas', MoreController::class)->name('more.index');
     Route::get('/mi-perfil/editar', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/mi-perfil', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/perfiles/{user}/seguir', [ProfileFollowController::class, 'toggle'])->name('profiles.follow.toggle');

@@ -7,18 +7,26 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen pb-24 bg-[#FAF8F4] text-[#17313A] antialiased">
-    <header class="border-b border-[#123B4A]/10 bg-white"><div class="mx-auto flex max-w-4xl items-center justify-between px-5 py-4"><a class="font-black" href="{{ route('dashboard') }}">Plaza Local</a><a class="rounded-full border border-[#123B4A]/10 px-4 py-2 text-sm font-black" href="{{ route('dashboard') }}">Volver</a></div></header>
+    <x-market-nav :back-url="route('dashboard')" />
     <main class="mx-auto max-w-4xl px-5 py-9">
-        <nav class="mb-5 flex gap-2"><a class="rounded-full border bg-white px-5 py-2.5 text-sm font-black" href="{{ route('conversations.index') }}">Conversaciones</a><a class="rounded-full bg-[#123B4A] px-5 py-2.5 text-sm font-black text-white" href="{{ route('notifications.index') }}">Notificaciones</a></nav><div class="flex flex-wrap items-end justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Actividad importante</p><h1 class="mt-2 text-3xl font-black">Notificaciones</h1><p class="mt-2 text-sm font-bold text-[#6B7D83]">{{ $unreadCount ? $unreadCount.' sin leer' : 'No tienes avisos pendientes' }} · Abrir un aviso lo marca como leído.</p></div>@if($unreadCount)<form method="POST" action="{{ route('notifications.read-all') }}">@csrf @method('PATCH')<button class="rounded-full border border-[#123B4A]/10 bg-white px-5 py-2.5 text-sm font-black" type="submit">Marcar todas como leídas</button></form>@endif</div>
+        <nav class="mb-5 grid grid-cols-2 rounded-2xl bg-[#E8ECEA] p-1"><a class="rounded-xl px-4 py-3 text-center text-sm font-black text-[#536A72]" href="{{ route('conversations.index') }}">Conversaciones @if(auth()->user()->unreadConversationsCount())<span class="ml-1 rounded-full bg-red-500 px-2 py-0.5 text-white">{{ auth()->user()->unreadConversationsCount() }}</span>@endif</a><a class="rounded-xl bg-white px-4 py-3 text-center text-sm font-black shadow-sm" href="{{ route('notifications.index') }}">Notificaciones @if($unreadCount)<span class="ml-1 rounded-full bg-[#F97316] px-2 py-0.5 text-white">{{ $unreadCount }}</span>@endif</a></nav><div class="flex flex-wrap items-end justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Actividad importante</p><h1 class="mt-2 text-3xl font-black">Notificaciones</h1><p class="mt-2 text-sm font-bold text-[#6B7D83]">{{ $unreadCount ? $unreadCount.' sin leer' : 'No tienes avisos pendientes' }} · Abrir un aviso lo marca como leído.</p></div>@if($unreadCount)<form method="POST" action="{{ route('notifications.read-all') }}">@csrf @method('PATCH')<button class="rounded-full border border-[#123B4A]/10 bg-white px-5 py-2.5 text-sm font-black" type="submit">Marcar todas como leídas</button></form>@endif</div>
         @if(session('status'))<p class="mt-5 rounded-2xl bg-[#E9F7F0] p-4 text-sm font-black text-[#14734A]">{{ session('status') }}</p>@endif
         <div class="mt-7 space-y-3">
             @forelse($notifications as $notification)
+                @php
+                    $kind = $notification->data['kind'] ?? 'activity';
+                    $kindLabel = match(true) {
+                        str_starts_with($kind, 'social_') => 'Social',
+                        str_contains($kind, 'support') => 'Soporte',
+                        default => 'Actividad',
+                    };
+                @endphp
                 <form method="POST" action="{{ route('notifications.open', $notification->id) }}">@csrf @method('PATCH')
                     <button class="relative flex w-full items-start gap-4 overflow-hidden rounded-[1.5rem] border p-5 text-left shadow-sm transition hover:-translate-y-0.5 {{ $notification->read_at ? 'border-[#123B4A]/10 bg-[#F0F2F1] text-[#536A72]' : 'border-[#22A06B]/30 bg-[#E9F7F0] text-[#17313A]' }}" type="submit">
                         <span class="absolute inset-y-0 left-0 w-1.5 {{ $notification->read_at ? 'bg-[#AAB5B1]' : 'bg-[#22A06B]' }}"></span>
                         <span class="mt-1 grid size-10 shrink-0 place-items-center rounded-full {{ $notification->read_at ? 'bg-white text-[#6B7D83]' : 'bg-[#14734A] text-white' }}">{{ $notification->read_at ? '✓' : '•' }}</span>
                         <span class="min-w-0 flex-1">
-                            <span class="flex flex-wrap items-center gap-2"><strong class="block {{ $notification->read_at ? 'font-bold' : 'font-black' }}">{{ $notification->data['title'] ?? 'Actividad nueva' }}</strong><span class="rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide {{ $notification->read_at ? 'bg-white text-[#6B7D83]' : 'bg-[#14734A] text-white' }}">{{ $notification->read_at ? 'Leída' : 'Nueva' }}</span></span>
+                            <span class="flex flex-wrap items-center gap-2"><strong class="block {{ $notification->read_at ? 'font-bold' : 'font-black' }}">{{ $notification->data['title'] ?? 'Actividad nueva' }}</strong><span class="rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide {{ $notification->read_at ? 'bg-white text-[#6B7D83]' : 'bg-[#14734A] text-white' }}">{{ $kindLabel }} · {{ $notification->read_at ? 'Leída' : 'Nueva' }}</span></span>
                             <span class="mt-1 block text-sm font-semibold leading-6 {{ $notification->read_at ? 'text-[#75857F]' : 'text-[#536A72]' }}">{{ $notification->data['body'] ?? '' }}</span>
                             <time class="mt-2 block text-xs font-bold text-[#8A999E]">{{ $notification->created_at->diffForHumans() }}</time>
                         </span>

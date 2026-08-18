@@ -17,6 +17,7 @@ class ConversationController extends Controller
         $conversations = $request->user()->conversations()
             ->with([
                 'participants:id,name,avatar_path,account_type',
+                'participants.roles:id,name',
                 'messages' => fn ($query) => $query->with('sender:id,name')->latest()->limit(1),
             ])
             ->orderByDesc('last_message_at')
@@ -57,7 +58,7 @@ class ConversationController extends Controller
     {
         abort_unless($conversation->includesUser($request->user()), 403);
 
-        $conversation->load('participants:id,name,avatar_path,account_type');
+        $conversation->load(['participants:id,name,avatar_path,account_type', 'participants.roles:id,name']);
         $messages = $conversation->messages()
             ->with('sender:id,name,avatar_path')
             ->latest()
@@ -68,8 +69,10 @@ class ConversationController extends Controller
 
         $conversation->participants()->updateExistingPivot($request->user()->id, ['last_read_at' => now()]);
         $otherUser = $conversation->participants->firstWhere('id', '!=', $request->user()->id);
+        $otherLastReadAt = $otherUser?->pivot?->last_read_at ? now()->parse($otherUser->pivot->last_read_at) : null;
+        $supportConversation = (bool) ($otherUser?->hasAnyRole(['admin', 'superadmin']) && ! $otherUser?->canUseMarketplace());
 
-        return view('conversations.show', compact('conversation', 'messages', 'otherUser'));
+        return view('conversations.show', compact('conversation', 'messages', 'otherUser', 'otherLastReadAt', 'supportConversation'));
     }
 
     public function store(Request $request, Conversation $conversation): RedirectResponse

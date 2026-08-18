@@ -53,7 +53,7 @@ class FeedPersonalizationTest extends TestCase
             ->assertSee('Mostramos solicitudes y ofertas de toda la comunidad');
     }
 
-    public function test_default_feed_shows_all_publication_types_for_now(): void
+    public function test_default_feed_prioritizes_personalized_content_without_hiding_public_types(): void
     {
         $viewer = User::factory()->create(['account_type' => 'client']);
         $client = User::factory()->create(['account_type' => 'client']);
@@ -65,7 +65,7 @@ class FeedPersonalizationTest extends TestCase
         $this->actingAs($viewer)
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertSee('Todo')
+            ->assertSee('Para ti')
             ->assertSee('Oferta visible en el feed general.')
             ->assertSee('Solicitud visible en el feed general.');
     }

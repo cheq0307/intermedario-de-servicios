@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements MustVerifyEmail
@@ -105,6 +106,19 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Message::class, 'sender_id');
     }
 
+    public function unreadConversationsCount(): int
+    {
+        return DB::table('conversation_participants as participant')
+            ->join('messages', 'messages.conversation_id', '=', 'participant.conversation_id')
+            ->where('participant.user_id', $this->id)
+            ->where('messages.sender_id', '!=', $this->id)
+            ->where(function ($query): void {
+                $query->whereNull('participant.last_read_at')
+                    ->orWhereColumn('messages.created_at', '>', 'participant.last_read_at');
+            })
+            ->distinct()
+            ->count('participant.conversation_id');
+    }
     public function posts(): HasMany
     {
         return $this->hasMany(Post::class);

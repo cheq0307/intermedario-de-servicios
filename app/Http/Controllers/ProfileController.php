@@ -20,7 +20,7 @@ class ProfileController extends Controller
 {
     public function show(User $user): View
     {
-        $user->load(['vendor', 'community'])->loadCount([
+        $user->load(['vendor.categories', 'community'])->loadCount([
             'posts' => fn ($query) => $query->whereNull('removed_at'),
             'jobRequests' => fn ($query) => $query->whereHas('post', fn ($post) => $post->whereNull('removed_at')),
         ]);

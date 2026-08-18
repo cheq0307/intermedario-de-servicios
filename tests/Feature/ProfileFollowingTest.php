@@ -21,6 +21,7 @@ class ProfileFollowingTest extends TestCase
 
         $this->actingAs($follower)->post(route('profiles.follow.toggle', $profile))->assertRedirect();
         $this->assertDatabaseHas('user_follows', ['follower_id' => $follower->id, 'followed_id' => $profile->id]);
+        $this->assertSame('Nuevo seguidor', $profile->notifications()->firstOrFail()->data['title']);
 
         $this->actingAs($follower)->post(route('profiles.follow.toggle', $profile))->assertRedirect();
         $this->assertDatabaseMissing('user_follows', ['follower_id' => $follower->id, 'followed_id' => $profile->id]);
@@ -49,5 +50,17 @@ class ProfileFollowingTest extends TestCase
             ->assertSee('Me gusta')
             ->assertSee('Comentarios')
             ->assertSee('Compartidos');
+    }
+    public function test_more_screen_groups_account_tools_without_repeating_profile_in_bottom_navigation(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->get(route('more.index'))
+            ->assertOk()
+            ->assertSee('Mis publicaciones')
+            ->assertSee('Mis pedidos y trabajos')
+            ->assertSee('Ayuda y soporte')
+            ->assertSee('Cerrar sesión')
+            ->assertSee('Más');
     }
 }

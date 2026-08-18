@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Notifications\MarketplaceActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -21,6 +22,13 @@ class ProfileFollowController extends Controller
             $actor->following()->detach($user->getKey());
         } else {
             $actor->following()->syncWithoutDetaching([$user->getKey()]);
+            $user->notify(new MarketplaceActivity(
+                'Nuevo seguidor',
+                $actor->name.' comenzó a seguir tu cuenta.',
+                'profile.show',
+                ['user' => $actor->id],
+                'social_follow',
+            ));
         }
 
         return back()->with('status', $following ? 'Dejaste de seguir esta cuenta.' : 'Ahora sigues esta cuenta.');

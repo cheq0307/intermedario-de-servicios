@@ -100,8 +100,8 @@ class MarketplaceCapabilityTest extends TestCase
         $this->actingAs($user)
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertSee('Solicitar algo')
-            ->assertSee('Ofrecer algo')
+            ->assertSee('Publicar')
+            ->assertSee('Más')
             ->assertDontSee('data-publication-form', false);
 
         $this->get(route('dashboard', ['publicar' => 'request']))
@@ -119,7 +119,7 @@ class MarketplaceCapabilityTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Pedidos')
-            ->assertSee('Perfil')
+            ->assertSee('Más')
             ->assertSee('aria-label="Navegación principal"', false)
             ->assertDontSee('Abrir menú');
 

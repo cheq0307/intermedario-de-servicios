@@ -11,18 +11,17 @@
         @endif
         <div class="group/search relative min-w-0 flex-1 sm:mx-auto sm:max-w-2xl">
             <form class="flex min-w-0 items-center gap-2 rounded-2xl bg-[#F4F6F5] px-3 py-2.5 ring-[#123B4A]/10 focus-within:ring-2" role="search" method="GET" action="{{ route('explore') }}">
-                <span class="grid size-7 shrink-0 place-items-center rounded-full bg-[#123B4A] text-[11px] font-black text-white" aria-hidden="true">P</span>
                 <input class="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none placeholder:text-[#8A999E]" type="search" name="q" value="{{ $searchValue }}" maxlength="100" placeholder="Buscar en Plaza Local" autocomplete="off">
                 <button class="grid size-8 shrink-0 place-items-center rounded-full text-[#536A72]" type="submit" aria-label="Buscar"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
             </form>
             <div class="invisible absolute inset-x-0 top-[calc(100%+.5rem)] z-50 translate-y-1 rounded-2xl border bg-white p-3 opacity-0 shadow-2xl transition group-focus-within/search:visible group-focus-within/search:translate-y-0 group-focus-within/search:opacity-100">
                 <p class="px-2 text-[10px] font-black uppercase tracking-[.16em] text-[#F97316]">Explora rápidamente</p>
                 <div class="mt-2 grid grid-cols-2 gap-2 text-sm font-black sm:grid-cols-5">
-                    <a class="rounded-xl bg-[#FAF8F4] p-3 hover:bg-[#E9F7F0]" href="{{ route('explore', ['q'=>'comida']) }}">🍽️ Comida</a>
-                    <a class="rounded-xl bg-[#FAF8F4] p-3 hover:bg-[#E9F7F0]" href="{{ route('explore', ['q'=>'transporte']) }}">🚕 Transporte</a>
-                    <a class="rounded-xl bg-[#FAF8F4] p-3 hover:bg-[#E9F7F0]" href="{{ route('explore', ['q'=>'hogar']) }}">🛠️ Hogar</a>
-                    <a class="rounded-xl bg-[#FAF8F4] p-3 hover:bg-[#E9F7F0]" href="{{ route('explore', ['q'=>'productos']) }}">🛍️ Productos</a>
-                    <a class="rounded-xl bg-[#FFF8E6] p-3 text-[#8B5B00]" href="{{ route('vacancies.index') }}">💼 Empleo</a>
+                    <a class="rounded-xl bg-[#FAF8F4] p-3 hover:bg-[#E9F7F0]" href="{{ route('explore', ['q'=>'comida']) }}">Comida</a>
+                    <a class="rounded-xl bg-[#FAF8F4] p-3 hover:bg-[#E9F7F0]" href="{{ route('explore', ['q'=>'transporte']) }}">Transporte</a>
+                    <a class="rounded-xl bg-[#FAF8F4] p-3 hover:bg-[#E9F7F0]" href="{{ route('explore', ['q'=>'hogar']) }}">Hogar</a>
+                    <a class="rounded-xl bg-[#FAF8F4] p-3 hover:bg-[#E9F7F0]" href="{{ route('explore', ['q'=>'productos']) }}">Productos</a>
+                    <a class="rounded-xl bg-[#FFF8E6] p-3 text-[#8B5B00]" href="{{ route('vacancies.index') }}">Empleo</a>
                 </div>
             </div>
         </div>

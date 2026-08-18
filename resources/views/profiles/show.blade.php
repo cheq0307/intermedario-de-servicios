@@ -8,7 +8,7 @@ $vendor=$user->vendor;
 $isProvider=$vendor?->status==='active';
 $staffLabel=$isStaff ? ($user->hasRole('superadmin')?'Superadministrador':'Administrador') : null;
 @endphp
-<x-market-nav :back-url="url()->previous()" :show-account="false" :show-notifications="false" />
+<x-market-nav :back-url="url()->previous()" />
 <main class="mx-auto max-w-6xl px-4 py-7 sm:px-6">
 @if(session('status'))<div class="mb-5 rounded-2xl bg-[#E9F7F0] p-4 text-sm font-black text-[#14734A]">{{ session('status') }}</div>@endif
 <section class="overflow-hidden rounded-[2rem] border border-[#123B4A]/10 bg-white shadow-sm">
@@ -36,13 +36,12 @@ $staffLabel=$isStaff ? ($user->hasRole('superadmin')?'Superadministrador':'Admin
 @if($isProvider)<div class="mt-4 flex flex-wrap gap-2">@if($vendor->availability_status==='busy')<span class="rounded-full bg-[#FFF4D6] px-3 py-1.5 text-xs font-black text-[#9A5A0A]">Realizando un trabajo</span>@elseif($vendor->availability_status==='available')<span class="rounded-full bg-[#E9F7F0] px-3 py-1.5 text-xs font-black text-[#14734A]">Disponible</span>@endif @if($vendor->businessHoursConfigured())<span class="rounded-full bg-[#FAF8F4] px-3 py-1.5 text-xs font-black">Horario: {{ collect($vendor->business_hours['days'])->map(fn($day)=>['monday'=>'Lun','tuesday'=>'Mar','wednesday'=>'Mié','thursday'=>'Jue','friday'=>'Vie','saturday'=>'Sáb','sunday'=>'Dom'][$day]??$day)->join(', ') }} · {{ $vendor->business_hours['opens_at'] }}–{{ $vendor->business_hours['closes_at'] }}</span>@endif</div>@endif
 </div>
 @if(!$isStaff)
-<div class="mt-6 grid grid-cols-4 gap-1 rounded-2xl bg-[#FAF8F4] p-4 text-center">
-<div><strong class="block text-lg">{{ $socialMetrics['followers'] }}</strong><span class="text-[10px] font-bold text-[#6B7D83] sm:text-xs">Seguidores</span></div>
-<div><strong class="block text-lg">{{ $socialMetrics['likes'] }}</strong><span class="text-[10px] font-bold text-[#6B7D83] sm:text-xs">Me gusta</span></div>
-<div><strong class="block text-lg">{{ $socialMetrics['comments'] }}</strong><span class="text-[10px] font-bold text-[#6B7D83] sm:text-xs">Comentarios</span></div>
-<div><strong class="block text-lg">{{ $socialMetrics['shares'] }}</strong><span class="text-[10px] font-bold text-[#6B7D83] sm:text-xs">Compartidos</span></div>
+<div class="mt-6 grid gap-3 sm:grid-cols-3">
+    @if($isProvider)<div class="rounded-2xl border bg-[#FAF8F4] p-4"><span class="block text-xs font-black uppercase tracking-wide text-[#6B7D83]">Especialidad</span><strong class="mt-1 block">{{ $vendor->specialty ?: 'Por completar' }}</strong>@if($vendor->categories->isNotEmpty())<span class="mt-1 block text-xs font-semibold text-[#6B7D83]">{{ $vendor->categories->pluck('name')->join(', ') }}</span>@endif</div>@endif
+    <div class="rounded-2xl border bg-[#FAF8F4] p-4"><span class="block text-xs font-black uppercase tracking-wide text-[#6B7D83]">Cobertura</span><strong class="mt-1 block">{{ $user->community?->display_label ?: 'Por definir' }}</strong>@if($isProvider && $vendor->service_area)<span class="mt-1 block text-xs font-semibold text-[#6B7D83]">{{ $vendor->service_area }}</span>@endif</div>
+    <div class="rounded-2xl border bg-[#FAF8F4] p-4"><span class="block text-xs font-black uppercase tracking-wide text-[#6B7D83]">Confianza verificada</span><strong class="mt-1 block">{{ $rating ? number_format($rating,1).' de 5' : 'Sin calificación' }}</strong><span class="mt-1 block text-xs font-semibold text-[#6B7D83]">{{ $completedOrdersCount }} trabajos · {{ $reviewsCount }} reseñas</span></div>
 </div>
-<div class="mt-3 flex flex-wrap gap-2 text-xs font-black text-[#536A72]"><span class="rounded-full border bg-white px-3 py-1.5">{{ $user->posts_count }} publicaciones</span><span class="rounded-full border bg-white px-3 py-1.5">{{ $completedOrdersCount }} trabajos verificados</span><span class="rounded-full border bg-white px-3 py-1.5">{{ $rating ? number_format($rating,1).' ★' : 'Sin puntuación' }} · {{ $reviewsCount }} reseñas</span></div>
+<div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-[#123B4A]/8 bg-white px-4 py-3 text-xs font-bold text-[#6B7D83]" aria-label="Actividad social"><span><strong class="text-[#17313A]">{{ $socialMetrics['followers'] }}</strong> Seguidores</span><span><strong class="text-[#17313A]">{{ $socialMetrics['likes'] }}</strong> Me gusta</span><span><strong class="text-[#17313A]">{{ $socialMetrics['comments'] }}</strong> Comentarios</span><span><strong class="text-[#17313A]">{{ $socialMetrics['shares'] }}</strong> Compartidos</span></div>
 @endif
 @if(!$isOwner)
 <div class="mt-6 rounded-2xl border border-[#F97316]/15 bg-[#FFF8F2] p-4">
@@ -78,5 +77,5 @@ $staffLabel=$isStaff ? ($user->hasRole('superadmin')?'Superadministrador':'Admin
 <section class="mt-7 rounded-[2rem] border bg-white p-7"><p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Cuenta institucional</p><h2 class="mt-2 text-2xl font-black">{{ $staffLabel }}</h2><p class="mt-3 max-w-2xl leading-7 text-[#536A72]">Su función es moderar, resolver incidencias y proteger la operación de las comunidades. Para atención, utiliza el canal de soporte oficial.</p></section>
 @endif
 </main>
-<x-bottom-nav active="profile" />
+<x-bottom-nav active="more" />
 </body></html>

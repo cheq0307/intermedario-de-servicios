@@ -75,7 +75,7 @@ class DashboardController extends Controller
             ->values();
 
         $posts = Post::query()
-            ->with(['user.community', 'listing.category', 'jobRequest.category', 'jobRequest.communities', 'media', 'comments.user'])
+            ->with(['user.community', 'listing.category', 'jobRequest.category', 'jobRequest.communities', 'media', 'comments' => fn ($query) => $query->with('user:id,name,avatar_path')->limit(2)])
             ->withCount(['reactions', 'comments', 'shares'])
             ->withExists(['reactions as reacted_by_user' => fn ($query) => $query->where('user_id', $user->id)])
             ->whereNotNull('published_at')

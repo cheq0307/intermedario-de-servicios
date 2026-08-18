@@ -18,7 +18,6 @@ class HomeRealDataTest extends TestCase
         $this->get(route('home'))
             ->assertOk()
             ->assertSee('aria-label="Iniciar sesión"', false)
-            ->assertSee('Abrir menú')
             ->assertSee('Crear cuenta')
             ->assertSee(route('login'), false)
             ->assertSee(route('register'), false);

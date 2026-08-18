@@ -6,14 +6,23 @@ use App\Models\Post;
 use App\Models\PostComment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class PostEngagementController extends Controller
 {
+    public function comments(Post $post): View
+    {
+        abort_if($post->removed_at !== null, 404);
+        $post->load('user:id,name');
+        $comments = $post->comments()->with('user:id,name,avatar_path')->paginate(20);
+
+        return view('comments.index', compact('post', 'comments'));
+    }
+
     public function toggleReaction(Request $request, Post $post): RedirectResponse
     {
         abort_if($post->removed_at !== null, 404);
         $reaction = $post->reactions()->where('user_id', $request->user()->id)->first();
-
         if ($reaction) {
             $reaction->delete();
             $message = 'Ya no te gusta esta publicación.';
@@ -33,6 +42,15 @@ class PostEngagementController extends Controller
         $post->comments()->create(['user_id' => $request->user()->id, 'body' => $validated['body']]);
 
         return back()->withFragment('post-'.$post->id)->with('status', 'Comentario publicado.');
+    }
+
+    public function updateComment(Request $request, PostComment $comment): RedirectResponse
+    {
+        abort_unless($comment->user_id === $request->user()->id, 403);
+        $validated = $request->validate(['body' => ['required', 'string', 'min:2', 'max:1000']]);
+        $comment->update(['body' => $validated['body']]);
+
+        return back()->with('status', 'Comentario actualizado.');
     }
 
     public function deleteComment(Request $request, PostComment $comment): RedirectResponse

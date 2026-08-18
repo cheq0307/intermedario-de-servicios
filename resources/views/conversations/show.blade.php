@@ -6,7 +6,7 @@
     <title>Chat con {{ $otherUser?->name ?? 'usuario' }} - Plaza Local</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-[#EEF3F1] text-[#17313A] antialiased">
+<body class="min-h-screen pb-24 bg-[#EEF3F1] text-[#17313A] antialiased">
     <div class="mx-auto flex min-h-screen max-w-4xl flex-col bg-white shadow-xl">
         <header class="sticky top-0 z-20 flex items-center gap-3 border-b border-[#123B4A]/10 bg-white/95 px-4 py-3 backdrop-blur-xl">
             <a class="grid size-10 place-items-center rounded-full text-xl font-black hover:bg-[#FAF8F4]" href="{{ route('conversations.index') }}" aria-label="Volver">‹</a>
@@ -38,5 +38,6 @@
             <button class="grid size-12 shrink-0 place-items-center rounded-full bg-[#F97316] font-black text-white shadow-lg shadow-[#F97316]/20" type="submit" aria-label="Enviar">➤</button>
         </form>
     </div>
+<x-bottom-nav active="messages" />
 </body>
 </html>

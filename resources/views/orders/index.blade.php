@@ -3,10 +3,10 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Mis trabajos - Plaza Local</title>
+    <title>Mis operaciones - Plaza Local</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-[#FAF8F4] text-[#17313A] antialiased">
+<body class="min-h-screen pb-24 bg-[#FAF8F4] text-[#17313A] antialiased">
     @php($statusLabels = ['accepted' => 'Contratación aceptada', 'in_progress' => 'En progreso', 'delivered' => 'Esperando confirmación', 'completed' => 'Completado', 'cancelled' => 'Cancelado', 'disputed' => 'En disputa'])
     @php($statusLabels = array_merge($statusLabels, ['awaiting_payment' => 'Pendiente de pago', 'paid' => 'Pagado', 'ready' => 'Listo para entregar']))
     <header class="border-b border-[#123B4A]/10 bg-white">
@@ -17,8 +17,8 @@
     </header>
     <main class="mx-auto max-w-5xl px-5 py-9">
         <p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Contrataciones</p>
-        <h1 class="mt-2 text-3xl font-black">Mis trabajos</h1>
-        <p class="mt-3 max-w-2xl leading-7 text-[#6B7D83]">Aquí puedes seguir los acuerdos realizados dentro de Plaza Local.</p>
+        <h1 class="mt-2 text-3xl font-black">Mis operaciones</h1>
+        <p class="mt-3 max-w-2xl leading-7 text-[#6B7D83]">Sigue compras y contrataciones sin confundirlas con las vacantes de empleo.</p><nav class="mt-5 flex gap-2"><a class="rounded-full px-5 py-2.5 text-sm font-black {{ $role === 'client' ? 'bg-[#123B4A] text-white' : 'border bg-white' }}" href="{{ route('orders.index', ['como' => 'client']) }}">Como cliente</a><a class="rounded-full px-5 py-2.5 text-sm font-black {{ $role === 'provider' ? 'bg-[#123B4A] text-white' : 'border bg-white' }}" href="{{ route('orders.index', ['como' => 'provider']) }}">Como proveedor</a></nav>
 
         <div class="mt-8 space-y-4">
             @forelse ($orders as $order)
@@ -46,5 +46,6 @@
         </div>
         @if ($orders->hasPages())<div class="mt-6">{{ $orders->links() }}</div>@endif
     </main>
+<x-bottom-nav active="orders" />
 </body>
 </html>

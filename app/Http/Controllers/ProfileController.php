@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Marketplace\Enums\OrderStatus;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Models\Category;
 use App\Models\Community;
+use App\Models\Order;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -19,16 +21,46 @@ class ProfileController extends Controller
             'posts' => fn ($query) => $query->whereNull('removed_at'),
             'jobRequests' => fn ($query) => $query->whereHas('post', fn ($post) => $post->whereNull('removed_at')),
         ]);
-        $posts = $user->posts()
-            ->with(['listing', 'jobRequest'])
-            ->whereNotNull('published_at')
-            ->whereNull('removed_at')
-            ->latest('published_at')
-            ->paginate(9);
-        $rating = $user->reviewsReceived()->where('is_visible', true)->avg('rating');
-        $reviewsCount = $user->reviewsReceived()->where('is_visible', true)->count();
+        $isStaff = $user->hasRole('superadmin') || ($user->hasRole('admin') && ! $user->canUseMarketplace());
+        $tab = request()->query('tab', $user->vendor?->status === 'active' ? 'offers' : 'needs');
+        if (! in_array($tab, ['offers', 'needs', 'work', 'reviews'], true)) {
+            $tab = 'offers';
+        }
 
-        return view('profiles.show', compact('user', 'posts', 'rating', 'reviewsCount'));
+        $posts = $isStaff
+            ? $user->posts()->whereRaw('1 = 0')->paginate(9)
+            : $user->posts()
+                ->with(['listing', 'jobRequest', 'media'])
+                ->whereNotNull('published_at')
+                ->whereNull('removed_at')
+                ->when($tab === 'offers', fn ($query) => $query->whereNotNull('listing_id'))
+                ->when($tab === 'needs', fn ($query) => $query->where(fn ($nested) => $nested->whereNotNull('job_request_id')->orWhere('type', 'job_request')))
+                ->when(in_array($tab, ['work', 'reviews'], true), fn ($query) => $query->whereRaw('1 = 0'))
+                ->latest('published_at')
+                ->paginate(9)
+                ->withQueryString();
+
+        $completedOrders = Order::query()
+            ->with(['buyer:id,name', 'jobRequest.post.media', 'items'])
+            ->whereHas('vendor', fn ($query) => $query->where('user_id', $user->id))
+            ->where('status', OrderStatus::Completed->value)
+            ->latest('completed_at')
+            ->limit(24)
+            ->get();
+        $reviewsQuery = $user->reviewsReceived()->where('is_visible', true);
+        $rating = (clone $reviewsQuery)->avg('rating');
+        $reviewsCount = (clone $reviewsQuery)->count();
+        $reviews = $reviewsQuery
+            ->with('author:id,name,avatar_path')
+            ->latest()
+            ->limit(30)
+            ->get();
+        $completedOrdersCount = Order::query()
+            ->whereHas('vendor', fn ($query) => $query->where('user_id', $user->id))
+            ->where('status', OrderStatus::Completed->value)
+            ->count();
+
+        return view('profiles.show', compact('user', 'posts', 'rating', 'reviewsCount', 'completedOrdersCount', 'completedOrders', 'reviews', 'tab', 'isStaff'));
     }
 
     public function edit(): View

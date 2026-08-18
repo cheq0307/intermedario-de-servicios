@@ -31,4 +31,6 @@ return [
     'allow_fake_payments' => (bool) env('MARKETPLACE_ALLOW_FAKE_PAYMENTS', false),
     'reservation_minutes' => (int) env('MARKETPLACE_RESERVATION_MINUTES', 20),
     'operations_alert_email' => env('OPERATIONS_ALERT_EMAIL'),
+    'job_posting_fee_amount' => (int) env('MARKETPLACE_JOB_POSTING_FEE_CENTS', 9900),
+    'job_posting_days' => (int) env('MARKETPLACE_JOB_POSTING_DAYS', 30),
 ];

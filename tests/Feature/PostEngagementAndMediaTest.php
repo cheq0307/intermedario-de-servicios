@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Post;
+use App\Models\PostComment;
 use App\Models\PostMedia;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -69,5 +70,27 @@ class PostEngagementAndMediaTest extends TestCase
             'body' => 'Solicitud valida con un archivo que no esta permitido.',
             'media' => [UploadedFile::fake()->create('malware.exe', 5, 'application/octet-stream')],
         ])->assertRedirect(route('dashboard'))->assertSessionHasErrors('media.0');
+    }
+
+    public function test_comments_are_paginated_and_only_the_author_can_edit_them(): void
+    {
+        $author = User::factory()->create();
+        $viewer = User::factory()->create();
+        $outsider = User::factory()->create();
+        $post = Post::create(['user_id' => $author->id, 'type' => 'job_request', 'body' => 'Solicitud con conversación activa.', 'published_at' => now()]);
+
+        foreach (range(1, 25) as $number) {
+            PostComment::create(['post_id' => $post->id, 'user_id' => $viewer->id, 'body' => "Comentario número {$number}"]);
+        }
+
+        $this->actingAs($viewer)->get(route('posts.comments.index', $post))
+            ->assertOk()
+            ->assertSee('Comentario número 25')
+            ->assertDontSee('Comentario número 5');
+
+        $comment = PostComment::latest('id')->firstOrFail();
+        $this->actingAs($viewer)->patch(route('posts.comments.update', $comment), ['body' => 'Comentario corregido por su autor.'])->assertRedirect();
+        $this->assertDatabaseHas('post_comments', ['id' => $comment->id, 'body' => 'Comentario corregido por su autor.']);
+        $this->actingAs($outsider)->patch(route('posts.comments.update', $comment), ['body' => 'Intento de edición no autorizado.'])->assertForbidden();
     }
 }

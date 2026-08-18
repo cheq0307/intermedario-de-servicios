@@ -6,10 +6,10 @@
     <title>Notificaciones - Plaza Local</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-[#FAF8F4] text-[#17313A] antialiased">
+<body class="min-h-screen pb-24 bg-[#FAF8F4] text-[#17313A] antialiased">
     <header class="border-b border-[#123B4A]/10 bg-white"><div class="mx-auto flex max-w-4xl items-center justify-between px-5 py-4"><a class="font-black" href="{{ route('dashboard') }}">Plaza Local</a><a class="rounded-full border border-[#123B4A]/10 px-4 py-2 text-sm font-black" href="{{ route('dashboard') }}">Volver</a></div></header>
     <main class="mx-auto max-w-4xl px-5 py-9">
-        <div class="flex flex-wrap items-end justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Actividad importante</p><h1 class="mt-2 text-3xl font-black">Notificaciones</h1><p class="mt-2 text-sm font-bold text-[#6B7D83]">{{ $unreadCount ? $unreadCount.' sin leer' : 'No tienes avisos pendientes' }} · Abrir un aviso lo marca como leído.</p></div>@if($unreadCount)<form method="POST" action="{{ route('notifications.read-all') }}">@csrf @method('PATCH')<button class="rounded-full border border-[#123B4A]/10 bg-white px-5 py-2.5 text-sm font-black" type="submit">Marcar todas como leídas</button></form>@endif</div>
+        <nav class="mb-5 flex gap-2"><a class="rounded-full border bg-white px-5 py-2.5 text-sm font-black" href="{{ route('conversations.index') }}">Conversaciones</a><a class="rounded-full bg-[#123B4A] px-5 py-2.5 text-sm font-black text-white" href="{{ route('notifications.index') }}">Notificaciones</a></nav><div class="flex flex-wrap items-end justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Actividad importante</p><h1 class="mt-2 text-3xl font-black">Notificaciones</h1><p class="mt-2 text-sm font-bold text-[#6B7D83]">{{ $unreadCount ? $unreadCount.' sin leer' : 'No tienes avisos pendientes' }} · Abrir un aviso lo marca como leído.</p></div>@if($unreadCount)<form method="POST" action="{{ route('notifications.read-all') }}">@csrf @method('PATCH')<button class="rounded-full border border-[#123B4A]/10 bg-white px-5 py-2.5 text-sm font-black" type="submit">Marcar todas como leídas</button></form>@endif</div>
         @if(session('status'))<p class="mt-5 rounded-2xl bg-[#E9F7F0] p-4 text-sm font-black text-[#14734A]">{{ session('status') }}</p>@endif
         <div class="mt-7 space-y-3">
             @forelse($notifications as $notification)
@@ -32,5 +32,6 @@
         @if($notifications->hasPages())<div class="mt-6">{{ $notifications->links() }}</div>@endif
         <div class="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-[1.5rem] border border-[#123B4A]/10 bg-white p-5"><div><h2 class="font-black">¿Necesitas ayuda?</h2><p class="mt-1 text-sm font-semibold text-[#6B7D83]">Abre un caso y conserva toda la conversación con soporte.</p></div><a class="rounded-full bg-[#123B4A] px-5 py-3 text-sm font-black text-white" href="{{ route('support.create') }}">Contactar soporte</a></div>
     </main>
+<x-bottom-nav active="messages" />
 </body>
 </html>

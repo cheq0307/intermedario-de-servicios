@@ -10,6 +10,7 @@ use App\Http\Controllers\DisputeController;
 use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\JobProposalController;
+use App\Http\Controllers\JobVacancyController;
 use App\Http\Controllers\MarketplaceCapabilityController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PostalCodeController;
@@ -29,6 +30,8 @@ Route::get('/', HomeController::class)->name('home');
 Route::get('/explorar', ExploreController::class)->name('explore');
 Route::get('/codigos-postales/{postalCode}', [PostalCodeController::class, 'show'])->whereNumber('postalCode')->middleware('throttle:60,1')->name('postal-codes.show');
 Route::get('/perfiles/{user}', [ProfileController::class, 'show'])->name('profile.show');
+Route::get('/empleo', [JobVacancyController::class, 'index'])->name('vacancies.index');
+Route::get('/empleo/{vacancy}', [JobVacancyController::class, 'show'])->name('vacancies.show');
 Route::post('/webhooks/stripe', StripeWebhookController::class)->name('stripe.webhook');
 
 Route::middleware('guest')->group(function () {
@@ -50,6 +53,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/soporte/{ticket}/respuestas', [SupportController::class, 'reply'])->name('support.reply');
     Route::middleware('verified')->group(function () {
         Route::post('/mi-cuenta/capacidades/{capability}', [MarketplaceCapabilityController::class, 'activate'])->name('capabilities.activate');
+        Route::get('/mi-empleo', [JobVacancyController::class, 'mine'])->name('vacancies.mine');
+        Route::get('/empleo-publicar', [JobVacancyController::class, 'create'])->name('vacancies.create');
+        Route::post('/empleo', [JobVacancyController::class, 'store'])->name('vacancies.store');
+        Route::post('/empleo/{vacancy}/pagar', [JobVacancyController::class, 'pay'])->name('vacancies.pay');
+        Route::post('/empleo/{vacancy}/postular', [JobVacancyController::class, 'apply'])->name('vacancies.apply');
+        Route::patch('/empleo/{vacancy}/cerrar', [JobVacancyController::class, 'close'])->name('vacancies.close');
         Route::post('/mi-perfil/solicitar-verificacion', [MarketplaceCapabilityController::class, 'submitProviderApplication'])->name('provider-applications.submit');
         Route::post('/publicaciones', [PostController::class, 'store'])->name('posts.store');
         Route::post('/stripe/conectar', [StripeConnectController::class, 'onboard'])->name('stripe.connect');
@@ -58,7 +67,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/publicaciones/{post}/editar', [PostManagementController::class, 'edit'])->name('posts.edit');
         Route::put('/publicaciones/{post}', [PostManagementController::class, 'update'])->name('posts.update');
         Route::post('/publicaciones/{post}/reaccion', [PostEngagementController::class, 'toggleReaction'])->name('posts.reactions.toggle');
+        Route::get('/publicaciones/{post}/comentarios', [PostEngagementController::class, 'comments'])->name('posts.comments.index');
         Route::post('/publicaciones/{post}/comentarios', [PostEngagementController::class, 'comment'])->name('posts.comments.store');
+        Route::patch('/comentarios/{comment}', [PostEngagementController::class, 'updateComment'])->name('posts.comments.update');
         Route::delete('/comentarios/{comment}', [PostEngagementController::class, 'deleteComment'])->name('posts.comments.destroy');
         Route::post('/publicaciones/{post}/compartir', [PostEngagementController::class, 'share'])->name('posts.shares.store');
         Route::get('/productos/{listing}/comprar', [ProductOrderController::class, 'checkout'])->name('products.checkout');
@@ -92,6 +103,7 @@ Route::middleware('auth')->group(function () {
         Route::patch('/disputas/{dispute}/resolver', [DisputeController::class, 'resolve'])->name('disputes.resolve');
         Route::get('/administracion/disputas', [DisputeController::class, 'adminIndex'])->name('disputes.admin-index');
         Route::post('/trabajos/{order}/calificaciones', [ReviewController::class, 'store'])->name('reviews.store');
+        Route::patch('/calificaciones/{review}', [ReviewController::class, 'update'])->name('reviews.update');
         Route::get('/administracion', [AdminController::class, 'index'])->name('admin.index');
         Route::get('/administracion/soporte', [SupportController::class, 'adminIndex'])->name('admin.support.index');
         Route::get('/administracion/soporte/{ticket}', [SupportController::class, 'show'])->name('admin.support.show');

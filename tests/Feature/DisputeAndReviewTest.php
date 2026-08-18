@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Dispute;
 use App\Models\JobRequest;
 use App\Models\Order;
+use App\Models\Review;
 use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -118,6 +119,10 @@ class DisputeAndReviewTest extends TestCase
         $this->actingAs($provider)->post(route('reviews.store', $order), ['rating' => 4, 'comment' => 'Cliente claro y respetuoso.'])->assertRedirect();
         $this->assertDatabaseHas('reviews', ['author_id' => $client->id, 'subject_user_id' => $provider->id, 'rating' => 5]);
         $this->assertDatabaseHas('reviews', ['author_id' => $provider->id, 'subject_user_id' => $client->id, 'rating' => 4]);
+        $review = Review::where('author_id', $client->id)->firstOrFail();
+        $this->actingAs($client)->patch(route('reviews.update', $review), ['rating' => 4, 'comment' => 'Actualizo mi opinión después de revisar el resultado.'])->assertRedirect();
+        $this->assertDatabaseHas('reviews', ['id' => $review->id, 'rating' => 4, 'comment' => 'Actualizo mi opinión después de revisar el resultado.']);
+        $this->actingAs($outsider)->patch(route('reviews.update', $review), ['rating' => 1])->assertForbidden();
         $this->actingAs($client)->post(route('reviews.store', $order), ['rating' => 1])->assertStatus(422);
         $this->actingAs($outsider)->post(route('reviews.store', $order), ['rating' => 5])->assertForbidden();
     }

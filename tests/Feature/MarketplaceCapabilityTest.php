@@ -110,17 +110,18 @@ class MarketplaceCapabilityTest extends TestCase
             ->assertOk()
             ->assertSee('Nombre del producto o servicio');
     }
-    public function test_dashboard_uses_the_hamburger_as_its_only_primary_navigation(): void
+
+    public function test_dashboard_uses_the_mobile_bottom_navigation(): void
     {
         $user = User::factory()->create(['account_type' => 'client']);
 
         $this->actingAs($user)
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertSee('Abrir menú')
-            ->assertSee('Mi perfil')
-            ->assertDontSee('aria-label="Navegación principal"', false)
-            ->assertDontSee('aria-label="Navegación móvil"', false);
+            ->assertSee('Pedidos')
+            ->assertSee('Perfil')
+            ->assertSee('aria-label="Navegación principal"', false)
+            ->assertDontSee('Abrir menú');
 
     }
 

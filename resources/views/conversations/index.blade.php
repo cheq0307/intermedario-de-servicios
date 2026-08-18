@@ -6,14 +6,14 @@
     <title>Mensajes - Plaza Local</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-[#FAF8F4] text-[#17313A] antialiased">
+<body class="min-h-screen pb-24 bg-[#FAF8F4] text-[#17313A] antialiased">
     <header class="border-b border-[#123B4A]/10 bg-white/90 backdrop-blur-xl">
         <div class="mx-auto flex max-w-4xl items-center justify-between px-5 py-4"><a class="flex items-center gap-3 font-black" href="{{ route('dashboard') }}"><span class="grid size-10 place-items-center rounded-2xl bg-[#123B4A] text-white">P</span> Plaza Local</a><a class="rounded-full border border-[#123B4A]/10 px-4 py-2 text-sm font-black" href="{{ route('dashboard') }}">Inicio</a></div>
     </header>
     <main class="mx-auto max-w-4xl px-5 py-9">
         <p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Conversaciones privadas</p>
         <h1 class="mt-2 text-4xl font-black tracking-tight">Mensajes</h1>
-        <p class="mt-3 text-[#6B7D83]">Habla dentro de Plaza Local para conservar el historial y la protección de la plataforma.</p>
+        <p class="mt-3 text-[#6B7D83]">Habla dentro de Plaza Local para conservar el historial y la protección de la plataforma.</p><nav class="mt-5 flex gap-2"><a class="rounded-full bg-[#123B4A] px-5 py-2.5 text-sm font-black text-white" href="{{ route('conversations.index') }}">Conversaciones</a><a class="rounded-full border bg-white px-5 py-2.5 text-sm font-black" href="{{ route('notifications.index') }}">Notificaciones @if(auth()->user()->unreadNotifications()->count())<span class="ml-1 rounded-full bg-[#F97316] px-2 py-0.5 text-white">{{ auth()->user()->unreadNotifications()->count() }}</span>@endif</a></nav>
 
         <section class="mt-7 overflow-hidden rounded-[2rem] border border-[#123B4A]/10 bg-white shadow-sm">
             @forelse ($conversations as $conversation)
@@ -34,5 +34,6 @@
         </section>
         @if ($conversations->hasPages())<div class="mt-6">{{ $conversations->links() }}</div>@endif
     </main>
+<x-bottom-nav active="messages" />
 </body>
 </html>

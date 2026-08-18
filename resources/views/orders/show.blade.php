@@ -6,7 +6,7 @@
     <title>Detalle del trabajo - Plaza Local</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-[#FAF8F4] text-[#17313A] antialiased">
+<body class="min-h-screen pb-24 bg-[#FAF8F4] text-[#17313A] antialiased">
     @php
         $isBuyer = $order->buyer_id === auth()->id();
         $statusLabels = ['accepted' => 'Aceptada', 'awaiting_payment' => 'Pendiente de pago', 'paid' => 'Pagada', 'in_progress' => 'En progreso', 'ready' => 'Lista para entregar', 'delivered' => 'Entregada', 'completed' => 'Completada', 'cancelled' => 'Cancelada', 'disputed' => 'En disputa'];
@@ -56,7 +56,7 @@
                 @if($order->status->value === 'completed' && ! $ownReview)
                     <form class="mt-6 border-t border-[#123B4A]/10 pt-6" method="POST" action="{{ route('reviews.store', $order) }}">@csrf<h2 class="text-xl font-black">Califica esta experiencia</h2><div class="mt-4 grid gap-3 sm:grid-cols-[160px_1fr]"><select class="rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" name="rating" required><option value="5">5 - Excelente</option><option value="4">4 - Muy buena</option><option value="3">3 - Regular</option><option value="2">2 - Mala</option><option value="1">1 - Muy mala</option></select><textarea class="min-h-24 rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" name="comment" maxlength="1500" placeholder="Comentario opcional"></textarea></div><button class="mt-3 rounded-full bg-[#123B4A] px-5 py-3 text-sm font-black text-white" type="submit">Publicar calificación</button></form>
                 @elseif($ownReview)
-                    <p class="mt-6 rounded-2xl bg-[#E9F7F0] p-4 text-sm font-black text-[#14734A]">Ya calificaste esta contratación.</p>
+                    <details class="mt-6 rounded-2xl bg-[#E9F7F0] p-4"><summary class="cursor-pointer text-sm font-black text-[#14734A]">Ya calificaste · Editar reseña</summary><form class="mt-4 grid gap-3" method="POST" action="{{ route('reviews.update', $ownReview) }}">@csrf @method('PATCH')<select class="rounded-xl border bg-white px-3 py-2" name="rating">@foreach(range(5,1) as $score)<option value="{{ $score }}" @selected($ownReview->rating === $score)>{{ $score }} estrellas</option>@endforeach</select><textarea class="rounded-xl border bg-white px-3 py-2" name="comment" maxlength="1500">{{ $ownReview->comment }}</textarea><button class="rounded-full bg-[#123B4A] px-4 py-2 text-sm font-black text-white">Guardar cambios</button></form><p class="mt-3 text-xs font-bold text-[#536A72]">Solo quienes participaron en una contratación completada pueden calificar. La reseña puede actualizarse después.</p></details>
                 @endif
             </section>
 
@@ -103,5 +103,6 @@ document.getElementById('stripe-payment-form').addEventListener('submit', async 
 });
 </script>
 @endif
+<x-bottom-nav active="orders" />
 </body>
 </html>

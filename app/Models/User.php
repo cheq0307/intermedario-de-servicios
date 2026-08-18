@@ -147,6 +147,16 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->categoryPreferences()->wherePivot('interest_score', '>', 0);
     }
 
+    public function jobVacancies(): HasMany
+    {
+        return $this->hasMany(JobVacancy::class, 'employer_id');
+    }
+
+    public function jobApplications(): HasMany
+    {
+        return $this->hasMany(JobApplication::class, 'applicant_id');
+    }
+
     public function supportTickets(): HasMany
     {
         return $this->hasMany(SupportTicket::class);

@@ -18,16 +18,19 @@ class ServiceOrderController extends Controller
 {
     public function index(Request $request): View
     {
+        $role = in_array($request->query('como'), ['client', 'provider'], true) ? $request->query('como') : 'client';
         $orders = Order::query()
             ->with(['buyer:id,name,avatar_path', 'vendor.user:id,name,avatar_path', 'jobRequest:id,public_id,title', 'items:id,order_id,name_snapshot'])
-            ->where(function ($query) use ($request) {
-                $query->where('buyer_id', $request->user()->id)
-                    ->orWhereHas('vendor', fn ($vendorQuery) => $vendorQuery->where('user_id', $request->user()->id));
-            })
+            ->when(
+                $role === 'client',
+                fn ($query) => $query->where('buyer_id', $request->user()->id),
+                fn ($query) => $query->whereHas('vendor', fn ($vendorQuery) => $vendorQuery->where('user_id', $request->user()->id)),
+            )
             ->latest()
-            ->paginate(15);
+            ->paginate(15)
+            ->withQueryString();
 
-        return view('orders.index', compact('orders'));
+        return view('orders.index', compact('orders', 'role'));
     }
 
     public function show(Request $request, Order $order): View

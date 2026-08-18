@@ -7,7 +7,7 @@
     <title>Inicio - Plaza Local</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-[#FAF8F4] text-[#17313A] antialiased selection:bg-[#F97316]/25">
+<body class="min-h-screen pb-24 bg-[#FAF8F4] text-[#17313A] antialiased selection:bg-[#F97316]/25">
     @php
         $currentUser = auth()->user();
         $isProvider = $activeMode === 'provider';
@@ -138,6 +138,18 @@
                 </section>
             @endif
 
+            @if($publishAs === 'choose')
+            <section id="publicar" class="scroll-mt-24 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-5 shadow-sm">
+                <p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Crear publicación</p>
+                <h2 class="mt-2 text-2xl font-black">¿Qué quieres publicar?</h2>
+                <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                    <a class="rounded-2xl border p-5 hover:bg-[#E9F7F0]" href="{{ route('dashboard',['publicar'=>'offer']).'#crear-publicacion' }}"><strong class="block">Vender un producto</strong><span class="mt-1 block text-sm text-[#536A72]">Comisión al concretar la venta.</span></a>
+                    <a class="rounded-2xl border p-5 hover:bg-[#E9F7F0]" href="{{ route('dashboard',['publicar'=>'offer']).'#crear-publicacion' }}"><strong class="block">Ofrecer un servicio</strong><span class="mt-1 block text-sm text-[#536A72]">Comisión al ser contratado.</span></a>
+                    <a class="rounded-2xl border p-5 hover:bg-[#FFF1E8]" href="{{ route('dashboard',['publicar'=>'request']).'#crear-publicacion' }}"><strong class="block">Solicitar algo</strong><span class="mt-1 block text-sm text-[#536A72]">Pide un producto o servicio.</span></a>
+                    <a class="rounded-2xl border border-[#E6A700]/30 bg-[#FFF9E7] p-5" href="{{ route('vacancies.create') }}"><strong class="block text-[#8B5B00]">Publicar vacante de empleo</strong><span class="mt-1 block text-sm text-[#79551E]">La tarifa se muestra antes del pago.</span></a>
+                </div>
+            </section>
+            @endif
             @if($showComposer)
             <section id="crear-publicacion" class="scroll-mt-24 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-5 shadow-sm sm:p-6">
                 <div class="flex items-center gap-3">
@@ -278,6 +290,7 @@
                     @foreach($feedLabels as $feedKey => $feedLabel)
                         <a class="shrink-0 rounded-full border px-4 py-2 text-xs font-black transition {{ $feed === $feedKey ? 'border-[#123B4A] bg-[#123B4A] text-white' : 'border-[#123B4A]/10 bg-white text-[#536A72] hover:border-[#F97316]/40 hover:text-[#D85B0B]' }}" href="{{ route('dashboard', ['feed' => $feedKey]).'#actividad' }}" @if($feed === $feedKey) aria-current="page" @endif>{{ $feedLabel }}</a>
                     @endforeach
+                    <a class="shrink-0 rounded-full border border-[#E6A700]/30 bg-[#FFF9E7] px-4 py-2 text-xs font-black text-[#8B5B00]" href="{{ route('vacancies.index') }}">Empleo</a>
                 </nav>
 
                 @if($feed === 'for_you')
@@ -425,9 +438,10 @@
                             </div>
                         </div>
                         <section id="comment-{{ $post->id }}" class="border-t border-[#123B4A]/8 bg-[#FAF8F4]/60 p-4" data-comment-panel>
-                            @foreach($post->comments->take(5) as $comment)
-                                <div class="mb-3 flex items-start justify-between gap-3 rounded-2xl bg-white px-4 py-3"><div><strong class="text-sm">{{ $comment->user->name }}</strong><p class="mt-1 text-sm leading-6 text-[#536A72]">{{ $comment->body }}</p></div>@if($comment->user_id === $currentUser->id || $post->user_id === $currentUser->id || $currentUser->hasAnyRole(['admin','superadmin']))<form method="POST" action="{{ route('posts.comments.destroy', $comment) }}">@csrf @method('DELETE')<button class="text-xs font-black text-red-600" type="submit">Eliminar</button></form>@endif</div>
+                            @foreach($post->comments as $comment)
+                                <div class="mb-3 flex items-start justify-between gap-3 rounded-2xl bg-white px-4 py-3"><div><strong class="text-sm">{{ $comment->user->name }}</strong><p class="mt-1 line-clamp-3 text-sm leading-6 text-[#536A72]">{{ $comment->body }}</p>@if($comment->updated_at->gt($comment->created_at))<span class="text-[10px] font-bold text-[#8A999E]">Editado</span>@endif</div>@if($comment->user_id === $currentUser->id || $post->user_id === $currentUser->id || $currentUser->hasAnyRole(['admin','superadmin']))<form method="POST" action="{{ route('posts.comments.destroy', $comment) }}">@csrf @method('DELETE')<button class="text-xs font-black text-red-600" type="submit">Eliminar</button></form>@endif</div>
                             @endforeach
+                            @if($post->comments_count > $post->comments->count())<a class="mb-3 block text-sm font-black text-[#14734A]" href="{{ route('posts.comments.index', $post) }}">Ver los {{ $post->comments_count }} comentarios</a>@endif
                             @if($post->comments_enabled)<form class="flex gap-2" method="POST" action="{{ route('posts.comments.store', $post) }}">@csrf<input class="min-w-0 flex-1 rounded-full border border-[#123B4A]/10 bg-white px-4 py-2.5 text-sm outline-none" name="body" maxlength="1000" required placeholder="Escribe un comentario"><button class="rounded-full bg-[#123B4A] px-4 py-2 text-xs font-black text-white" type="submit">Publicar</button></form>@endif
                         </section>
                     </article>
@@ -470,5 +484,6 @@
         </aside>
     </main>
 
+    <x-bottom-nav active="home" />
 </body>
 </html>

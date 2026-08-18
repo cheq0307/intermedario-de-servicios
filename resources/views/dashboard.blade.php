@@ -32,6 +32,13 @@
 
     <main class="mx-auto grid max-w-5xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,680px)_280px]">
         <div id="inicio" class="min-w-0 space-y-5">
+            <nav class="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Accesos rápidos">
+                <a class="shrink-0 rounded-full border bg-white px-4 py-2 text-xs font-black" href="{{ route('explore', ['q'=>'comida']) }}">🍽️ Comida</a>
+                <a class="shrink-0 rounded-full border bg-white px-4 py-2 text-xs font-black" href="{{ route('explore', ['q'=>'servicios']) }}">🛠️ Servicios</a>
+                <a class="shrink-0 rounded-full border bg-white px-4 py-2 text-xs font-black" href="{{ route('explore', ['q'=>'productos']) }}">🛍️ Productos</a>
+                <a class="shrink-0 rounded-full border bg-white px-4 py-2 text-xs font-black" href="{{ route('explore', ['q'=>'transporte']) }}">🚕 Transporte</a>
+                <a class="shrink-0 rounded-full border border-[#E6A700]/30 bg-[#FFF9E7] px-4 py-2 text-xs font-black text-[#8B5B00]" href="{{ route('vacancies.index') }}">💼 Empleo</a>
+            </nav>
             @if (session('status'))
                 <div class="rounded-2xl border border-[#22A06B]/20 bg-[#E9F7F0] px-5 py-4 text-sm font-black text-[#14734A]" role="status">
                     {{ session('status') }}
@@ -60,11 +67,11 @@
                 </div>
             @endif
 
-            <section class="overflow-hidden rounded-[2rem] bg-[#123B4A] p-6 text-white shadow-[0_22px_55px_rgba(18,59,74,.16)] sm:p-8">
+            <section class="overflow-hidden rounded-[1.75rem] bg-[#123B4A] p-5 text-white shadow-[0_22px_55px_rgba(18,59,74,.16)] sm:p-7">
                 <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <p class="text-xs font-black uppercase tracking-[.2em] text-[#F9B36B]">Hola, {{ explode(' ', trim($currentUser->name))[0] }}</p>
-                        <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+                        <h1 class="mt-3 text-2xl font-black tracking-tight sm:text-3xl">
                             Compra, solicita, vende u ofrece desde una sola cuenta.
                         </h1>
                         <p class="mt-3 max-w-xl leading-7 text-white/65">

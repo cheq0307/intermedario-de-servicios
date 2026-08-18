@@ -7,6 +7,9 @@ use App\Http\Requests\UpdateProfileRequest;
 use App\Models\Category;
 use App\Models\Community;
 use App\Models\Order;
+use App\Models\PostComment;
+use App\Models\PostReaction;
+use App\Models\PostShare;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -60,7 +63,18 @@ class ProfileController extends Controller
             ->where('status', OrderStatus::Completed->value)
             ->count();
 
-        return view('profiles.show', compact('user', 'posts', 'rating', 'reviewsCount', 'completedOrdersCount', 'completedOrders', 'reviews', 'tab', 'isStaff'));
+        $publishedPostIds = $user->posts()->whereNotNull('published_at')->whereNull('removed_at')->select('id');
+        $socialMetrics = [
+            'followers' => $user->followers()->count(),
+            'likes' => PostReaction::query()->whereIn('post_id', clone $publishedPostIds)->count(),
+            'comments' => PostComment::query()->whereIn('post_id', clone $publishedPostIds)->count(),
+            'shares' => PostShare::query()->whereIn('post_id', clone $publishedPostIds)->count(),
+        ];
+        $isFollowing = auth()->check()
+            && ! auth()->user()->is($user)
+            && auth()->user()->following()->whereKey($user->id)->exists();
+
+        return view('profiles.show', compact('user', 'posts', 'rating', 'reviewsCount', 'completedOrdersCount', 'completedOrders', 'reviews', 'tab', 'isStaff', 'socialMetrics', 'isFollowing'));
     }
 
     public function edit(): View

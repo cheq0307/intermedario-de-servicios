@@ -8,7 +8,7 @@ $vendor=$user->vendor;
 $isProvider=$vendor?->status==='active';
 $staffLabel=$isStaff ? ($user->hasRole('superadmin')?'Superadministrador':'Administrador') : null;
 @endphp
-<x-market-nav :back-url="url()->previous()" />
+<x-market-nav :back-url="url()->previous()" :show-account="false" :show-notifications="false" />
 <main class="mx-auto max-w-6xl px-4 py-7 sm:px-6">
 @if(session('status'))<div class="mb-5 rounded-2xl bg-[#E9F7F0] p-4 text-sm font-black text-[#14734A]">{{ session('status') }}</div>@endif
 <section class="overflow-hidden rounded-[2rem] border border-[#123B4A]/10 bg-white shadow-sm">
@@ -36,10 +36,24 @@ $staffLabel=$isStaff ? ($user->hasRole('superadmin')?'Superadministrador':'Admin
 @if($isProvider)<div class="mt-4 flex flex-wrap gap-2">@if($vendor->availability_status==='busy')<span class="rounded-full bg-[#FFF4D6] px-3 py-1.5 text-xs font-black text-[#9A5A0A]">Realizando un trabajo</span>@elseif($vendor->availability_status==='available')<span class="rounded-full bg-[#E9F7F0] px-3 py-1.5 text-xs font-black text-[#14734A]">Disponible</span>@endif @if($vendor->businessHoursConfigured())<span class="rounded-full bg-[#FAF8F4] px-3 py-1.5 text-xs font-black">Horario: {{ collect($vendor->business_hours['days'])->map(fn($day)=>['monday'=>'Lun','tuesday'=>'Mar','wednesday'=>'Mié','thursday'=>'Jue','friday'=>'Vie','saturday'=>'Sáb','sunday'=>'Dom'][$day]??$day)->join(', ') }} · {{ $vendor->business_hours['opens_at'] }}–{{ $vendor->business_hours['closes_at'] }}</span>@endif</div>@endif
 </div>
 @if(!$isStaff)
-<div class="mt-6 grid grid-cols-3 gap-2 rounded-2xl bg-[#FAF8F4] p-4 text-center"><div><strong class="block text-xl">{{ $user->posts_count }}</strong><span class="text-xs font-bold text-[#6B7D83]">Publicaciones</span></div><div><strong class="block text-xl">{{ $completedOrdersCount }}</strong><span class="text-xs font-bold text-[#6B7D83]">Trabajos reales</span></div><div><strong class="block text-xl">{{ $rating ? number_format($rating,1) : '—' }}</strong><span class="text-xs font-bold text-[#6B7D83]">{{ $reviewsCount }} reseñas</span></div></div>
+<div class="mt-6 grid grid-cols-4 gap-1 rounded-2xl bg-[#FAF8F4] p-4 text-center">
+<div><strong class="block text-lg">{{ $socialMetrics['followers'] }}</strong><span class="text-[10px] font-bold text-[#6B7D83] sm:text-xs">Seguidores</span></div>
+<div><strong class="block text-lg">{{ $socialMetrics['likes'] }}</strong><span class="text-[10px] font-bold text-[#6B7D83] sm:text-xs">Me gusta</span></div>
+<div><strong class="block text-lg">{{ $socialMetrics['comments'] }}</strong><span class="text-[10px] font-bold text-[#6B7D83] sm:text-xs">Comentarios</span></div>
+<div><strong class="block text-lg">{{ $socialMetrics['shares'] }}</strong><span class="text-[10px] font-bold text-[#6B7D83] sm:text-xs">Compartidos</span></div>
+</div>
+<div class="mt-3 flex flex-wrap gap-2 text-xs font-black text-[#536A72]"><span class="rounded-full border bg-white px-3 py-1.5">{{ $user->posts_count }} publicaciones</span><span class="rounded-full border bg-white px-3 py-1.5">{{ $completedOrdersCount }} trabajos verificados</span><span class="rounded-full border bg-white px-3 py-1.5">{{ $rating ? number_format($rating,1).' ★' : 'Sin puntuación' }} · {{ $reviewsCount }} reseñas</span></div>
 @endif
 @if(!$isOwner)
-<div class="mt-6 rounded-2xl border border-[#F97316]/15 bg-[#FFF8F2] p-4">@if($isStaff)<a class="inline-flex rounded-full bg-[#123B4A] px-6 py-3 font-black text-white" href="{{ route('support.create') }}">Contactar soporte oficial</a>@guest<p class="mt-2 text-xs font-bold text-[#8A6A55]">Inicia sesión para abrir un caso.</p>@endguest @else @guest<a class="inline-flex rounded-full bg-[#123B4A] px-6 py-3 font-black text-white" href="{{ route('register') }}">Regístrate para contactar</a>@else<form method="POST" action="{{ route('conversations.start') }}">@csrf<input type="hidden" name="recipient_id" value="{{ $user->id }}"><button class="rounded-full bg-[#123B4A] px-6 py-3 font-black text-white">Contactar dentro de Plaza Local</button></form>@endguest @endif</div>
+<div class="mt-6 rounded-2xl border border-[#F97316]/15 bg-[#FFF8F2] p-4">
+@if(!$isStaff)
+    @guest
+        <a class="mb-3 inline-flex rounded-full border border-[#123B4A] px-6 py-3 font-black text-[#123B4A]" href="{{ route('login') }}">Inicia sesión para seguir</a>
+    @else
+        <form class="mb-3" method="POST" action="{{ route('profiles.follow.toggle', $user) }}">@csrf<button class="rounded-full {{ $isFollowing ? 'border border-[#123B4A] bg-white text-[#123B4A]' : 'bg-[#F97316] text-white' }} px-6 py-3 font-black">{{ $isFollowing ? 'Siguiendo · dejar de seguir' : 'Seguir' }}</button></form>
+    @endguest
+@endif
+@if($isStaff)<a class="inline-flex rounded-full bg-[#123B4A] px-6 py-3 font-black text-white" href="{{ route('support.create') }}">Contactar soporte oficial</a>@guest<p class="mt-2 text-xs font-bold text-[#8A6A55]">Inicia sesión para abrir un caso.</p>@endguest @else @guest<a class="inline-flex rounded-full bg-[#123B4A] px-6 py-3 font-black text-white" href="{{ route('register') }}">Regístrate para contactar</a>@else<form method="POST" action="{{ route('conversations.start') }}">@csrf<input type="hidden" name="recipient_id" value="{{ $user->id }}"><button class="rounded-full bg-[#123B4A] px-6 py-3 font-black text-white">Contactar dentro de Plaza Local</button></form>@endguest @endif</div>
 @endif
 </div>
 </section>

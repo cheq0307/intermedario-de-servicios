@@ -19,6 +19,7 @@ use App\Http\Controllers\PostEngagementController;
 use App\Http\Controllers\PostManagementController;
 use App\Http\Controllers\ProductOrderController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProfileFollowController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ServiceOrderController;
 use App\Http\Controllers\StripeConnectController;
@@ -46,6 +47,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/mi-perfil/editar', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/mi-perfil', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/perfiles/{user}/seguir', [ProfileFollowController::class, 'toggle'])->name('profiles.follow.toggle');
     Route::get('/soporte', [SupportController::class, 'index'])->name('support.index');
     Route::get('/soporte/nueva', [SupportController::class, 'create'])->name('support.create');
     Route::post('/soporte', [SupportController::class, 'store'])->name('support.store');

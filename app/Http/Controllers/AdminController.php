@@ -67,7 +67,7 @@ class AdminController extends Controller
         }
         $auditLogs = AuditLog::with('user:id,name')->latest('created_at')->limit(30)->get();
         $communities = Community::query()->withCount(['users', 'jobRequests'])->orderBy('name')->get();
-        $auditActions = ['admin.granted' => 'Administrador asignado', 'admin.revoked' => 'Permiso de administrador retirado', 'vendor.active' => 'Proveedor aprobado o reactivado', 'vendor.rejected' => 'Cambios solicitados al proveedor', 'vendor.suspended' => 'Proveedor suspendido', 'post.removed' => 'Publicación retirada', 'community.created' => 'Comunidad agregada', 'community.updated' => 'Comunidad actualizada', 'community.suspended' => 'Comunidad suspendida', 'community.reactivated' => 'Comunidad reactivada', 'community.deleted' => 'Comunidad eliminada'];
+        $auditActions = ['admin.granted' => 'Administrador asignado', 'admin.revoked' => 'Permiso de administrador retirado', 'vendor.active' => 'Proveedor aprobado o reactivado', 'vendor.rejected' => 'Cambios solicitados al proveedor', 'vendor.suspended' => 'Proveedor suspendido', 'vendor.verified' => 'Proveedor verificado', 'vendor.verification_revoked' => 'Verificación retirada', 'post.removed' => 'Publicación retirada', 'community.created' => 'Comunidad agregada', 'community.updated' => 'Comunidad actualizada', 'community.suspended' => 'Comunidad suspendida', 'community.reactivated' => 'Comunidad reactivada', 'community.deleted' => 'Comunidad eliminada'];
         $categories = Category::query()->withCount(['users', 'vendors', 'listings', 'jobRequests'])->orderBy('name')->get();
         $auditSubjects = ['User' => 'Usuario', 'Vendor' => 'Proveedor', 'Post' => 'Publicación', 'Community' => 'Comunidad'];
         $isSuperadmin = $request->user()->hasRole('superadmin');
@@ -118,6 +118,46 @@ class AdminController extends Controller
         $vendor->user?->notify(new MarketplaceActivity('Tu perfil de proveedor fue suspendido', 'Motivo: '.$validated['reason'], 'profile.show', ['user' => $vendor->user_id], 'vendor_suspended'));
 
         return back()->with('status', 'Proveedor suspendido y notificado.');
+    }
+
+    public function verifyVendor(Request $request, Vendor $vendor): RedirectResponse
+    {
+        $this->authorizeSuperadmin($request);
+        abort_unless($vendor->status === 'active', 422, 'Solo se puede verificar un proveedor aprobado y activo.');
+        $validated = $request->validate([
+            'verification_level' => ['required', Rule::in(['identity', 'business'])],
+            'verification_note' => ['required', 'string', 'min:10', 'max:1000'],
+        ]);
+
+        $vendor->update([
+            'verified_at' => now(),
+            'verified_by_user_id' => $request->user()->id,
+            'verification_level' => $validated['verification_level'],
+            'verification_note' => $validated['verification_note'],
+        ]);
+        $this->audit($request, 'vendor.verified', $vendor, ['level' => $validated['verification_level']]);
+        $vendor->loadMissing('user');
+        $vendor->user?->notify(new MarketplaceActivity('Obtuviste el distintivo de proveedor verificado', 'Tu identidad o negocio fue revisado por Plaza Local. Este distintivo no fue comprado.', 'profile.show', ['user' => $vendor->user_id], 'vendor_verified'));
+
+        return back()->with('status', 'Proveedor verificado y notificado.');
+    }
+
+    public function revokeVendorVerification(Request $request, Vendor $vendor): RedirectResponse
+    {
+        $this->authorizeSuperadmin($request);
+        abort_if($vendor->verified_at === null, 422, 'Este proveedor no tiene un distintivo vigente.');
+        $validated = $request->validate(['reason' => ['required', 'string', 'min:10', 'max:1000']]);
+        $vendor->update([
+            'verified_at' => null,
+            'verified_by_user_id' => null,
+            'verification_level' => null,
+            'verification_note' => null,
+        ]);
+        $this->audit($request, 'vendor.verification_revoked', $vendor, ['reason' => $validated['reason']]);
+        $vendor->loadMissing('user');
+        $vendor->user?->notify(new MarketplaceActivity('Tu distintivo de proveedor verificado fue retirado', 'Motivo: '.$validated['reason'], 'support.create', ['category' => 'moderation'], 'vendor_verification_revoked'));
+
+        return back()->with('status', 'Distintivo retirado y proveedor notificado.');
     }
 
     public function removePost(Request $request, Post $post): RedirectResponse
@@ -322,7 +362,10 @@ class AdminController extends Controller
         DB::transaction(function () use ($request, $vendor, $status, $metadata): void {
             $vendor->update([
                 'status' => $status,
-                'verified_at' => $status === 'active' ? now() : null,
+                'verified_at' => in_array($status, ['rejected', 'suspended'], true) ? null : $vendor->verified_at,
+                'verified_by_user_id' => in_array($status, ['rejected', 'suspended'], true) ? null : $vendor->verified_by_user_id,
+                'verification_level' => in_array($status, ['rejected', 'suspended'], true) ? null : $vendor->verification_level,
+                'verification_note' => in_array($status, ['rejected', 'suspended'], true) ? null : $vendor->verification_note,
                 'reviewed_at' => now(),
                 'rejection_reason' => $status === 'rejected' ? ($metadata['reason'] ?? null) : null,
                 'suspension_reason' => $status === 'suspended' ? ($metadata['reason'] ?? null) : null,

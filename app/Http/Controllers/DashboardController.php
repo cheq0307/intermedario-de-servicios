@@ -49,11 +49,12 @@ class DashboardController extends Controller
             ->pluck('categories.id')
             ->all();
         $showcaseListings = Listing::query()
-            ->with(['category', 'vendor.user.community', 'post.media'])
+            ->with(['category', 'vendor.user.community', 'post.media', 'post.activePromotion'])
             ->where('is_active', true)
             ->whereHas('category', fn ($query) => $query->where('is_active', true))
             ->whereHas('vendor', fn ($query) => $query->where('status', 'active'))
             ->whereHas('post', fn ($query) => $query->whereNotNull('published_at')->whereNull('removed_at'))
+            ->orderByRaw('CASE WHEN EXISTS (SELECT 1 FROM post_promotions WHERE post_promotions.post_id = (SELECT posts.id FROM posts WHERE posts.listing_id = listings.id LIMIT 1) AND post_promotions.status = ? AND post_promotions.starts_at <= ? AND post_promotions.ends_at > ?) THEN 0 ELSE 1 END', ['active', now(), now()])
             ->when($preferredCategoryIds !== [], fn ($query) => $query->orderByRaw(
                 'CASE WHEN listings.category_id IN ('.implode(',', array_map('intval', $preferredCategoryIds)).') THEN 0 ELSE 1 END'
             ))

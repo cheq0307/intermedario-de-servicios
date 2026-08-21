@@ -46,6 +46,20 @@
                 <ul class="mt-4 space-y-2 text-sm font-bold"><li>{{ $vendor->user->hasVerifiedEmail() ? '✓' : '×' }} Correo verificado</li><li>{{ $vendor->categories->isNotEmpty() ? '✓' : '×' }} Al menos un rubro ofrecido</li><li>{{ $vendor->businessHoursConfigured() ? '✓' : '×' }} Horario configurado</li><li>{{ blank($vendor->description) ? '×' : '✓' }} Descripción profesional</li><li>{{ $vendor->user->community ? '✓' : '×' }} Comunidad asignada</li></ul>
             </section>
 
+            @if($vendor->status === 'active')
+                <section class="rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6 shadow-sm">
+                    <h2 class="text-xl font-black">Distintivo de confianza</h2>
+                    @if($vendor->verified_at)
+                        <div class="mt-4 rounded-2xl bg-[#E9F7F0] p-4 text-sm text-[#14734A]"><strong>Proveedor verificado</strong><p class="mt-1 font-semibold">Nivel: {{ $vendor->verification_level === 'business' ? 'Identidad y negocio' : 'Identidad' }} · {{ $vendor->verified_at->format('d/m/Y') }}</p></div>
+                        @if(auth()->user()->hasRole('superadmin'))<form class="mt-4" method="POST" action="{{ route('admin.vendors.verification.revoke', $vendor) }}">@csrf @method('DELETE')<textarea class="min-h-20 w-full rounded-2xl border border-red-200 px-4 py-3 text-sm" name="reason" minlength="10" maxlength="1000" required placeholder="Motivo para retirar el distintivo"></textarea><button class="mt-3 w-full rounded-full border border-red-200 px-5 py-3 font-black text-red-700" type="submit">Retirar verificación</button></form>@endif
+                    @elseif(auth()->user()->hasRole('superadmin'))
+                        <p class="mt-2 text-sm font-semibold text-[#6B7D83]">Aprobar el perfil permite operar; este distintivo requiere una revisión adicional. Pagar una tarifa de revisión nunca garantiza obtenerlo.</p>
+                        <form class="mt-4 space-y-3" method="POST" action="{{ route('admin.vendors.verify', $vendor) }}">@csrf @method('PATCH')<select class="w-full rounded-2xl bg-[#FAF8F4] px-4 py-3" name="verification_level" required><option value="identity">Identidad revisada</option><option value="business">Identidad y negocio revisados</option></select><textarea class="min-h-24 w-full rounded-2xl border border-[#123B4A]/10 px-4 py-3 text-sm" name="verification_note" minlength="10" maxlength="1000" required placeholder="Anota qué documentos o evidencia fueron contrastados"></textarea><button class="w-full rounded-full bg-[#123B4A] px-5 py-3 font-black text-white" type="submit">Otorgar distintivo verificado</button></form>
+                    @else
+                        <p class="mt-2 text-sm font-semibold text-[#6B7D83]">Solo el superadministrador puede otorgar el distintivo después de revisar el expediente.</p>
+                    @endif
+                </section>
+            @endif
             @if($vendor->status === 'pending')
                 <section class="rounded-[1.75rem] border border-[#F97316]/20 bg-white p-6 shadow-sm"><h2 class="text-xl font-black">Decisión administrativa</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Aprueba solo después de contrastar toda la información anterior.</p>
                     @if($ready)<form class="mt-5" method="POST" action="{{ route('admin.vendors.approve', $vendor) }}">@csrf @method('PATCH')<button class="w-full rounded-full bg-[#14734A] px-5 py-3 font-black text-white" type="submit">Aprobar proveedor</button></form>@else<button class="mt-5 w-full cursor-not-allowed rounded-full bg-[#D8DEDB] px-5 py-3 font-black text-[#70817B]" disabled>Faltan requisitos</button>@endif

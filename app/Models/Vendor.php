@@ -34,6 +34,9 @@ class Vendor extends Model
         'suspension_reason',
         'suspended_at',
         'verified_at',
+        'verified_by_user_id',
+        'verification_level',
+        'verification_note',
         'latitude',
         'longitude',
         'address',
@@ -124,6 +127,11 @@ class Vendor extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function verifiedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'verified_by_user_id');
     }
 
     public function listings(): HasMany

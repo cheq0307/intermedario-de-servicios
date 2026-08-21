@@ -54,7 +54,7 @@ class AdminAuthorizationTest extends TestCase
         $this->actingAs($admin)->get(route('admin.index'))->assertOk()->assertSee('1 solicitudes pendientes')->assertDontSee('Negocio pendiente');
         $this->actingAs($admin)->patch(route('admin.vendors.approve', $vendor))->assertRedirect();
         $this->assertSame('active', $vendor->fresh()->status);
-        $this->assertNotNull($vendor->fresh()->verified_at);
+        $this->assertNull($vendor->fresh()->verified_at);
         $this->actingAs($admin)->get(route('admin.index'))->assertOk()->assertSee('Suspender proveedor')->assertSee('Moderación de proveedores');
         $this->actingAs($admin)->post(route('admin.users.grant', $target))->assertForbidden();
 

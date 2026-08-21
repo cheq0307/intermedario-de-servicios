@@ -18,6 +18,7 @@ use App\Http\Controllers\PostalCodeController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\PostEngagementController;
 use App\Http\Controllers\PostManagementController;
+use App\Http\Controllers\PostPromotionController;
 use App\Http\Controllers\ProductOrderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileFollowController;
@@ -76,6 +77,8 @@ Route::middleware('auth')->group(function () {
         Route::patch('/comentarios/{comment}', [PostEngagementController::class, 'updateComment'])->name('posts.comments.update');
         Route::delete('/comentarios/{comment}', [PostEngagementController::class, 'deleteComment'])->name('posts.comments.destroy');
         Route::post('/publicaciones/{post}/compartir', [PostEngagementController::class, 'share'])->name('posts.shares.store');
+        Route::get('/promociones', [PostPromotionController::class, 'index'])->name('promotions.index');
+        Route::post('/promociones', [PostPromotionController::class, 'store'])->name('promotions.store');
         Route::get('/productos/{listing}/comprar', [ProductOrderController::class, 'checkout'])->name('products.checkout');
         Route::post('/productos/{listing}/pedidos', [ProductOrderController::class, 'store'])->name('products.orders.store');
         Route::post('/pedidos/{order}/simular-pago', [ProductOrderController::class, 'simulatePayment'])->name('products.orders.simulate-payment');
@@ -120,6 +123,8 @@ Route::middleware('auth')->group(function () {
         Route::patch('/administracion/proveedores/{vendor}/aprobar', [AdminController::class, 'approveVendor'])->name('admin.vendors.approve');
         Route::patch('/administracion/proveedores/{vendor}/rechazar', [AdminController::class, 'rejectVendor'])->name('admin.vendors.reject');
         Route::patch('/administracion/proveedores/{vendor}/suspender', [AdminController::class, 'suspendVendor'])->name('admin.vendors.suspend');
+        Route::patch('/administracion/proveedores/{vendor}/verificar', [AdminController::class, 'verifyVendor'])->name('admin.vendors.verify');
+        Route::delete('/administracion/proveedores/{vendor}/verificacion', [AdminController::class, 'revokeVendorVerification'])->name('admin.vendors.verification.revoke');
         Route::post('/administracion/comunidades', [AdminController::class, 'storeCommunity'])->name('admin.communities.store');
         Route::post('/administracion/codigos-postales/importar', [AdminController::class, 'importPostalCodes'])->name('admin.postal-codes.import');
         Route::patch('/administracion/comunidades/{community}', [AdminController::class, 'updateCommunity'])->name('admin.communities.update');

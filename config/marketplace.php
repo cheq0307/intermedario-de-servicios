@@ -33,4 +33,10 @@ return [
     'operations_alert_email' => env('OPERATIONS_ALERT_EMAIL'),
     'job_posting_fee_amount' => (int) env('MARKETPLACE_JOB_POSTING_FEE_CENTS', 9900),
     'job_posting_days' => (int) env('MARKETPLACE_JOB_POSTING_DAYS', 30),
+    'verification_review_fee_amount' => (int) env('MARKETPLACE_VERIFICATION_REVIEW_FEE_CENTS', 0),
+    'promotion_prices' => [
+        7 => (int) env('MARKETPLACE_PROMOTION_7_DAYS_CENTS', 4900),
+        15 => (int) env('MARKETPLACE_PROMOTION_15_DAYS_CENTS', 8900),
+        30 => (int) env('MARKETPLACE_PROMOTION_30_DAYS_CENTS', 14900),
+    ],
 ];

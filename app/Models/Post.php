@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Post extends Model
 {
@@ -78,5 +79,19 @@ class Post extends Model
     public function shares(): HasMany
     {
         return $this->hasMany(PostShare::class);
+    }
+
+    public function promotions(): HasMany
+    {
+        return $this->hasMany(PostPromotion::class);
+    }
+
+    public function activePromotion(): HasOne
+    {
+        return $this->hasOne(PostPromotion::class)
+            ->where('status', 'active')
+            ->where('starts_at', '<=', now())
+            ->where('ends_at', '>', now())
+            ->latestOfMany();
     }
 }

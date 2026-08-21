@@ -105,6 +105,7 @@
                                                 <span class="grid size-full place-items-center text-sm font-black text-[#6B7D83]">Sin imagen</span>
                                             @endif
                                             <span class="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-[#123B4A] shadow-sm">{{ $listing->type->value === 'product' ? 'Producto' : 'Servicio' }}</span>
+                                            @if($listing->post?->activePromotion)<span class="absolute right-3 top-3 rounded-full bg-[#17313A]/90 px-2.5 py-1 text-[10px] font-black text-white shadow-sm">Patrocinado</span>@endif
                                         </div>
                                         <div class="p-4">
                                             <h4 class="line-clamp-2 min-h-12 font-black leading-6">{{ $listing->name }}</h4>

@@ -63,6 +63,42 @@ class PostPublishingTest extends TestCase
         ]);
     }
 
+    public function test_an_approved_provider_can_publish_more_than_one_offer(): void
+    {
+        $provider = $this->approvedProvider();
+
+        foreach (['Primera reparación', 'Segunda reparación'] as $title) {
+            $this->actingAs($provider)->post(route('posts.store'), [
+                'submission_token' => (string) Str::uuid(),
+                'type' => 'service',
+                'title' => $title,
+                'price_type' => 'quote',
+                'body' => 'Servicio distinto publicado por la misma cuenta para la comunidad.',
+            ])->assertRedirect(route('dashboard'));
+        }
+
+        $this->assertDatabaseCount('listings', 2);
+        $this->assertDatabaseCount('posts', 2);
+    }
+
+    public function test_a_provider_account_can_also_publish_more_than_one_request(): void
+    {
+        $provider = $this->approvedProvider();
+
+        foreach (['Necesito apoyo para una entrega', 'Necesito apoyo para una instalación'] as $title) {
+            $this->actingAs($provider)->post(route('posts.store'), [
+                'submission_token' => (string) Str::uuid(),
+                'type' => 'job_request',
+                'title' => $title,
+                'urgency' => 'normal',
+                'body' => 'Esta solicitud demuestra que una sola cuenta también puede pedir ayuda.',
+            ])->assertRedirect(route('dashboard'));
+        }
+
+        $this->assertDatabaseCount('job_requests', 2);
+        $this->assertDatabaseCount('posts', 2);
+    }
+
     public function test_a_client_can_publish_a_structured_job_request(): void
     {
         $client = User::factory()->create(['account_type' => 'client']);
@@ -163,7 +199,10 @@ class PostPublishingTest extends TestCase
             'price_type' => 'quote',
         ]);
 
-        $response->assertStatus(422);
+        $response
+            ->assertRedirect()
+            ->assertSessionHasErrors('type');
+        $this->assertDatabaseCount('posts', 0);
     }
 
     private function approvedProvider(): User

@@ -54,6 +54,37 @@ class VendorApplicationWorkflowTest extends TestCase
         $this->actingAs($admin)->get(route('admin.index'))->assertOk()->assertSee('1 solicitudes pendientes')->assertDontSee('Servicios Luna');
     }
 
+    public function test_resubmitting_provider_application_notifies_admin_and_points_to_the_exact_record(): void
+    {
+        $provider = User::factory()->create(['account_type' => 'provider']);
+        $vendor = Vendor::create([
+            'user_id' => $provider->id, 'display_name' => 'Servicios reenviados', 'slug' => 'servicios-reenviados',
+            'description' => 'Servicios profesionales para la comunidad.', 'specialty' => 'Reparaciones', 'service_area' => 'Centro',
+            'business_hours' => ['days' => ['monday'], 'opens_at' => '09:00', 'closes_at' => '18:00'],
+            'status' => 'rejected', 'submitted_at' => now()->subDay(), 'rejection_reason' => 'Completa la información.',
+        ]);
+        $vendor->categories()->attach(Category::query()->value('id'));
+        $superadmin = User::factory()->create();
+        $superadmin->assignRole(Role::findOrCreate('superadmin'));
+
+        $this->actingAs($provider)
+            ->post(route('provider-applications.submit'))
+            ->assertRedirect(route('profile.edit'))
+            ->assertSessionHas('status');
+
+        $this->assertSame('pending', $vendor->fresh()->status);
+        $this->assertNull($vendor->fresh()->rejection_reason);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'vendor.submitted', 'subject_id' => $vendor->id]);
+        $notification = $superadmin->notifications()->sole();
+        $this->assertSame('admin.vendors.show', $notification->data['route_name']);
+        $this->assertSame(['vendor' => $vendor->id], $notification->data['route_parameters']);
+        $this->assertSame('vendor_submitted', $notification->data['kind']);
+        $this->actingAs($superadmin)->get(route('admin.index'))
+            ->assertOk()
+            ->assertSee('Notificaciones')
+            ->assertSee('1 solicitudes pendientes');
+    }
+
     public function test_editing_a_submitted_profile_returns_it_to_draft(): void
     {
         $provider = User::factory()->create(['account_type' => 'provider']);

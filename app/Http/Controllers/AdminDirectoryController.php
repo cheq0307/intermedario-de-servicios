@@ -105,10 +105,14 @@ class AdminDirectoryController extends Controller
             'categories:id,name,slug',
             'user.community:id,name,municipality,state,postal_code',
             'user.categoryPreferences:id,name,slug',
-            'verificationDocuments.reviewedBy:id,name',
         ])->loadCount(['listings', 'orders']);
+        $documents = $vendor->verificationDocuments()
+            ->with('reviewedBy:id,name')
+            ->latest('id')
+            ->paginate(10)
+            ->withQueryString();
 
-        return view('admin.vendors.show', compact('vendor'));
+        return view('admin.vendors.show', compact('vendor', 'documents'));
     }
 
     private function authorizeAdmin(Request $request): void

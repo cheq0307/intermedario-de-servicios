@@ -55,8 +55,9 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->avatar_path ? Storage::disk($this->avatar_disk ?: 'public')->url($this->avatar_path) : null;
     }
 
-    public function canActAsClient(): bool    {
-        return $this->hasRole('client');
+    public function canActAsClient(): bool
+    {
+        return $this->canUseMarketplace();
     }
 
     public function canActAsProvider(): bool
@@ -125,6 +126,7 @@ class User extends Authenticatable implements MustVerifyEmail
             ->distinct()
             ->count('participant.conversation_id');
     }
+
     public function posts(): HasMany
     {
         return $this->hasMany(Post::class);
@@ -144,6 +146,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->belongsToMany(self::class, 'user_follows', 'follower_id', 'followed_id')->withTimestamps();
     }
+
     public function reviewsReceived(): HasMany
     {
         return $this->hasMany(Review::class, 'subject_user_id');

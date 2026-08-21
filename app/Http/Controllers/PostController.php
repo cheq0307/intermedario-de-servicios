@@ -6,8 +6,8 @@ use App\Domain\Marketplace\Enums\JobRequestStatus;
 use App\Models\JobRequest;
 use App\Models\Listing;
 use App\Models\Post;
-use App\Services\Marketplace\NotifyMatchingProviders;
 use App\Models\Vendor;
+use App\Services\Marketplace\NotifyMatchingProviders;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -20,10 +20,9 @@ class PostController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $providerTypes = ['portfolio', 'business_update', 'product', 'service', 'promotion'];
-        $allowedTypes = array_merge(
-            $request->user()->canActAsClient() ? ['job_request'] : [],
-            $request->user()->canActAsProvider() ? $providerTypes : [],
-        );
+        $allowedTypes = $request->user()->canUseMarketplace()
+            ? array_merge(['job_request'], $providerTypes)
+            : [];
 
         $postData = $request->validate([
             'submission_token' => ['required', 'uuid'],
@@ -37,8 +36,15 @@ class PostController extends Controller
         ]);
 
         $isProvider = in_array($postData['type'], $providerTypes, true);
-        if ($isProvider) {
-            abort_unless($request->user()->vendor?->status === 'active', 422, 'Tu perfil comercial debe ser aprobado antes de publicar ofertas.');
+        if ($isProvider && $request->user()->vendor?->status !== 'active') {
+            $message = match ($request->user()->vendor?->status) {
+                'pending' => 'Tu solicitud comercial sigue en revisión. Puedes publicar solicitudes mientras administración la revisa.',
+                'rejected' => 'Tu perfil comercial necesita correcciones antes de publicar ofertas.',
+                'suspended' => 'Tu perfil comercial está suspendido. Contacta a soporte para solicitar una revisión.',
+                default => 'Completa y envía tu perfil comercial antes de publicar productos o servicios.',
+            };
+
+            return back()->withInput()->withErrors(['type' => $message]);
         }
 
         return Cache::lock('publication:'.$postData['submission_token'], 10)

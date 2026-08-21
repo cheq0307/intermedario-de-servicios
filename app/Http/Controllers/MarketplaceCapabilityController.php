@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Notifications\MarketplaceActivity;
@@ -61,26 +62,47 @@ class MarketplaceCapabilityController extends Controller
         abort_unless($user->hasVerifiedEmail(), 422, 'Verifica tu correo antes de enviar la solicitud.');
         abort_if($user->vendor->missingReviewRequirements() !== [], 422, 'Completa tu perfil comercial antes de enviarlo.');
 
-        $user->vendor->update([
-            'status' => 'pending',
-            'submitted_at' => now(),
-            'reviewed_at' => null,
-            'rejection_reason' => null,
-            'verified_at' => null,
-        ]);
+        $previousStatus = $user->vendor->status;
+        $vendor = DB::transaction(function () use ($request, $user, $previousStatus): Vendor {
+            $vendor = Vendor::query()->whereKey($user->vendor->id)->lockForUpdate()->firstOrFail();
+            $vendor->update([
+                'status' => 'pending',
+                'submitted_at' => now(),
+                'reviewed_at' => null,
+                'rejection_reason' => null,
+                'verified_at' => null,
+                'verified_by_user_id' => null,
+                'verification_level' => null,
+                'verification_note' => null,
+            ]);
+            AuditLog::create([
+                'user_id' => $user->id,
+                'action' => 'vendor.submitted',
+                'subject_type' => Vendor::class,
+                'subject_id' => $vendor->id,
+                'metadata' => ['previous_status' => $previousStatus],
+                'ip_address' => $request->ip(),
+                'user_agent' => mb_substr((string) $request->userAgent(), 0, 1000),
+                'created_at' => now(),
+            ]);
 
-        User::whereHas('roles', fn ($query) => $query->whereIn('name', ['admin', 'superadmin']))
-            ->each(function (User $administrator) use ($user): void {
+            return $vendor;
+        });
+
+        $isResubmission = in_array($previousStatus, ['pending', 'rejected'], true);
+        User::query()
+            ->whereHas('roles', fn ($query) => $query->whereIn('name', ['admin', 'superadmin']))
+            ->each(function (User $administrator) use ($user, $vendor, $isResubmission): void {
                 $administrator->notify(new MarketplaceActivity(
-                    'Nueva solicitud de proveedor',
-                    $user->vendor->display_name.' envió su perfil para revisión.',
-                    'admin.index',
-                    [],
+                    $isResubmission ? 'Solicitud de proveedor actualizada' : 'Nueva solicitud de proveedor',
+                    $user->vendor->display_name.' '.($isResubmission ? 'volvió a enviar' : 'envió').' su perfil para revisión.',
+                    'admin.vendors.show',
+                    ['vendor' => $vendor->id],
                     'vendor_submitted',
                 ));
             });
 
-        return redirect()->route('profile.edit')->with('status', 'Solicitud enviada. Un administrador revisará tu correo y perfil comercial.');
+        return redirect()->route('profile.edit')->with('status', 'Solicitud enviada y administración notificada. Puedes seguir publicando solicitudes mientras se revisa.');
     }
 
     public function switchMode(Request $request, string $mode): RedirectResponse

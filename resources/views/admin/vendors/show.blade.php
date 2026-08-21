@@ -48,14 +48,15 @@
 
             <section class="rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6 shadow-sm">
                 <h2 class="text-xl font-black">Documentos de verificación</h2>
-                <p class="mt-2 text-sm font-semibold text-[#6B7D83]">Archivos privados. Contrasta identidad y vigencia; no copies datos sensibles fuera del expediente.</p>
+                <p class="mt-2 text-sm font-semibold text-[#6B7D83]">Archivos privados. Contrasta identidad y vigencia; no copies datos sensibles fuera del expediente. La constancia fiscal o evidencia de negocio es opcional y nunca bloquea la aprobación para operar.</p>
                 <div class="mt-4 space-y-3">
-                    @forelse($vendor->verificationDocuments->sortByDesc('id') as $document)
+                    @forelse($documents as $document)
                         <article class="rounded-2xl bg-[#FAF8F4] p-4"><div class="flex flex-wrap items-center justify-between gap-2"><div><strong class="text-sm">{{ $document->label() }}</strong><p class="text-xs font-bold text-[#6B7D83]">{{ \App\Models\VendorVerificationDocument::STATUSES[$document->status] ?? $document->status }} · {{ number_format($document->size / 1024, 0) }} KB</p></div><a class="rounded-full border border-[#123B4A]/15 px-3 py-2 text-xs font-black" href="{{ route('verification-documents.download', $document) }}">Abrir</a></div>
                         @if($document->status === 'pending')<form class="mt-3 space-y-2" method="POST" action="{{ route('admin.verification-documents.review', $document) }}">@csrf @method('PATCH')<textarea class="min-h-20 w-full rounded-xl border border-[#123B4A]/10 px-3 py-2 text-sm" name="review_note" minlength="10" maxlength="1000" required placeholder="Resultado de la revisión"></textarea><div class="flex gap-2"><button class="flex-1 rounded-full bg-[#14734A] px-3 py-2 text-xs font-black text-white" name="decision" value="approved">Aprobar</button><button class="flex-1 rounded-full border border-red-200 px-3 py-2 text-xs font-black text-red-700" name="decision" value="rejected">Rechazar</button></div></form>@elseif($document->review_note)<p class="mt-2 text-xs font-semibold text-[#6B7D83]">{{ $document->review_note }}</p>@endif
                         </article>
                     @empty<p class="rounded-2xl border border-dashed border-[#123B4A]/20 p-5 text-sm font-bold text-[#6B7D83]">La persona aún no ha enviado documentos.</p>@endforelse
                 </div>
+                @if($documents->hasPages())<div class="mt-5">{{ $documents->links() }}</div>@endif
             </section>            @if($vendor->status === 'active')
                 <section class="rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6 shadow-sm">
                     <h2 class="text-xl font-black">Distintivo de confianza</h2>

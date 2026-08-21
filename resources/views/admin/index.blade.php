@@ -12,6 +12,7 @@
             <a class="flex items-center gap-3 font-black" href="{{ route('admin.index') }}"><span class="grid size-10 place-items-center rounded-2xl bg-[#123B4A] text-white">P</span><span>Plaza Local</span></a>
             <div class="flex flex-wrap items-center justify-end gap-2">
                 <span class="hidden rounded-full bg-[#FFF1E8] px-4 py-2 text-xs font-black text-[#D85B0B] sm:inline-flex">{{ $isSuperadmin ? 'Superadministrador' : 'Administrador' }}</span>
+                <a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('notifications.index') }}">Notificaciones @if($metrics['unread_notifications'])<span class="ml-1 rounded-full bg-red-500 px-2 py-0.5 text-[10px] text-white">{{ min(99, $metrics['unread_notifications']) }}</span>@endif</a>
                 <a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('admin.users.index') }}">Usuarios</a><a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('admin.vendors.index') }}">Proveedores</a><a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('admin.posts.index') }}">Publicaciones</a><a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('disputes.admin-index') }}">Disputas</a><a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('admin.support.index') }}">Soporte @if($metrics['open_support_tickets'])<span class="ml-1 rounded-full bg-[#F97316] px-2 py-0.5 text-[10px] text-white">{{ min(99,$metrics['open_support_tickets']) }}</span>@endif</a>
                 @unless($isSuperadmin)<a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('explore') }}">Explorar plaza</a>@endunless
                 <form method="POST" action="{{ route('logout') }}">@csrf<button class="rounded-full border border-red-200 bg-white px-4 py-2 text-sm font-black text-red-700" type="submit">Cerrar sesión</button></form>
@@ -110,6 +111,7 @@
                     </article>
                 @endforeach
             </div>
+            @if($communities->hasPages())<div class="mt-5">{{ $communities->links() }}</div>@endif
         </section>
 
         <section class="mt-8 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6" id="rubros">
@@ -124,10 +126,11 @@
                     </article>
                 @endforeach
             </div>
+            @if($categories->hasPages())<div class="mt-5">{{ $categories->links() }}</div>@endif
         </section>
 
         <section class="mt-8 rounded-[1.75rem] border border-[#F97316]/20 bg-white p-5 shadow-sm sm:p-6" id="aprobaciones">
-            <div class="flex flex-wrap items-center justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Avisos de revisión</p><h2 class="mt-1 text-xl font-black">{{ $pendingVendors->count() }} solicitudes pendientes</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Esta tarjeta solo avisa el trabajo pendiente. La información completa y las decisiones están concentradas en el módulo de proveedores.</p></div><a class="rounded-full bg-[#123B4A] px-5 py-3 text-sm font-black text-white" href="{{ route('admin.vendors.index', ['status' => 'pending']) }}">Abrir pendientes</a></div>
+            <div class="flex flex-wrap items-center justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Avisos de revisión</p><h2 class="mt-1 text-xl font-black">{{ $pendingVendorCount }} solicitudes pendientes</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Esta tarjeta solo avisa el trabajo pendiente. La información completa y las decisiones están concentradas en el módulo de proveedores.</p></div><a class="rounded-full bg-[#123B4A] px-5 py-3 text-sm font-black text-white" href="{{ route('admin.vendors.index', ['status' => 'pending']) }}">Abrir pendientes</a></div>
         </section>
 
         <div class="mt-8 grid gap-6 xl:grid-cols-2">
@@ -165,6 +168,7 @@
                         <p class="rounded-2xl border border-dashed border-[#123B4A]/20 p-6 text-sm font-bold text-[#6B7D83]">Aún no hay proveedores aprobados para moderar.</p>
                     @endforelse
                 </div>
+                @if($vendors->hasPages())<div class="mt-5">{{ $vendors->links() }}</div>@endif
             </section>
             <section class="rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6">
                 <h2 class="text-xl font-black">Administradores y delegación</h2>
@@ -194,11 +198,12 @@
                         <p class="rounded-2xl border border-dashed border-[#123B4A]/20 p-5 text-sm font-bold text-[#6B7D83]">Todavía no hay administradores delegados.</p>
                     @endforelse
                 </div>
+                @if($administrators->hasPages())<div class="mt-5">{{ $administrators->links() }}</div>@endif
             </section>
         </div>
 
 
-        <section class="mt-6 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6"><h2 class="text-xl font-black">Auditoría reciente</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Registro de quién realizó cada cambio administrativo y sobre qué elemento.</p><div class="mt-4 overflow-x-auto"><table class="w-full min-w-[650px] text-left text-sm"><thead><tr class="text-[#6B7D83]"><th class="p-3">Fecha</th><th class="p-3">Responsable</th><th class="p-3">Qué ocurrió</th><th class="p-3">Elemento afectado</th></tr></thead><tbody>@forelse($auditLogs as $log)<tr class="border-t border-[#123B4A]/10"><td class="p-3">{{ $log->created_at->format('d/m/Y H:i') }}</td><td class="p-3">{{ $log->user?->name ?? 'Sistema' }}</td><td class="p-3 font-black">{{ $auditActions[$log->action] ?? str_replace(['.', '_'], ' ', ucfirst($log->action)) }}</td><td class="p-3">{{ $auditSubjects[class_basename($log->subject_type)] ?? class_basename($log->subject_type) }} #{{ $log->subject_id }}</td></tr>@empty<tr><td class="p-6 text-center font-bold text-[#6B7D83]" colspan="4">Todavía no hay acciones administrativas registradas.</td></tr>@endforelse</tbody></table></div></section>
+        <section class="mt-6 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6"><h2 class="text-xl font-black">Auditoría reciente</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Registro de quién realizó cada cambio administrativo y sobre qué elemento.</p><div class="mt-4 overflow-x-auto"><table class="w-full min-w-[650px] text-left text-sm"><thead><tr class="text-[#6B7D83]"><th class="p-3">Fecha</th><th class="p-3">Responsable</th><th class="p-3">Qué ocurrió</th><th class="p-3">Elemento afectado</th></tr></thead><tbody>@forelse($auditLogs as $log)<tr class="border-t border-[#123B4A]/10"><td class="p-3">{{ $log->created_at->format('d/m/Y H:i') }}</td><td class="p-3">{{ $log->user?->name ?? 'Sistema' }}</td><td class="p-3 font-black">{{ $auditActions[$log->action] ?? str_replace(['.', '_'], ' ', ucfirst($log->action)) }}</td><td class="p-3">{{ $auditSubjects[class_basename($log->subject_type)] ?? class_basename($log->subject_type) }} #{{ $log->subject_id }}</td></tr>@empty<tr><td class="p-6 text-center font-bold text-[#6B7D83]" colspan="4">Todavía no hay acciones administrativas registradas.</td></tr>@endforelse</tbody></table></div>@if($auditLogs->hasPages())<div class="mt-5">{{ $auditLogs->links() }}</div>@endif</section>
     </main>
     <script>
         const postalInput = document.getElementById('community-postal-code');

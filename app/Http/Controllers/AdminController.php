@@ -36,13 +36,12 @@ class AdminController extends Controller
             'open_disputes' => Dispute::where('status', 'open')->count(),
             'active_orders' => Order::whereIn('status', ['accepted', 'awaiting_payment', 'paid', 'in_progress', 'ready', 'delivered', 'disputed'])->count(),
             'active_posts' => Post::whereNull('removed_at')->count(),
+            'unread_notifications' => $request->user()->unreadNotifications()->count(),
         ];
-        $pendingVendors = Vendor::with('user:id,name,email,email_verified_at')
-            ->where('status', 'pending')->where('user_id', '!=', $request->user()->id)
-            ->latest('submitted_at')->get();
+        $pendingVendorCount = $metrics['pending_vendors'];
         $vendors = Vendor::with('user:id,name,email,email_verified_at')
             ->whereIn('status', ['active', 'suspended'])->where('user_id', '!=', $request->user()->id)
-            ->latest()->limit(30)->get();
+            ->latest()->paginate(8, ['*'], 'vendors_page')->withQueryString();
         $adminSearch = trim((string) $request->query('admin_q', ''));
         abort_if(mb_strlen($adminSearch) > 100, 422, 'La búsqueda es demasiado larga.');
         $administrators = User::query()
@@ -50,7 +49,8 @@ class AdminController extends Controller
             ->whereHas('roles', fn ($query) => $query->where('name', 'admin'))
             ->whereKeyNot($request->user()->id)
             ->orderBy('name')
-            ->get();
+            ->paginate(8, ['*'], 'administrators_page')
+            ->withQueryString();
         $adminCandidates = collect();
         if ($request->user()->hasRole('superadmin') && mb_strlen($adminSearch) >= 2) {
             $adminCandidates = User::query()
@@ -65,14 +65,14 @@ class AdminController extends Controller
                 ->limit(10)
                 ->get();
         }
-        $auditLogs = AuditLog::with('user:id,name')->latest('created_at')->limit(30)->get();
-        $communities = Community::query()->withCount(['users', 'jobRequests'])->orderBy('name')->get();
-        $auditActions = ['admin.granted' => 'Administrador asignado', 'admin.revoked' => 'Permiso de administrador retirado', 'vendor.active' => 'Proveedor aprobado o reactivado', 'vendor.rejected' => 'Cambios solicitados al proveedor', 'vendor.suspended' => 'Proveedor suspendido', 'vendor.verified' => 'Proveedor verificado', 'vendor.verification_revoked' => 'Verificación retirada', 'post.removed' => 'Publicación retirada', 'community.created' => 'Comunidad agregada', 'community.updated' => 'Comunidad actualizada', 'community.suspended' => 'Comunidad suspendida', 'community.reactivated' => 'Comunidad reactivada', 'community.deleted' => 'Comunidad eliminada'];
-        $categories = Category::query()->withCount(['users', 'vendors', 'listings', 'jobRequests'])->orderBy('name')->get();
+        $auditLogs = AuditLog::with('user:id,name')->latest('created_at')->paginate(15, ['*'], 'audit_page')->withQueryString();
+        $communities = Community::query()->withCount(['users', 'jobRequests'])->orderBy('name')->paginate(9, ['*'], 'communities_page')->withQueryString();
+        $auditActions = ['vendor.submitted' => 'Solicitud de proveedor enviada', 'admin.granted' => 'Administrador asignado', 'admin.revoked' => 'Permiso de administrador retirado', 'vendor.active' => 'Proveedor aprobado o reactivado', 'vendor.rejected' => 'Cambios solicitados al proveedor', 'vendor.suspended' => 'Proveedor suspendido', 'vendor.verified' => 'Proveedor verificado', 'vendor.verification_revoked' => 'Verificación retirada', 'post.removed' => 'Publicación retirada', 'community.created' => 'Comunidad agregada', 'community.updated' => 'Comunidad actualizada', 'community.suspended' => 'Comunidad suspendida', 'community.reactivated' => 'Comunidad reactivada', 'community.deleted' => 'Comunidad eliminada'];
+        $categories = Category::query()->withCount(['users', 'vendors', 'listings', 'jobRequests'])->orderBy('name')->paginate(9, ['*'], 'categories_page')->withQueryString();
         $auditSubjects = ['User' => 'Usuario', 'Vendor' => 'Proveedor', 'Post' => 'Publicación', 'Community' => 'Comunidad'];
         $isSuperadmin = $request->user()->hasRole('superadmin');
 
-        return view('admin.index', compact('metrics', 'pendingVendors', 'vendors', 'administrators', 'adminCandidates', 'adminSearch', 'auditLogs', 'communities', 'categories', 'auditActions', 'auditSubjects', 'isSuperadmin'));
+        return view('admin.index', compact('metrics', 'pendingVendorCount', 'vendors', 'administrators', 'adminCandidates', 'adminSearch', 'auditLogs', 'communities', 'categories', 'auditActions', 'auditSubjects', 'isSuperadmin'));
     }
 
     public function approveVendor(Request $request, Vendor $vendor): RedirectResponse

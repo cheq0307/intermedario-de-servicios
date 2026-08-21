@@ -65,6 +65,30 @@ class AdminAuthorizationTest extends TestCase
         $this->assertSame(2, AuditLog::where('user_id', $admin->id)->count());
     }
 
+    public function test_provider_can_be_approved_without_fiscal_or_verification_documents(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::findOrCreate('admin'));
+        $provider = User::factory()->create(['account_type' => 'provider']);
+        $vendor = Vendor::create([
+            'user_id' => $provider->id,
+            'display_name' => 'Paletas de la comunidad',
+            'slug' => 'paletas-comunidad',
+            'description' => 'Venta local de paletas preparadas artesanalmente.',
+            'specialty' => 'Paletas',
+            'service_area' => 'Comunidad principal',
+            'business_hours' => ['days' => ['monday'], 'opens_at' => '09:00', 'closes_at' => '18:00'],
+            'status' => 'pending',
+            'submitted_at' => now(),
+        ]);
+        $vendor->categories()->attach(Category::query()->value('id'));
+
+        $this->actingAs($admin)->patch(route('admin.vendors.approve', $vendor))->assertRedirect();
+
+        $this->assertSame('active', $vendor->fresh()->status);
+        $this->assertDatabaseCount('vendor_verification_documents', 0);
+    }
+
     public function test_incomplete_or_unverified_provider_cannot_be_approved(): void
     {
         $admin = User::factory()->create();
@@ -227,6 +251,54 @@ class AdminAuthorizationTest extends TestCase
             ->assertSee('¿Qué puede hacer cada administrador?')
             ->assertSee('Comunidad agregada')
             ->assertDontSee('community.created');
+    }
+
+    public function test_admin_dashboard_uses_independent_paginators_for_growing_catalogs(): void
+    {
+        $superadmin = User::factory()->create();
+        $superadmin->syncRoles([Role::findOrCreate('superadmin')]);
+
+        foreach (range(1, 10) as $index) {
+            Community::create([
+                'name' => sprintf('Comunidad paginada %02d', $index),
+                'municipality' => 'Municipio de prueba',
+                'state' => 'Puebla',
+                'default_radius_km' => 8,
+                'is_active' => true,
+            ]);
+            Category::create([
+                'name' => sprintf('Rubro paginado %02d', $index),
+                'slug' => sprintf('rubro-paginado-%02d', $index),
+                'is_active' => true,
+            ]);
+        }
+
+        foreach (range(1, 9) as $index) {
+            $administrator = User::factory()->create(['email' => "admin-paginado-{$index}@example.test"]);
+            $administrator->assignRole(Role::findOrCreate('admin'));
+            $provider = User::factory()->create(['account_type' => 'provider']);
+            Vendor::create([
+                'user_id' => $provider->id,
+                'display_name' => "Proveedor paginado {$index}",
+                'slug' => "proveedor-paginado-{$index}",
+                'status' => 'active',
+            ]);
+        }
+        foreach (range(1, 16) as $index) {
+            AuditLog::create([
+                'user_id' => $superadmin->id,
+                'action' => 'community.updated',
+                'subject_type' => Community::class,
+                'subject_id' => $index,
+                'created_at' => now()->subSeconds($index),
+            ]);
+        }
+
+        $response = $this->actingAs($superadmin)->get(route('admin.index'));
+        $response->assertOk();
+        foreach (['communities_page=2', 'categories_page=2', 'vendors_page=2', 'administrators_page=2', 'audit_page=2'] as $pageParameter) {
+            $response->assertSee($pageParameter, false);
+        }
     }
 
     public function test_admin_candidates_only_appear_after_a_search(): void

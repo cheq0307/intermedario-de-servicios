@@ -83,7 +83,7 @@
             <section class="mt-8 rounded-[2rem] border border-[#123B4A]/10 bg-white p-6 shadow-sm sm:p-8">
                 <p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Expediente privado de confianza</p>
                 <h2 class="mt-2 text-xl font-black">Documentos para el distintivo verificado</h2>
-                <p class="mt-2 text-sm leading-6 text-[#6B7D83]">No son necesarios para usar Plaza Local. Solo se solicitan si deseas el distintivo de identidad o negocio verificado. Se almacenan de forma privada y nunca aparecen en tu perfil público.</p>
+                <p class="mt-2 text-sm leading-6 text-[#6B7D83]">No son necesarios para usar Plaza Local ni para que administración apruebe tu perfil comercial. Identificación y domicilio sirven para solicitar el distintivo de identidad; la constancia fiscal o evidencia del negocio es completamente opcional y solo aplica a quien quiera acreditar un negocio formal.</p>
                 <div class="mt-5 grid gap-3 sm:grid-cols-3">
                     @foreach(\App\Models\VendorVerificationDocument::TYPES as $type => $label)
                         @php($currentDocument = $user->vendor?->verificationDocuments->where('type', $type)->sortByDesc('id')->first())

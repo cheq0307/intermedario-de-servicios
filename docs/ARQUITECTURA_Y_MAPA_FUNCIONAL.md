@@ -109,6 +109,8 @@ Filtros principales: comida, servicios, productos, transporte y empleo. Subfiltr
 ## 8. Publicaciones sociales
 
 - Creación separada por producto, servicio, solicitud y vacante.
+- Una misma cuenta puede crear múltiples publicaciones; cada envío nuevo usa un token de idempotencia diferente y un reintento del mismo envío no duplica datos.
+- Toda cuenta ordinaria puede publicar solicitudes. Las ofertas comerciales requieren que su perfil comercial esté aprobado, sin impedirle seguir actuando como solicitante.
 - Texto, imágenes y video según validación.
 - Me gusta reversible, comentarios editables/eliminables por autor y compartir.
 - Comentarios paginados para no cargar cientos a la vez.
@@ -150,6 +152,8 @@ Flujo de producto:
 - Conversaciones directas protegidas dentro de Plaza Local.
 - Lectura/no lectura, último mensaje y contador pendiente.
 - Notificaciones sociales, operativas, de empleo, pagos, moderación y soporte.
+- Cada envío o reenvío de una solicitud comercial notifica a administradores y superadministradores, enlazando al expediente exacto.
+- El panel administrativo muestra el contador de notificaciones pendientes.
 - Abrir una notificación la marca leída; existe lectura masiva.
 - Soporte usa tickets y conversación con canal oficial identificable.
 - Administradores reciben, responden y cambian estado del ticket.
@@ -166,9 +170,9 @@ Nivel `Identidad`:
 Nivel `Identidad y negocio`:
 
 - los dos documentos anteriores;
-- constancia fiscal o evidencia formal del negocio.
+- constancia fiscal o evidencia formal del negocio, únicamente si la persona desea acreditar un negocio formal.
 
-No se solicita por defecto CURP escrita, selfie con identificación, datos bancarios ni documentos sin propósito definido. La pasarela conserva su propio KYC financiero.
+La constancia fiscal es opcional. No bloquea el alta ni la aprobación del perfil comercial; un vendedor informal puede operar sin ella. Solo es requisito para conceder específicamente el nivel `Identidad y negocio`. No se solicita por defecto CURP escrita, selfie con identificación, datos bancarios ni documentos sin propósito definido. La pasarela conserva su propio KYC financiero.
 
 Reglas:
 
@@ -280,6 +284,7 @@ Pendiente antes de pagos reales:
 
 - indicadores operativos;
 - directorios filtrables de usuarios, proveedores y publicaciones;
+- paginación independiente en comunidades, rubros, moderación, administradores, auditoría y documentos, además de los directorios;
 - aprobación/rechazo/suspensión de proveedores;
 - revisión documental e insignias;
 - comunidades, códigos postales y rubros;

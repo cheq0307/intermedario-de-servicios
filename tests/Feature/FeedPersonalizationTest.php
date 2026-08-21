@@ -3,12 +3,14 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\JobRequest;
 use App\Models\Listing;
 use App\Models\Post;
 use App\Models\PostMedia;
 use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class FeedPersonalizationTest extends TestCase
@@ -53,6 +55,45 @@ class FeedPersonalizationTest extends TestCase
             ->assertSee('Oferta de otro proveedor oculta por defecto.')
             ->assertDontSee('Actividad local')
             ->assertDontSee('Comunidad activa');
+    }
+
+    public function test_request_card_only_shows_a_real_proposal_action_to_an_active_provider(): void
+    {
+        $client = User::factory()->create(['account_type' => 'client']);
+        $viewer = User::factory()->create(['account_type' => 'client']);
+        $provider = User::factory()->create(['account_type' => 'provider']);
+        Vendor::create([
+            'user_id' => $provider->id,
+            'display_name' => 'Proveedor activo',
+            'slug' => 'proveedor-activo',
+            'status' => 'active',
+        ]);
+        $request = JobRequest::create([
+            'public_id' => (string) Str::uuid(),
+            'client_id' => $client->id,
+            'title' => 'Reparar una instalación',
+            'description' => 'Necesito una reparación profesional en la comunidad.',
+            'status' => 'published',
+            'urgency' => 'soon',
+            'published_at' => now(),
+        ]);
+        Post::create([
+            'user_id' => $client->id,
+            'job_request_id' => $request->id,
+            'type' => 'job_request',
+            'body' => $request->description,
+            'published_at' => now(),
+        ]);
+
+        $this->actingAs($viewer)->get(route('dashboard'))
+            ->assertOk()
+            ->assertDontSee('Disponible para personas que ofrecen este servicio')
+            ->assertDontSee('Enviar propuesta');
+
+        $this->actingAs($provider)->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Enviar propuesta')
+            ->assertSee('href="'.route('job-proposals.index', $request).'"', false);
     }
 
     public function test_default_feed_prioritizes_personalized_content_without_hiding_public_types(): void

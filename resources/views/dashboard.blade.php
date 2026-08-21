@@ -358,33 +358,42 @@
 
 
                         </div>
-                        <div class="border-t border-[#123B4A]/8 px-4 pt-2">
+                        @php
+                            $ownsPost = $post->user_id === $currentUser->id;
+                            $canSendProposal = $post->jobRequest
+                                && ! $ownsPost
+                                && $currentUser->canActAsProvider()
+                                && $currentUser->vendor?->status === 'active';
+                            $canBuyProduct = ! $ownsPost
+                                && $post->listing?->type?->value === 'product'
+                                && $post->listing?->price_type?->value === 'fixed';
+                            $canContactSeller = ! $ownsPost && $post->listing;
+                            $hasPrimaryAction = $ownsPost || $canSendProposal || $canBuyProduct || $canContactSeller;
+                        @endphp
+                        <div class="px-4 {{ $hasPrimaryAction ? 'border-t border-[#123B4A]/8 pt-2' : '' }}">
+                            @if($hasPrimaryAction)
                             <div class="flex min-h-11 items-center justify-end text-xs font-black text-[#536A72]">
-                            @if ($post->user_id === $currentUser->id)
-
+                            @if ($ownsPost)
                                 @if ($post->jobRequest)
                                     <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-[#FAF8F4] hover:text-[#F97316]" href="{{ route('job-proposals.index', $post->jobRequest) }}">Ver propuestas</a>
                                 @else
-                                    <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button">Ver respuestas</button>
+                                    <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-[#FAF8F4] hover:text-[#F97316]" href="{{ route('posts.edit', $post) }}">Administrar</a>
                                 @endif
                             @else
-                                @if ($post->jobRequest && $isProvider)
+                                @if ($canSendProposal)
                                     <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-[#FAF8F4] hover:text-[#F97316]" href="{{ route('job-proposals.index', $post->jobRequest) }}">Enviar propuesta</a>
-                                @elseif ($post->jobRequest)
-                                    <span class="grid size-10 place-items-center rounded-full text-[#8A999E]" title="Disponible para personas que ofrecen este servicio" aria-label="Disponible para personas que ofrecen este servicio">
-                                        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7V5.8A1.8 1.8 0 0 1 10.8 4h2.4A1.8 1.8 0 0 1 15 5.8V7m-9 0h12a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Zm-2 5h16M10 12v2h4v-2"/></svg>
-                                    </span>
-                                @elseif ($post->listing?->type?->value === 'product' && $post->listing?->price_type?->value === 'fixed')
-                                    <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-[#FAF8F4] hover:text-[#F97316]" href="{{ route('products.checkout', $post->listing) }}">
-                                        Comprar
-                                    </a>
-                                @else
-                                    <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="button">
-                                        {{ $post->listing?->price_type?->value === 'quote' ? 'Solicitar cotización' : 'Me interesa' }}
-                                    </button>
+                                @elseif ($canBuyProduct)
+                                    <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-[#FAF8F4] hover:text-[#F97316]" href="{{ route('products.checkout', $post->listing) }}">Comprar</a>
+                                @elseif ($canContactSeller)
+                                    <form method="POST" action="{{ route('conversations.start') }}">
+                                        @csrf
+                                        <input type="hidden" name="recipient_id" value="{{ $post->user_id }}">
+                                        <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="submit">{{ $post->listing?->price_type?->value === 'quote' ? 'Solicitar cotización' : 'Me interesa' }}</button>
+                                    </form>
                                 @endif
                             @endif
                             </div>
+                            @endif
                             <div class="flex items-center gap-1 border-t border-[#123B4A]/8 py-2 text-[#123B4A]">
                                 <form method="POST" action="{{ route('posts.reactions.toggle', $post) }}">
                                     @csrf

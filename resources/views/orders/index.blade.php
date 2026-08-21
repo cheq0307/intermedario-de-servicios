@@ -9,12 +9,7 @@
 <body class="min-h-screen pb-24 bg-[#FAF8F4] text-[#17313A] antialiased">
     @php($statusLabels = ['accepted' => 'Contratación aceptada', 'in_progress' => 'En progreso', 'delivered' => 'Esperando confirmación', 'completed' => 'Completado', 'cancelled' => 'Cancelado', 'disputed' => 'En disputa'])
     @php($statusLabels = array_merge($statusLabels, ['awaiting_payment' => 'Pendiente de pago', 'paid' => 'Pagado', 'ready' => 'Listo para entregar']))
-    <header class="border-b border-[#123B4A]/10 bg-white">
-        <div class="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
-            <a class="font-black" href="{{ route('dashboard') }}">Plaza Local</a>
-            <a class="rounded-full border border-[#123B4A]/10 px-4 py-2 text-sm font-black" href="{{ route('dashboard') }}">Volver al inicio</a>
-        </div>
-    </header>
+    <x-market-nav :back-url="route('more.index')" />
     <main class="mx-auto max-w-5xl px-5 py-9">
         <p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Contrataciones</p>
         <h1 class="mt-2 text-3xl font-black">Mis operaciones</h1>

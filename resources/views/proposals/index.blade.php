@@ -8,7 +8,7 @@
 </head>
 <body class="min-h-screen bg-[#FAF8F4] text-[#17313A] antialiased">
     @php($statusLabels = ['pending' => 'Pendiente', 'accepted' => 'Aceptada', 'rejected' => 'Rechazada', 'withdrawn' => 'Retirada'])
-    <header class="border-b border-[#123B4A]/10 bg-white"><div class="mx-auto flex max-w-5xl items-center justify-between px-5 py-4"><a class="font-black" href="{{ route('dashboard') }}">Plaza Local</a><a class="rounded-full border border-[#123B4A]/10 px-4 py-2 text-sm font-black" href="{{ route('dashboard') }}">Volver al inicio</a></div></header>
+    <x-market-nav :back-url="route('dashboard')" />
     <main class="mx-auto max-w-5xl px-5 py-9">
         @if (session('status'))<div class="mb-6 rounded-2xl border border-[#22A06B]/20 bg-[#E9F7F0] px-5 py-4 text-sm font-black text-[#14734A]">{{ session('status') }}</div>@endif
         @error('proposal')<div class="mb-6 rounded-2xl bg-red-50 px-5 py-4 text-sm font-black text-red-700">{{ $message }}</div>@enderror

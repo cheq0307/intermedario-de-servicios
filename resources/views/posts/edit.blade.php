@@ -7,7 +7,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-[#FAF8F4] text-[#17313A] antialiased">
-    <header class="border-b border-[#123B4A]/10 bg-white"><div class="mx-auto flex max-w-3xl items-center justify-between px-5 py-4"><a class="font-black" href="{{ route('dashboard') }}">Plaza Local</a><a class="rounded-full border border-[#123B4A]/10 px-4 py-2 text-sm font-black" href="{{ route('dashboard') }}">Cancelar</a></div></header>
+    <x-market-nav :back-url="route('dashboard')" />
     <main class="mx-auto max-w-3xl px-5 py-9">
         <p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Tu publicación</p>
         <h1 class="mt-2 text-3xl font-black">Editar información</h1>

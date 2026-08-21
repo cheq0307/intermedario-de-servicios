@@ -2,11 +2,15 @@
 <html lang="es">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Empleo - Plaza Local</title>@vite(['resources/css/app.css','resources/js/app.js'])</head>
 <body class="min-h-screen overflow-x-hidden bg-[#FAF8F4] pb-24 text-[#17313A] antialiased">
-<x-market-nav :search-value="request('q','')" />
+<x-market-nav :back-url="auth()->check() ? route('more.index') : route('home')" :search-value="request('q','')" />
 <main class="mx-auto w-full min-w-0 max-w-6xl px-4 py-6 sm:px-6">
     <div class="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div class="min-w-0"><p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Bolsa de trabajo local</p><h1 class="mt-2 text-3xl font-black">Vacantes de empleo</h1><p class="mt-2 max-w-2xl leading-6 text-[#536A72]">Empleo formal o temporal, separado de contratar un servicio puntual.</p></div>
-        @auth<a class="inline-flex w-fit rounded-full bg-[#123B4A] px-5 py-3 text-sm font-black text-white" href="{{ route('vacancies.mine') }}">Mis vacantes y postulaciones</a>@endauth
+        @auth
+            @if(auth()->user()->canUseMarketplace())
+                <div class="flex flex-wrap gap-2"><a class="inline-flex rounded-full bg-[#F97316] px-5 py-3 text-sm font-black text-white" href="{{ route('vacancies.create') }}">Publicar vacante</a><a class="inline-flex rounded-full bg-[#123B4A] px-5 py-3 text-sm font-black text-white" href="{{ route('vacancies.mine') }}">Mis vacantes y postulaciones</a></div>
+            @endif
+        @endauth
     </div>
     <form class="mt-6 grid min-w-0 gap-3 rounded-3xl border bg-white p-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(13rem,18rem)_auto]" method="GET">
         <label class="min-w-0"><span class="sr-only">Puesto o palabra clave</span><input class="block w-full min-w-0 max-w-full rounded-2xl border bg-[#FAF8F4] px-4 py-3" name="q" value="{{ request('q') }}" placeholder="Puesto, actividad o palabra clave"></label>

@@ -7,7 +7,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-[#FAF8F4] text-[#17313A] antialiased">
-    <header class="border-b border-[#123B4A]/10 bg-white"><div class="mx-auto flex max-w-4xl items-center justify-between px-5 py-4"><a class="font-black" href="{{ route('dashboard') }}">Plaza Local</a><a class="rounded-full border border-[#123B4A]/10 px-4 py-2 text-sm font-black" href="{{ route('dashboard') }}">Volver</a></div></header>
+    <x-market-nav :back-url="route('dashboard')" />
     <main class="mx-auto grid max-w-4xl gap-6 px-5 py-9 md:grid-cols-[1fr_340px]">
         <section class="rounded-[2rem] border border-[#123B4A]/10 bg-white p-6 shadow-sm sm:p-8">
             <p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Compra local</p>

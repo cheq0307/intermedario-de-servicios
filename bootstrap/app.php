@@ -12,7 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->trustProxies(at: env('TRUSTED_PROXIES'));
-        $middleware->validateCsrfTokens(except: ['webhooks/stripe']);
+        $middleware->validateCsrfTokens(except: ['webhooks/stripe', 'webhooks/mercado-pago']);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

@@ -10,6 +10,8 @@ class PostPromotion extends Model
     protected $fillable = [
         'post_id', 'user_id', 'community_id', 'status', 'duration_days',
         'amount', 'currency', 'paid_at', 'starts_at', 'ends_at',
+        'payment_provider', 'provider_preference_id', 'provider_payment_id',
+        'checkout_url', 'payment_payload',
         'reviewed_by_user_id', 'reviewed_at', 'impressions', 'clicks',
     ];
 
@@ -19,6 +21,7 @@ class PostPromotion extends Model
             'paid_at' => 'datetime',
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
+            'payment_payload' => 'array',
         ];
     }
 

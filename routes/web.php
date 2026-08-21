@@ -12,6 +12,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\JobProposalController;
 use App\Http\Controllers\JobVacancyController;
 use App\Http\Controllers\MarketplaceCapabilityController;
+use App\Http\Controllers\MercadoPagoWebhookController;
 use App\Http\Controllers\MoreController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PostalCodeController;
@@ -36,6 +37,7 @@ Route::get('/perfiles/{user}', [ProfileController::class, 'show'])->name('profil
 Route::get('/empleo', [JobVacancyController::class, 'index'])->name('vacancies.index');
 Route::get('/empleo/{vacancy}', [JobVacancyController::class, 'show'])->name('vacancies.show');
 Route::post('/webhooks/stripe', StripeWebhookController::class)->name('stripe.webhook');
+Route::post('/webhooks/mercado-pago', MercadoPagoWebhookController::class)->name('mercadopago.webhook');
 
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
@@ -79,6 +81,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/publicaciones/{post}/compartir', [PostEngagementController::class, 'share'])->name('posts.shares.store');
         Route::get('/promociones', [PostPromotionController::class, 'index'])->name('promotions.index');
         Route::post('/promociones', [PostPromotionController::class, 'store'])->name('promotions.store');
+        Route::post('/promociones/{promotion}/pagar', [PostPromotionController::class, 'checkout'])->name('promotions.checkout');
+        Route::get('/promociones/{promotion}/resultado', [PostPromotionController::class, 'returned'])->name('promotions.return');
         Route::get('/productos/{listing}/comprar', [ProductOrderController::class, 'checkout'])->name('products.checkout');
         Route::post('/productos/{listing}/pedidos', [ProductOrderController::class, 'store'])->name('products.orders.store');
         Route::post('/pedidos/{order}/simular-pago', [ProductOrderController::class, 'simulatePayment'])->name('products.orders.simulate-payment');

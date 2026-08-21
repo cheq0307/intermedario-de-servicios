@@ -19,6 +19,12 @@
             'promotion' => 'Promoción',
             'job_request' => 'Busco ayuda',
         ];
+        $moduleLabels = [
+            'food' => 'Comida',
+            'services' => 'Servicios',
+            'products' => 'Productos',
+            'transport' => 'Transporte',
+        ];
         $feedLabels = [
             'for_you' => 'Para ti',
             'offers' => 'Ofertas',
@@ -30,12 +36,13 @@
 
     <main class="mx-auto grid max-w-5xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,680px)_280px]">
         <div id="inicio" class="min-w-0 space-y-5">
-            <nav class="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Accesos rápidos">
-                <a class="shrink-0 rounded-full border bg-white px-4 py-2 text-xs font-black" href="{{ route('explore', ['q'=>'comida']) }}">Comida</a>
-                <a class="shrink-0 rounded-full border bg-white px-4 py-2 text-xs font-black" href="{{ route('explore', ['q'=>'servicios']) }}">Servicios</a>
-                <a class="shrink-0 rounded-full border bg-white px-4 py-2 text-xs font-black" href="{{ route('explore', ['q'=>'productos']) }}">Productos</a>
-                <a class="shrink-0 rounded-full border bg-white px-4 py-2 text-xs font-black" href="{{ route('explore', ['q'=>'transporte']) }}">Transporte</a>
-                <a class="shrink-0 rounded-full border border-[#E6A700]/30 bg-[#FFF9E7] px-4 py-2 text-xs font-black text-[#8B5B00]" href="{{ route('vacancies.index') }}">Empleo</a>
+            <nav class="-mx-4 flex gap-6 overflow-x-auto border-b border-[#123B4A]/10 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0" aria-label="Módulos del marketplace">
+                @foreach($moduleLabels as $moduleKey => $moduleLabel)
+                    <a class="relative shrink-0 px-0.5 pb-3 pt-1 text-sm font-bold transition {{ $module === $moduleKey ? 'text-[#123B4A]' : 'text-[#6B7D83] hover:text-[#123B4A]' }}" href="{{ route('dashboard', ['module' => $moduleKey, 'feed' => $feed]) }}#actividad" @if($module === $moduleKey) aria-current="page" @endif>
+                        {{ $moduleLabel }}
+                        @if($module === $moduleKey)<span class="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-[#F97316]"></span>@endif
+                    </a>
+                @endforeach
             </nav>
             @if (session('status'))
                 <div class="rounded-2xl border border-[#22A06B]/20 bg-[#E9F7F0] px-5 py-4 text-sm font-black text-[#14734A]" role="status">
@@ -65,7 +72,7 @@
                 </div>
             @endif
 
-            @if($showcaseSections->isNotEmpty())
+            @if($feed === 'for_you' && $showcaseSections->isNotEmpty())
                 <section class="space-y-7 rounded-[2rem] border border-[#123B4A]/10 bg-white p-5 shadow-sm sm:p-6" aria-labelledby="escaparate-local">
                     <div class="flex items-end justify-between gap-4">
                         <div>
@@ -263,31 +270,23 @@
 
             @endif
             <section id="actividad" class="scroll-mt-24 space-y-4">
-                <div class="flex items-end justify-between gap-4 px-1 pt-2">
-                    <div>
-                        <p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Actividad local</p>
-                        <h2 class="mt-1 text-2xl font-black">{{ $feed === 'for_you' ? 'Seleccionado para ti' : ($feedLabels[$feed] ?? match($feed) { 'community' => 'Comunidad', 'all' => 'Todo', default => 'Actividad' }) }}</h2>
-                    </div>
-                    <span class="rounded-full bg-[#E8F1EE] px-3 py-1.5 text-xs font-black text-[#14734A]">Comunidad activa</span>
+                <div class="px-1 pt-1">
+                    <h2 class="text-xl font-black">{{ $feedLabels[$feed] ?? 'Para ti' }}</h2>
+                    @if($currentUser->community)<p class="mt-1 text-xs font-semibold text-[#6B7D83]">{{ $currentUser->community->name }} · lo más relevante primero</p>@endif
                 </div>
 
-                <nav class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="Filtros de actividad">
+                <nav class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Filtros de actividad">
                     @foreach($feedLabels as $feedKey => $feedLabel)
-                        <a class="shrink-0 rounded-full border px-4 py-2 text-xs font-black transition {{ $feed === $feedKey ? 'border-[#123B4A] bg-[#123B4A] text-white' : 'border-[#123B4A]/10 bg-white text-[#536A72] hover:border-[#F97316]/40 hover:text-[#D85B0B]' }}" href="{{ route('dashboard', ['feed' => $feedKey]).'#actividad' }}" @if($feed === $feedKey) aria-current="page" @endif>{{ $feedLabel }}</a>
+                        <a class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold transition {{ $feed === $feedKey ? 'border-[#F97316] bg-[#F97316] text-white' : 'border-[#123B4A]/10 bg-white text-[#536A72] hover:border-[#F97316]/40 hover:text-[#D85B0B]' }}" href="{{ route('dashboard', ['module' => $module, 'feed' => $feedKey]).'#actividad' }}" @if($feed === $feedKey) aria-current="page" @endif>{{ $feedLabel }}</a>
                     @endforeach
-                    <a class="shrink-0 rounded-full border border-[#E6A700]/30 bg-[#FFF9E7] px-4 py-2 text-xs font-black text-[#8B5B00]" href="{{ route('vacancies.index') }}">Empleo</a>
                 </nav>
 
-                @if($feed === 'for_you')
-                    <p class="px-1 text-xs font-semibold leading-5 text-[#6B7D83]">Mostramos solicitudes y ofertas de toda la comunidad; tus intereses y búsquedas ayudan a ordenar primero lo más relevante.</p>
-                @endif
-
                 @forelse ($posts as $post)
-                    <article id="post-{{ $post->id }}" class="scroll-mt-24 overflow-hidden rounded-[1.75rem] border border-[#123B4A]/10 bg-white shadow-sm">
-                        <div class="p-5 sm:p-6">
+                    <article id="post-{{ $post->id }}" class="scroll-mt-24 overflow-hidden rounded-[1.5rem] border border-[#123B4A]/10 bg-white shadow-[0_4px_18px_rgba(18,59,74,.05)]">
+                        <div class="p-4 sm:p-5">
                             <div class="flex items-start justify-between gap-4">
                                 <div class="flex min-w-0 items-center gap-3">
-                                    <a class="grid size-12 shrink-0 place-items-center overflow-hidden rounded-full bg-[#DCEAE6] font-black text-[#123B4A]" href="{{ route('profile.show', $post->user) }}" aria-label="Ver perfil de {{ $post->user->name }}">
+                                    <a class="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[#DCEAE6] font-black text-[#123B4A]" href="{{ route('profile.show', $post->user) }}" aria-label="Ver perfil de {{ $post->user->name }}">
                                         @if ($post->user->avatar_path)
                                             <img class="size-full object-cover" src="{{ asset('storage/'.$post->user->avatar_path) }}" alt="">
                                         @else
@@ -296,13 +295,19 @@
                                     </a>
                                     <div class="min-w-0">
                                         <h3 class="truncate font-black"><a class="hover:text-[#F97316]" href="{{ route('profile.show', $post->user) }}">{{ $post->user->name }}</a></h3>
-                                        <p class="mt-0.5 text-xs font-semibold text-[#6B7D83]">{{ $post->published_at->diffForHumans() }} · Tu comunidad</p>
+                                        <p class="mt-0.5 text-xs font-semibold text-[#6B7D83]">{{ $post->published_at->diffForHumans() }} · {{ $post->type === 'job_request' ? 'Solicitud' : ($typeLabels[$post->type] ?? 'Oferta') }}@if($post->user->community) · {{ $post->user->community->name }}@endif</p>
                                     </div>
                                 </div>
-                                <span class="shrink-0 rounded-full px-3 py-1.5 text-[11px] font-black {{ $post->type === 'job_request' ? 'bg-[#FFF1E8] text-[#D85B0B]' : 'bg-[#E9F7F0] text-[#14734A]' }}">{{ $post->type === 'job_request' ? 'SOLICITO · ' : 'OFREZCO · ' }}{{ $typeLabels[$post->type] ?? 'Publicación' }}</span>
+                                <details class="relative shrink-0">
+                                    <summary class="grid size-9 cursor-pointer list-none place-items-center rounded-full text-xl leading-none text-[#6B7D83] hover:bg-[#F4F6F5]" aria-label="Opciones de la publicación">···</summary>
+                                    <div class="absolute right-0 top-10 z-20 w-44 rounded-2xl border border-[#123B4A]/10 bg-white p-2 shadow-xl">
+                                        <a class="block rounded-xl px-3 py-2 text-sm font-bold hover:bg-[#FAF8F4]" href="{{ route('profile.show', $post->user) }}">Ver perfil</a>
+                                        @if($post->user_id === $currentUser->id)<a class="block rounded-xl px-3 py-2 text-sm font-bold hover:bg-[#FAF8F4]" href="{{ route('posts.edit', $post) }}">Editar publicación</a>@endif
+                                    </div>
+                                </details>
                             </div>
 
-                            <p class="mt-5 whitespace-pre-line text-[15px] font-medium leading-7 text-[#314B54]">{{ $post->body }}</p>
+                            <p class="mt-4 whitespace-pre-line text-[15px] font-medium leading-7 text-[#314B54]">{{ $post->body }}</p>
                             @if($post->media->isNotEmpty())
                                 <div class="mt-5 grid gap-2 {{ $post->media->count() > 1 ? 'grid-cols-2' : 'grid-cols-1' }}">
                                     @foreach($post->media as $media)
@@ -316,23 +321,16 @@
                             @endif
 
                             @if ($post->listing)
-                                <div class="mt-5 rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] p-4">
-                                    <div class="flex flex-wrap items-start justify-between gap-3">
-                                        <div>
-                                            <p class="text-xs font-black uppercase tracking-[.14em] text-[#6B7D83]">{{ $post->type === 'product' ? 'Producto disponible' : 'Servicio disponible' }}</p>
-                                            <h4 class="mt-1 text-lg font-black text-[#123B4A]">{{ $post->listing->name }}</h4>
-                                        </div>
-                                        <span class="rounded-full bg-white px-3 py-1.5 text-sm font-black text-[#D85B0B] shadow-sm">
-                                            @if ($post->listing->price_type->value === 'quote')
-                                                Solicitar cotización
-                                            @else
-                                                {{ $post->listing->price_type->value === 'starting_at' ? 'Desde ' : '' }}${{ number_format($post->listing->price_amount / 100, 2) }} MXN
-                                            @endif
-                                        </span>
-                                    </div>
-                                    @if ($post->type === 'product' && $post->listing->stock !== null)
-                                        <p class="mt-3 text-xs font-bold text-[#6B7D83]">{{ $post->listing->stock }} unidades disponibles</p>
-                                    @endif
+                                <div class="mt-4 border-t border-[#123B4A]/10 pt-4">
+                                    <h4 class="text-lg font-black text-[#123B4A]">{{ $post->listing->name }}</h4>
+                                    <p class="mt-1 text-sm font-black text-[#14734A]">
+                                        @if ($post->listing->price_type->value === 'quote')
+                                            Cotización
+                                        @else
+                                            {{ $post->listing->price_type->value === 'starting_at' ? 'Desde ' : '' }}${{ number_format($post->listing->price_amount / 100, 2) }} MXN
+                                        @endif
+                                    </p>
+                                    @if ($post->type === 'product' && $post->listing->stock !== null)<p class="mt-1 text-xs font-bold text-[#6B7D83]">{{ $post->listing->stock }} unidades disponibles</p>@endif
                                 </div>
                             @elseif ($post->jobRequest)
                                 @php
@@ -340,40 +338,30 @@
                                     $minimumBudget = $post->jobRequest->budget_min_amount;
                                     $maximumBudget = $post->jobRequest->budget_max_amount;
                                 @endphp
-                                <div class="mt-5 rounded-2xl border border-[#F97316]/15 bg-[#FFF8F2] p-4">
-                                    <p class="text-xs font-black uppercase tracking-[.14em] text-[#D85B0B]">Solicitud de la comunidad</p>
-                                    <h4 class="mt-1 text-lg font-black text-[#123B4A]">{{ $post->jobRequest->title }}</h4>
-                                    <div class="mt-3 flex flex-wrap gap-2 text-xs font-black">
-                                        @if ($minimumBudget !== null || $maximumBudget !== null)
-                                            <span class="rounded-full bg-white px-3 py-1.5 text-[#14734A] shadow-sm">
-                                                Presupuesto:
-                                                @if ($minimumBudget !== null && $maximumBudget !== null)
-                                                    ${{ number_format($minimumBudget / 100, 2) }}–${{ number_format($maximumBudget / 100, 2) }} MXN
-                                                @elseif ($maximumBudget !== null)
-                                                    Hasta ${{ number_format($maximumBudget / 100, 2) }} MXN
-                                                @else
-                                                    Desde ${{ number_format($minimumBudget / 100, 2) }} MXN
-                                                @endif
-                                            </span>
-                                        @endif
-                                        <span class="rounded-full bg-white px-3 py-1.5 text-[#D85B0B] shadow-sm">{{ $urgencyLabels[$post->jobRequest->urgency] ?? 'Sin prisa' }}</span>
-                                        @if ($post->jobRequest->location_label)
-                                            <span class="rounded-full bg-white px-3 py-1.5 text-[#536A72] shadow-sm">{{ $post->jobRequest->location_label }}</span>
-                                        @endif
-                                    </div>
+                                <div class="mt-4 border-t border-[#123B4A]/10 pt-4">
+                                    <h4 class="text-lg font-black text-[#123B4A]">{{ $post->jobRequest->title }}</h4>
+                                    @if ($minimumBudget !== null || $maximumBudget !== null)
+                                        <p class="mt-1 text-sm font-black text-[#14734A]">
+                                            Presupuesto:
+                                            @if ($minimumBudget !== null && $maximumBudget !== null)
+                                                ${{ number_format($minimumBudget / 100, 2) }}–${{ number_format($maximumBudget / 100, 2) }} MXN
+                                            @elseif ($maximumBudget !== null)
+                                                Hasta ${{ number_format($maximumBudget / 100, 2) }} MXN
+                                            @else
+                                                Desde ${{ number_format($minimumBudget / 100, 2) }} MXN
+                                            @endif
+                                        </p>
+                                    @endif
+                                    <p class="mt-1 text-xs font-semibold text-[#6B7D83]">{{ $urgencyLabels[$post->jobRequest->urgency] ?? 'Sin prisa' }}@if($post->jobRequest->location_label) · {{ $post->jobRequest->location_label }}@endif</p>
                                 </div>
                             @endif
 
-                            @if ($post->type === 'service' || $post->type === 'product' || $post->type === 'promotion')
-                                <div class="mt-5 flex items-center gap-2 rounded-2xl bg-[#E9F7F0] px-4 py-3 text-sm font-black text-[#14734A]">
-                                    <span class="size-2 rounded-full bg-[#22A06B]"></span> Disponible para recibir solicitudes
-                                </div>
-                            @endif
+
                         </div>
                         <div class="border-t border-[#123B4A]/8 px-4 pt-2">
                             <div class="flex min-h-11 items-center justify-end text-xs font-black text-[#536A72]">
                             @if ($post->user_id === $currentUser->id)
-                                <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-[#FAF8F4] hover:text-[#F97316]" href="{{ route('posts.edit', $post) }}">Editar publicación</a>
+
                                 @if ($post->jobRequest)
                                     <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-[#FAF8F4] hover:text-[#F97316]" href="{{ route('job-proposals.index', $post->jobRequest) }}">Ver propuestas</a>
                                 @else

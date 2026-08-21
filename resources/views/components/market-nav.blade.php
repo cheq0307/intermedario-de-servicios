@@ -5,7 +5,7 @@
     $accountUrl = $navUser ? ($administrativeOnly ? route('admin.index') : route('profile.show', $navUser)) : route('login');
 @endphp
 <header class="sticky top-0 z-40 border-b border-[#123B4A]/10 bg-white/95 backdrop-blur-xl">
-    <div class="mx-auto flex max-w-7xl items-center gap-2 px-3 py-3 sm:gap-3 sm:px-5">
+    <div class="mx-auto flex max-w-5xl items-center gap-2 px-3 py-3 sm:gap-3 sm:px-5">
         @if($backUrl)
             <a class="grid size-10 shrink-0 place-items-center rounded-full border border-[#123B4A]/10 bg-white text-[#123B4A] shadow-sm" href="{{ $backUrl }}" aria-label="Regresar"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg></a>
         @endif

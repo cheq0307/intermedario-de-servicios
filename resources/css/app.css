@@ -25,3 +25,42 @@
         }
 }
 }
+
+@layer base {
+    body {
+        background-color: #faf8f4;
+    }
+
+    details > summary::-webkit-details-marker {
+        display: none;
+    }
+}
+
+@layer components {
+    .market-surface {
+        @apply rounded-3xl border border-[#123B4A]/10 bg-white shadow-sm;
+    }
+
+    .market-tabs {
+        @apply flex overflow-x-auto border-b border-[#123B4A]/10;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .market-tabs::-webkit-scrollbar,
+    .scrollbar-none::-webkit-scrollbar {
+        display: none;
+    }
+
+    .scrollbar-none {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+}
+
+@media (max-width: 639px) {
+    .market-surface {
+        border-radius: 1.25rem;
+        box-shadow: none;
+    }
+}

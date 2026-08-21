@@ -146,7 +146,7 @@ class PostPublishingTest extends TestCase
         ]);
 
         $this->actingAs($provider)
-            ->get(route('dashboard'))
+            ->get(route('dashboard', ['module' => 'products']))
             ->assertOk()
             ->assertSee('Promoción especial disponible');
     }

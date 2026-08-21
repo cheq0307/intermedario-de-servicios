@@ -31,7 +31,8 @@ class FeedPersonalizationTest extends TestCase
             ->assertSee('Servicio profesional visible para clientes.')
             ->assertSee('Mi propia solicitud permanece visible.')
             ->assertSee('Solicitud de otro cliente oculta por defecto.')
-            ->assertSee('Mostramos solicitudes y ofertas de toda la comunidad');
+            ->assertDontSee('Actividad local')
+            ->assertDontSee('Comunidad activa');
     }
 
     public function test_commercial_user_still_sees_other_offers_and_requests(): void
@@ -42,15 +43,16 @@ class FeedPersonalizationTest extends TestCase
 
         $this->createPost($client, 'job_request', 'Cliente busca una reparación de plomería.');
         $this->createPost($otherProvider, 'service', 'Oferta de otro proveedor oculta por defecto.');
-        $this->createPost($provider, 'promotion', 'Mi promoción permanece visible para administrarla.');
+        $this->createPost($provider, 'service', 'Mi servicio permanece visible para administrarlo.');
 
         $this->actingAs($provider)
             ->get(route('dashboard', ['feed' => 'for_you']))
             ->assertOk()
             ->assertSee('Cliente busca una reparación de plomería.')
-            ->assertSee('Mi promoción permanece visible para administrarla.')
+            ->assertSee('Mi servicio permanece visible para administrarlo.')
             ->assertSee('Oferta de otro proveedor oculta por defecto.')
-            ->assertSee('Mostramos solicitudes y ofertas de toda la comunidad');
+            ->assertDontSee('Actividad local')
+            ->assertDontSee('Comunidad activa');
     }
 
     public function test_default_feed_prioritizes_personalized_content_without_hiding_public_types(): void
@@ -85,16 +87,16 @@ class FeedPersonalizationTest extends TestCase
             ->assertSee('Solicitud dentro de su pestaña especializada.')
             ->assertDontSee('Producto dentro de la pestaña de ofertas.');
 
-        $this->get(route('dashboard', ['feed' => 'community']))
+        $this->get(route('dashboard', ['module' => 'services', 'feed' => 'community']))
             ->assertOk()
             ->assertSee('Trabajo terminado dentro de comunidad.')
             ->assertDontSee('Solicitud dentro de su pestaña especializada.');
 
-        $this->get(route('dashboard', ['feed' => 'all']))
+        $this->get(route('dashboard', ['module' => 'products', 'feed' => 'all']))
             ->assertOk()
             ->assertSee('Producto dentro de la pestaña de ofertas.')
-            ->assertSee('Trabajo terminado dentro de comunidad.')
-            ->assertSee('Solicitud dentro de su pestaña especializada.');
+            ->assertDontSee('Trabajo terminado dentro de comunidad.')
+            ->assertDontSee('Solicitud dentro de su pestaña especializada.');
     }
 
     public function test_suspended_provider_offers_are_hidden_but_client_requests_remain_visible(): void
@@ -160,7 +162,7 @@ class FeedPersonalizationTest extends TestCase
         ]);
 
         $this->actingAs($viewer)
-            ->get(route('dashboard'))
+            ->get(route('dashboard', ['module' => 'food']))
             ->assertOk()
             ->assertSee('Escaparate local')
             ->assertSee('Comida y bebidas')

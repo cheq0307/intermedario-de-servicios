@@ -16,12 +16,11 @@
             </form>
             <div class="invisible absolute inset-x-0 top-[calc(100%+.5rem)] z-50 translate-y-1 rounded-2xl border bg-white p-3 opacity-0 shadow-2xl transition group-focus-within/search:visible group-focus-within/search:translate-y-0 group-focus-within/search:opacity-100">
                 <p class="px-2 text-[10px] font-black uppercase tracking-[.16em] text-[#F97316]">Explora rápidamente</p>
-                <div class="mt-2 grid grid-cols-2 gap-2 text-sm font-black sm:grid-cols-5">
+                <div class="mt-2 grid grid-cols-2 gap-2 text-sm font-black sm:grid-cols-4">
                     <a class="rounded-xl bg-[#FAF8F4] p-3 hover:bg-[#E9F7F0]" href="{{ route('explore', ['q'=>'comida']) }}">Comida</a>
                     <a class="rounded-xl bg-[#FAF8F4] p-3 hover:bg-[#E9F7F0]" href="{{ route('explore', ['q'=>'transporte']) }}">Transporte</a>
                     <a class="rounded-xl bg-[#FAF8F4] p-3 hover:bg-[#E9F7F0]" href="{{ route('explore', ['q'=>'hogar']) }}">Hogar</a>
                     <a class="rounded-xl bg-[#FAF8F4] p-3 hover:bg-[#E9F7F0]" href="{{ route('explore', ['q'=>'productos']) }}">Productos</a>
-                    <a class="rounded-xl bg-[#FFF8E6] p-3 text-[#8B5B00]" href="{{ route('vacancies.index') }}">Empleo</a>
                 </div>
             </div>
         </div>

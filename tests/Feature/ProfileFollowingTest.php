@@ -59,6 +59,8 @@ class ProfileFollowingTest extends TestCase
             ->assertOk()
             ->assertSee('Mis publicaciones')
             ->assertSee('Mis pedidos y trabajos')
+            ->assertSee('Empleo')
+            ->assertSee('href="'.route('vacancies.index').'"', false)
             ->assertSee('Ayuda y soporte')
             ->assertSee('Cerrar sesión')
             ->assertSee('Más');

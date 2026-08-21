@@ -75,7 +75,7 @@ class ExploreController extends Controller
         $filters = array_merge($filters, ['community_id' => $communityId, 'scope' => $scope, 'radius_km' => $radiusKm]);
 
         $listings = Listing::query()
-            ->with(['vendor.user:id,name,avatar_path,city'])
+            ->with(['vendor.user:id,name,avatar_path,avatar_disk,city'])
             ->where('is_active', true)
             ->where(fn (Builder $query) => $query->whereDoesntHave('post')->orWhereHas('post', fn (Builder $post) => $post->whereNull('removed_at')))
             ->whereHas('vendor', fn (Builder $query) => $query->where('status', 'active'))
@@ -97,7 +97,7 @@ class ExploreController extends Controller
             ->withQueryString();
 
         $providers = Vendor::query()
-            ->with('user:id,name,avatar_path,city')
+            ->with('user:id,name,avatar_path,avatar_disk,city')
             ->where('status', 'active')
             ->when($categoryId, fn (Builder $query) => $query->whereHas('categories', fn (Builder $category) => $category->whereKey($categoryId)))
             ->when(in_array($type, ['product', 'service', 'job_request'], true), fn (Builder $query) => $query->whereRaw('1 = 0'))
@@ -114,7 +114,7 @@ class ExploreController extends Controller
             ->withQueryString();
 
         $jobRequests = JobRequest::query()
-            ->with(['client:id,name,avatar_path,city', 'category:id,name', 'communities:id,name,municipality,state'])
+            ->with(['client:id,name,avatar_path,avatar_disk,city', 'category:id,name', 'communities:id,name,municipality,state'])
             ->whereIn('status', [JobRequestStatus::Published, JobRequestStatus::InConversation])
             ->where(fn (Builder $query) => $query->whereDoesntHave('post')->orWhereHas('post', fn (Builder $post) => $post->whereNull('removed_at')))
             ->when($categoryId, fn (Builder $query) => $query->where('category_id', $categoryId))

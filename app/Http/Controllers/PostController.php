@@ -182,15 +182,17 @@ class PostController extends Controller
 
     private function storeMedia(Request $request, Post $post): void
     {
+        $disk = (string) config('marketplace.media_disk', 'public');
         foreach ($request->file('media', []) as $position => $file) {
             $type = str_starts_with((string) $file->getMimeType(), 'video/') ? 'video' : 'image';
-            $path = $file->store('post-media/'.now()->format('Y/m'), 'public');
+            $path = $file->store('post-media/'.now()->format('Y/m'), $disk);
             if (! $path) {
                 throw new \RuntimeException('No fue posible guardar uno de los archivos.');
             }
             $post->media()->create([
                 'type' => $type,
                 'path' => $path,
+                'disk' => $disk,
                 'position' => $position,
                 'alt_text' => $type === 'image' ? 'Imagen de la publicacion de '.$request->user()->name : null,
             ]);

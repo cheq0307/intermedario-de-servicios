@@ -11,6 +11,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->trustProxies(at: env('TRUSTED_PROXIES'));
         $middleware->validateCsrfTokens(except: ['webhooks/stripe', 'webhooks/mercado-pago']);
     })

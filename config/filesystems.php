@@ -47,6 +47,32 @@ return [
             'report' => false,
         ],
 
+        'marketplace_media' => [
+            'driver' => 's3',
+            'key' => env('CLOUD_STORAGE_ACCESS_KEY'),
+            'secret' => env('CLOUD_STORAGE_SECRET_KEY'),
+            'region' => env('CLOUD_STORAGE_REGION', 'auto'),
+            'bucket' => env('CLOUD_STORAGE_BUCKET'),
+            'url' => env('CLOUD_STORAGE_URL'),
+            'endpoint' => env('CLOUD_STORAGE_ENDPOINT'),
+            'use_path_style_endpoint' => env('CLOUD_STORAGE_PATH_STYLE', false),
+            'visibility' => 'public',
+            'throw' => true,
+            'report' => true,
+        ],
+
+        'marketplace_private' => [
+            'driver' => 's3',
+            'key' => env('CLOUD_STORAGE_ACCESS_KEY'),
+            'secret' => env('CLOUD_STORAGE_SECRET_KEY'),
+            'region' => env('CLOUD_STORAGE_REGION', 'auto'),
+            'bucket' => env('CLOUD_STORAGE_PRIVATE_BUCKET', env('CLOUD_STORAGE_BUCKET')),
+            'endpoint' => env('CLOUD_STORAGE_ENDPOINT'),
+            'use_path_style_endpoint' => env('CLOUD_STORAGE_PATH_STYLE', false),
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => true,
+        ],
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

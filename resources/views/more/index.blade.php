@@ -6,7 +6,7 @@
 <main class="mx-auto max-w-3xl px-4 py-7 sm:px-6">
     <section class="rounded-[2rem] border border-[#123B4A]/10 bg-white p-6 shadow-sm">
         <a class="flex items-center gap-4" href="{{ route('profile.show', $user) }}">
-            @if($user->avatar_path)<img class="size-14 rounded-full object-cover" src="{{ asset('storage/'.$user->avatar_path) }}" alt="">@else<span class="grid size-14 place-items-center rounded-full bg-[#DCEAE6] text-xl font-black">{{ mb_strtoupper(mb_substr($user->name,0,1)) }}</span>@endif
+            @if($user->avatar_path)<img class="size-14 rounded-full object-cover" src="{{ $user->avatarUrl() }}" alt="">@else<span class="grid size-14 place-items-center rounded-full bg-[#DCEAE6] text-xl font-black">{{ mb_strtoupper(mb_substr($user->name,0,1)) }}</span>@endif
             <span class="min-w-0 flex-1"><strong class="block truncate text-lg">{{ $user->name }}</strong><span class="block truncate text-sm font-semibold text-[#6B7D83]">Ver mi perfil público</span></span>
             <span aria-hidden="true">›</span>
         </a>

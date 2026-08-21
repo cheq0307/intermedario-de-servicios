@@ -4,12 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class PostMedia extends Model
 {
     protected $table = 'post_media';
 
-    protected $fillable = ['post_id', 'type', 'path', 'thumbnail_path', 'position', 'alt_text'];
+    protected $fillable = ['post_id', 'type', 'path', 'disk', 'thumbnail_path', 'position', 'alt_text'];
 
     public function post(): BelongsTo
     {
@@ -18,6 +19,6 @@ class PostMedia extends Model
 
     public function getUrlAttribute(): string
     {
-        return asset('storage/'.$this->path);
+        return Storage::disk($this->disk ?: 'public')->url($this->path);
     }
 }

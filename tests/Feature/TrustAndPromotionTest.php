@@ -8,6 +8,7 @@ use App\Models\Post;
 use App\Models\PostPromotion;
 use App\Models\User;
 use App\Models\Vendor;
+use App\Models\VendorVerificationDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -34,6 +35,31 @@ class TrustAndPromotionTest extends TestCase
             'verification_level' => 'identity',
             'verification_note' => 'Identificación oficial contrastada.',
         ])->assertForbidden();
+
+        $this->actingAs($superadmin)->patch(route('admin.vendors.verify', $vendor), [
+            'verification_level' => 'identity',
+            'verification_note' => 'Identificación oficial contrastada.',
+        ])->assertStatus(422);
+
+        foreach ([
+            VendorVerificationDocument::TYPE_GOVERNMENT_ID => 'identificacion.pdf',
+            VendorVerificationDocument::TYPE_PROOF_OF_ADDRESS => 'domicilio.pdf',
+        ] as $type => $filename) {
+            VendorVerificationDocument::create([
+                'vendor_id' => $vendor->id,
+                'uploaded_by_user_id' => $provider->id,
+                'reviewed_by_user_id' => $superadmin->id,
+                'type' => $type,
+                'status' => VendorVerificationDocument::STATUS_APPROVED,
+                'disk' => 'local',
+                'path' => 'verification-tests/'.$filename,
+                'original_name' => $filename,
+                'mime_type' => 'application/pdf',
+                'size' => 1024,
+                'sha256' => hash('sha256', $filename),
+                'reviewed_at' => now(),
+            ]);
+        }
 
         $this->actingAs($superadmin)->patch(route('admin.vendors.verify', $vendor), [
             'verification_level' => 'identity',

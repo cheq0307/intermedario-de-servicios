@@ -288,7 +288,7 @@
                                 <div class="flex min-w-0 items-center gap-3">
                                     <a class="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[#DCEAE6] font-black text-[#123B4A]" href="{{ route('profile.show', $post->user) }}" aria-label="Ver perfil de {{ $post->user->name }}">
                                         @if ($post->user->avatar_path)
-                                            <img class="size-full object-cover" src="{{ asset('storage/'.$post->user->avatar_path) }}" alt="">
+                                            <img class="size-full object-cover" src="{{ $post->user->avatarUrl() }}" alt="">
                                         @else
                                             {{ mb_strtoupper(mb_substr($post->user->name, 0, 1)) }}
                                         @endif

@@ -15,7 +15,7 @@ class PostEngagementController extends Controller
     {
         abort_if($post->removed_at !== null, 404);
         $post->load('user:id,name');
-        $comments = $post->comments()->with('user:id,name,avatar_path')->paginate(20);
+        $comments = $post->comments()->with('user:id,name,avatar_path,avatar_disk')->paginate(20);
 
         return view('comments.index', compact('post', 'comments'));
     }

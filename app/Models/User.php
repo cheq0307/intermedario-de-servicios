@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements MustVerifyEmail
@@ -24,6 +25,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'account_type',
         'phone',
         'avatar_path',
+        'avatar_disk',
         'bio',
         'city',
         'community_id',
@@ -48,8 +50,12 @@ class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
-    public function canActAsClient(): bool
+    public function avatarUrl(): ?string
     {
+        return $this->avatar_path ? Storage::disk($this->avatar_disk ?: 'public')->url($this->avatar_path) : null;
+    }
+
+    public function canActAsClient(): bool    {
         return $this->hasRole('client');
     }
 

@@ -20,7 +20,7 @@ class ServiceOrderController extends Controller
     {
         $role = in_array($request->query('como'), ['client', 'provider'], true) ? $request->query('como') : 'client';
         $orders = Order::query()
-            ->with(['buyer:id,name,avatar_path', 'vendor.user:id,name,avatar_path', 'jobRequest:id,public_id,title', 'items:id,order_id,name_snapshot'])
+            ->with(['buyer:id,name,avatar_path,avatar_disk', 'vendor.user:id,name,avatar_path,avatar_disk', 'jobRequest:id,public_id,title', 'items:id,order_id,name_snapshot'])
             ->when(
                 $role === 'client',
                 fn ($query) => $query->where('buyer_id', $request->user()->id),
@@ -35,7 +35,7 @@ class ServiceOrderController extends Controller
 
     public function show(Request $request, Order $order): View
     {
-        $order->load(['buyer:id,name,avatar_path', 'vendor.user:id,name,avatar_path', 'jobRequest', 'jobProposal', 'items', 'payments', 'dispute', 'reviews.author:id,name']);
+        $order->load(['buyer:id,name,avatar_path,avatar_disk', 'vendor.user:id,name,avatar_path,avatar_disk', 'jobRequest', 'jobProposal', 'items', 'payments', 'dispute', 'reviews.author:id,name']);
         $this->authorizeParticipant($request, $order);
 
         $participantIds = collect([$order->buyer_id, $order->vendor->user_id])->sort()->values();

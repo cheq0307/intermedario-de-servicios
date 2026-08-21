@@ -129,6 +129,12 @@ class AdminController extends Controller
             'verification_note' => ['required', 'string', 'min:10', 'max:1000'],
         ]);
 
+        abort_unless(
+            $vendor->hasApprovedVerificationDocuments($validated['verification_level']),
+            422,
+            'Faltan documentos aprobados para este nivel de verificación.',
+        );
+
         $vendor->update([
             'verified_at' => now(),
             'verified_by_user_id' => $request->user()->id,

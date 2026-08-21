@@ -18,7 +18,7 @@ class HomeController extends Controller
         }
 
         $featuredListings = Listing::query()
-            ->with(['vendor.user:id,name,avatar_path,city', 'post.media'])
+            ->with(['vendor.user:id,name,avatar_path,avatar_disk,city', 'post.media'])
             ->where('is_active', true)
             ->where(fn (Builder $query) => $query->whereDoesntHave('post')->orWhereHas('post', fn (Builder $post) => $post->whereNull('removed_at')))
             ->whereHas('vendor', fn (Builder $query) => $query->where('status', 'active'))

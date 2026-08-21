@@ -28,6 +28,7 @@ use App\Http\Controllers\ServiceOrderController;
 use App\Http\Controllers\StripeConnectController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\SupportController;
+use App\Http\Controllers\VendorVerificationDocumentController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -67,6 +68,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/empleo/{vacancy}/postular', [JobVacancyController::class, 'apply'])->name('vacancies.apply');
         Route::patch('/empleo/{vacancy}/cerrar', [JobVacancyController::class, 'close'])->name('vacancies.close');
         Route::post('/mi-perfil/solicitar-verificacion', [MarketplaceCapabilityController::class, 'submitProviderApplication'])->name('provider-applications.submit');
+        Route::post('/mi-perfil/documentos-verificacion', [VendorVerificationDocumentController::class, 'store'])->middleware('throttle:6,1')->name('verification-documents.store');
+        Route::get('/documentos-verificacion/{document}', [VendorVerificationDocumentController::class, 'download'])->name('verification-documents.download');
         Route::post('/publicaciones', [PostController::class, 'store'])->name('posts.store');
         Route::post('/stripe/conectar', [StripeConnectController::class, 'onboard'])->name('stripe.connect');
         Route::get('/stripe/conectar/actualizar', [StripeConnectController::class, 'refresh'])->name('stripe.connect.refresh');
@@ -129,6 +132,7 @@ Route::middleware('auth')->group(function () {
         Route::patch('/administracion/proveedores/{vendor}/suspender', [AdminController::class, 'suspendVendor'])->name('admin.vendors.suspend');
         Route::patch('/administracion/proveedores/{vendor}/verificar', [AdminController::class, 'verifyVendor'])->name('admin.vendors.verify');
         Route::delete('/administracion/proveedores/{vendor}/verificacion', [AdminController::class, 'revokeVendorVerification'])->name('admin.vendors.verification.revoke');
+        Route::patch('/administracion/documentos-verificacion/{document}', [VendorVerificationDocumentController::class, 'review'])->name('admin.verification-documents.review');
         Route::post('/administracion/comunidades', [AdminController::class, 'storeCommunity'])->name('admin.communities.store');
         Route::post('/administracion/codigos-postales/importar', [AdminController::class, 'importPostalCodes'])->name('admin.postal-codes.import');
         Route::patch('/administracion/comunidades/{community}', [AdminController::class, 'updateCommunity'])->name('admin.communities.update');

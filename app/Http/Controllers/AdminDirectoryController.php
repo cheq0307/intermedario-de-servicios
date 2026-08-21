@@ -105,6 +105,7 @@ class AdminDirectoryController extends Controller
             'categories:id,name,slug',
             'user.community:id,name,municipality,state,postal_code',
             'user.categoryPreferences:id,name,slug',
+            'verificationDocuments.reviewedBy:id,name',
         ])->loadCount(['listings', 'orders']);
 
         return view('admin.vendors.show', compact('vendor'));

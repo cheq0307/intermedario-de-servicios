@@ -1,6 +1,10 @@
 <?php
 
 return [
+
+    'media_disk' => env('MARKETPLACE_MEDIA_DISK', 'public'),
+
+    'private_disk' => env('MARKETPLACE_PRIVATE_DISK', 'local'),
     'brand_name' => env('MARKETPLACE_NAME', 'Plaza Local'),
 
     'service_radius_km' => (int) env('MARKETPLACE_RADIUS_KM', 8),

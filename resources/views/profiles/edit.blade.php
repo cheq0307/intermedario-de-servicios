@@ -80,6 +80,24 @@
             <div class="flex flex-wrap justify-end gap-3"><a class="rounded-full border border-[#123B4A]/10 bg-white px-7 py-3.5 font-black" href="{{ route('more.index') }}">Cancelar</a><button class="rounded-full bg-[#F97316] px-7 py-3.5 font-black text-white shadow-lg shadow-[#F97316]/15" type="submit">Guardar perfil</button></div>
         </form>
         @if($isProvider)
+            <section class="mt-8 rounded-[2rem] border border-[#123B4A]/10 bg-white p-6 shadow-sm sm:p-8">
+                <p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Expediente privado de confianza</p>
+                <h2 class="mt-2 text-xl font-black">Documentos para el distintivo verificado</h2>
+                <p class="mt-2 text-sm leading-6 text-[#6B7D83]">No son necesarios para usar Plaza Local. Solo se solicitan si deseas el distintivo de identidad o negocio verificado. Se almacenan de forma privada y nunca aparecen en tu perfil público.</p>
+                <div class="mt-5 grid gap-3 sm:grid-cols-3">
+                    @foreach(\App\Models\VendorVerificationDocument::TYPES as $type => $label)
+                        @php($currentDocument = $user->vendor?->verificationDocuments->where('type', $type)->sortByDesc('id')->first())
+                        <div class="rounded-2xl bg-[#FAF8F4] p-4"><strong class="text-sm">{{ $label }}</strong><p class="mt-2 text-xs font-bold text-[#6B7D83]">{{ $currentDocument ? (\App\Models\VendorVerificationDocument::STATUSES[$currentDocument->status] ?? $currentDocument->status) : 'No enviado' }}</p>@if($currentDocument)<a class="mt-2 inline-flex text-xs font-black text-[#14734A] underline" href="{{ route('verification-documents.download', $currentDocument) }}">Descargar mi archivo</a>@endif</div>
+                    @endforeach
+                </div>
+                <form class="mt-5 grid gap-3 sm:grid-cols-[1fr_1fr_auto]" method="POST" action="{{ route('verification-documents.store') }}" enctype="multipart/form-data">@csrf
+                    <select class="rounded-2xl bg-[#FAF8F4] px-4 py-3" name="type" required>@foreach(\App\Models\VendorVerificationDocument::TYPES as $type => $label)<option value="{{ $type }}">{{ $label }}</option>@endforeach</select>
+                    <input class="rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3 text-sm" type="file" name="document" accept="application/pdf,image/jpeg,image/png" required>
+                    <button class="rounded-full bg-[#123B4A] px-5 py-3 font-black text-white" type="submit">Enviar</button>
+                </form>
+                <p class="mt-3 text-xs font-semibold text-[#6B7D83]">PDF, JPG o PNG; máximo 5 MB. No solicitamos contraseña, NIP, CVV, CLABE ni fotografía de tarjeta.</p>
+            </section>
+        @endif        @if($isProvider)
             <section class="mt-8 rounded-[2rem] border border-[#F97316]/20 bg-white p-6 shadow-sm sm:p-8">
                 <p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Verificación de proveedor</p>
                 @if($vendorStatus === 'active')

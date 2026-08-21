@@ -32,7 +32,7 @@ class JobVacancyController extends Controller
     public function show(JobVacancy $vacancy): View
     {
         abort_unless($vacancy->isOpen() || auth()->id() === $vacancy->employer_id || auth()->user()?->hasAnyRole(['admin', 'superadmin']), 404);
-        $vacancy->load(['employer:id,name,avatar_path', 'community', 'category'])->loadCount('applications');
+        $vacancy->load(['employer:id,name,avatar_path,avatar_disk', 'community', 'category'])->loadCount('applications');
         $alreadyApplied = auth()->check() && $vacancy->applications()->where('applicant_id', auth()->id())->exists();
 
         return view('vacancies.show', compact('vacancy', 'alreadyApplied'));

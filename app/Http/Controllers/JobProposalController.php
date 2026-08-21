@@ -33,7 +33,7 @@ class JobProposalController extends Controller
         $isProvider = $request->user()->canActAsProvider();
         abort_unless($isOwner || $isProvider, 403);
 
-        $jobRequest->load('client:id,name,avatar_path');
+        $jobRequest->load('client:id,name,avatar_path,avatar_disk');
         $proposals = $jobRequest->proposals()
             ->with(['provider.vendor', 'order'])
             ->when(! $isOwner, fn ($query) => $query->where('provider_id', $request->user()->id))

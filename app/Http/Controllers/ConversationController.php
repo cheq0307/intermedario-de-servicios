@@ -16,7 +16,7 @@ class ConversationController extends Controller
     {
         $conversations = $request->user()->conversations()
             ->with([
-                'participants:id,name,avatar_path,account_type',
+                'participants:id,name,avatar_path,avatar_disk,account_type',
                 'participants.roles:id,name',
                 'messages' => fn ($query) => $query->with('sender:id,name')->latest()->limit(1),
             ])
@@ -58,9 +58,9 @@ class ConversationController extends Controller
     {
         abort_unless($conversation->includesUser($request->user()), 403);
 
-        $conversation->load(['participants:id,name,avatar_path,account_type', 'participants.roles:id,name']);
+        $conversation->load(['participants:id,name,avatar_path,avatar_disk,account_type', 'participants.roles:id,name']);
         $messages = $conversation->messages()
-            ->with('sender:id,name,avatar_path')
+            ->with('sender:id,name,avatar_path,avatar_disk')
             ->latest()
             ->limit(50)
             ->get()

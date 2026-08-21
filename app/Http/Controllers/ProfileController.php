@@ -54,7 +54,7 @@ class ProfileController extends Controller
         $rating = (clone $reviewsQuery)->avg('rating');
         $reviewsCount = (clone $reviewsQuery)->count();
         $reviews = $reviewsQuery
-            ->with('author:id,name,avatar_path')
+            ->with('author:id,name,avatar_path,avatar_disk')
             ->latest()
             ->limit(30)
             ->get();
@@ -79,7 +79,7 @@ class ProfileController extends Controller
 
     public function edit(): View
     {
-        $user = request()->user()->load(['vendor.categories', 'community', 'categoryPreferences']);
+        $user = request()->user()->load(['vendor.categories', 'vendor.verificationDocuments', 'community', 'categoryPreferences']);
         $communities = Community::query()->where('is_active', true)->orderBy('name')->get();
         $categories = Category::query()->where('is_active', true)->orderBy('name')->get();
 
@@ -97,7 +97,9 @@ class ProfileController extends Controller
             $userData['city'] = $community->municipality;
 
             if ($request->hasFile('avatar')) {
-                $userData['avatar_path'] = $request->file('avatar')->store('avatars', 'public');
+                $disk = (string) config('marketplace.media_disk', 'public');
+                $userData['avatar_path'] = $request->file('avatar')->store('avatars', $disk);
+                $userData['avatar_disk'] = $disk;
             }
 
             $user->update($userData);

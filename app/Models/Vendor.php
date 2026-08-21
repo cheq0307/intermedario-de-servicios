@@ -144,8 +144,27 @@ class Vendor extends Model
         return $this->hasMany(Order::class);
     }
 
-    public function categories(): BelongsToMany
+    public function verificationDocuments(): HasMany
     {
+        return $this->hasMany(VendorVerificationDocument::class);
+    }
+
+    public function hasApprovedVerificationDocuments(string $level): bool
+    {
+        $required = ['government_id', 'proof_of_address'];
+        if ($level === 'business') {
+            $required[] = 'business_proof';
+        }
+
+        $approvedTypes = $this->verificationDocuments()
+            ->where('status', 'approved')
+            ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+            ->pluck('type')->unique()->all();
+
+        return collect($required)->every(fn (string $type): bool => in_array($type, $approvedTypes, true));
+    }
+
+    public function categories(): BelongsToMany    {
         return $this->belongsToMany(Category::class)->withTimestamps();
     }
 }

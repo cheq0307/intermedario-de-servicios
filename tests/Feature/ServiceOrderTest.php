@@ -147,7 +147,7 @@ class ServiceOrderTest extends TestCase
             'unit_price_amount' => 125000,
             'line_total_amount' => 125000,
         ]);
-        $participantIds = collect([$client->id, $provider->id])->sort()->values();
+
         $order->payments()->create([
             'provider' => 'fake',
             'provider_reference' => 'fake_'.Str::uuid(),
@@ -160,9 +160,12 @@ class ServiceOrderTest extends TestCase
         ]);
         $conversation = Conversation::create([
             'public_id' => (string) Str::uuid(),
-            'direct_key' => $participantIds->implode(':'),
+            'order_id' => $order->id,
+            'job_request_id' => $jobRequest->id,
+            'type' => 'operation',
+            'state' => 'active',
         ]);
-        $conversation->participants()->attach($participantIds->all());
+        $conversation->participants()->attach([$client->id, $provider->id]);
 
         return [$client, $provider, $order, $jobRequest];
     }

@@ -158,13 +158,13 @@ class JobProposalController extends Controller
             $lockedRequest->update(['status' => JobRequestStatus::Assigned]);
 
             $participantIds = collect([$request->user()->id, $lockedProposal->provider_id])->sort()->values();
-            $conversation = Conversation::firstOrCreate(
-                ['direct_key' => $participantIds->implode(':')],
-                ['public_id' => (string) Str::uuid(), 'job_request_id' => $lockedRequest->id],
-            );
-            if (! $conversation->job_request_id) {
-                $conversation->update(['job_request_id' => $lockedRequest->id]);
-            }
+            $conversation = Conversation::create([
+                'public_id' => (string) Str::uuid(),
+                'order_id' => $order->id,
+                'job_request_id' => $lockedRequest->id,
+                'type' => 'operation',
+                'state' => 'active',
+            ]);
             $conversation->participants()->syncWithoutDetaching($participantIds->all());
             $conversation->messages()->create([
                 'sender_id' => $request->user()->id,

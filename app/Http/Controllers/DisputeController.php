@@ -67,6 +67,7 @@ class DisputeController extends Controller
             $dispute->messages()->create(['user_id' => $request->user()->id, 'body' => $validated['description']]);
             $lockedOrder->update(['status' => OrderStatus::Disputed]);
             $this->recordSystemMessage($lockedOrder, 'Se abrió una disputa sobre esta contratación.', $request->user()->id);
+            $lockedOrder->conversation?->update(['state' => 'under_review']);
 
             return $dispute;
         });
@@ -141,6 +142,11 @@ class DisputeController extends Controller
                 'resolved_at' => now(),
             ]);
             $this->recordSystemMessage($order, 'La disputa fue resuelta: '.$validated['resolution'], $request->user()->id);
+            if (in_array($nextStatus, [OrderStatus::Completed, OrderStatus::Cancelled], true)) {
+                $order->conversation?->archive();
+            } else {
+                $order->conversation?->update(['state' => 'active', 'archived_at' => null]);
+            }
         });
         $this->notifyParticipants($dispute, 'Disputa resuelta', 'Administración registró una resolución en el expediente.');
 
@@ -182,8 +188,7 @@ class DisputeController extends Controller
 
     private function recordSystemMessage(Order $order, string $body, int $actorId): void
     {
-        $participantIds = collect([$order->buyer_id, $order->vendor->user_id])->sort()->values();
-        $conversation = Conversation::where('direct_key', $participantIds->implode(':'))->first();
+        $conversation = $order->conversation;
         if (! $conversation) {
             return;
         }

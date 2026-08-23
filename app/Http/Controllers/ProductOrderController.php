@@ -90,10 +90,12 @@ class ProductOrderController extends Controller
             ]);
 
             $participantIds = collect([$request->user()->id, $lockedListing->vendor->user_id])->sort()->values();
-            $conversation = Conversation::firstOrCreate(
-                ['direct_key' => $participantIds->implode(':')],
-                ['public_id' => (string) Str::uuid()],
-            );
+            $conversation = Conversation::create([
+                'public_id' => (string) Str::uuid(),
+                'order_id' => $order->id,
+                'type' => 'operation',
+                'state' => 'active',
+            ]);
             $conversation->participants()->syncWithoutDetaching($participantIds->all());
             $conversation->messages()->create([
                 'sender_id' => $request->user()->id,
@@ -157,6 +159,7 @@ class ProductOrderController extends Controller
             abort_unless($lockedOrder->status === OrderStatus::AwaitingPayment, 422);
 
             $this->releaseReservation($lockedOrder->inventoryReservation);
+            $lockedOrder->conversation?->archive();
             $lockedOrder->payments()->where('status', PaymentStatus::Pending->value)->update(['status' => PaymentStatus::Cancelled->value]);
             $lockedOrder->update([
                 'status' => OrderStatus::Cancelled,

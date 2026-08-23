@@ -47,6 +47,24 @@ class ConversationTest extends TestCase
 
     }
 
+    public function test_archived_operation_chat_is_read_only_but_direct_chat_remains_usable(): void
+    {
+        [$sender, $recipient, $direct] = $this->directConversation();
+        $operation = Conversation::create([
+            'public_id' => (string) \Illuminate\Support\Str::uuid(),
+            'type' => 'operation',
+            'state' => 'archived',
+            'archived_at' => now(),
+        ]);
+        $operation->participants()->attach([$sender->id, $recipient->id]);
+
+        $this->actingAs($sender)
+            ->post(route('conversations.messages.store', $operation), ['body' => 'No debe enviarse'])
+            ->assertStatus(422);
+        $this->actingAs($sender)
+            ->post(route('conversations.messages.store', $direct), ['body' => 'El chat directo sigue activo'])
+            ->assertRedirect();
+    }
     public function test_outsider_cannot_read_or_write_conversation(): void
     {
         [, , $conversation] = $this->directConversation();

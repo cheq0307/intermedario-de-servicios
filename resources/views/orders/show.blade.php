@@ -73,7 +73,7 @@
                         @elseif (! $isBuyer && $order->status->value === 'in_progress')<form method="POST" action="{{ route('orders.deliver', $order) }}">@csrf @method('PATCH')<button class="w-full rounded-full bg-[#F97316] px-5 py-3 font-black text-white" type="submit">Marcar como entregado</button></form>
                         @elseif ($isBuyer && $order->status->value === 'delivered')<form method="POST" action="{{ route('orders.complete', $order) }}">@csrf @method('PATCH')<button class="w-full rounded-full bg-[#14734A] px-5 py-3 font-black text-white" type="submit">Confirmar entrega</button></form>
                         @else<p class="text-sm font-bold leading-6 text-[#6B7D83]">No tienes una acción pendiente en este momento.</p>@endif
-                        @if ($conversation)<a class="block w-full rounded-full border border-[#123B4A]/10 px-5 py-3 text-center text-sm font-black" href="{{ route('conversations.show', $conversation) }}">Abrir conversación</a>@endif
+                        @if ($conversation)<a class="block w-full rounded-full border border-[#123B4A]/10 px-5 py-3 text-center text-sm font-black" href="{{ route('conversations.show', $conversation) }}">{{ $conversation->state === 'archived' ? 'Ver historial de operación' : 'Abrir chat de operación' }}</a>@endif
                     </div>
                 </section>
 

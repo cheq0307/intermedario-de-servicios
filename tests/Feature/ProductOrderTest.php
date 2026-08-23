@@ -31,6 +31,7 @@ class ProductOrderTest extends TestCase
         $this->assertSame(2400, $order->commission_amount);
         $this->assertDatabaseHas('inventory_reservations', ['order_id' => $order->id, 'quantity' => 2, 'status' => 'active']);
         $this->assertDatabaseHas('payments', ['order_id' => $order->id, 'provider' => 'fake', 'status' => 'pending']);
+        $this->assertDatabaseHas('conversations', ['order_id' => $order->id, 'type' => 'operation', 'state' => 'active']);
     }
 
     public function test_product_order_follows_payment_and_delivery_lifecycle(): void
@@ -80,6 +81,7 @@ class ProductOrderTest extends TestCase
         $this->assertSame(2, $listing->fresh()->stock);
         $this->assertSame('cancelled', $order->fresh()->status->value);
         $this->assertSame('cancelled', $order->payments()->firstOrFail()->status->value);
+        $this->assertSame('archived', $order->conversation()->firstOrFail()->state);
     }
 
     public function test_invalid_or_unsafe_product_purchases_are_rejected(): void

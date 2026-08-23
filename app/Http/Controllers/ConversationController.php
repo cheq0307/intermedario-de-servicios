@@ -18,6 +18,8 @@ class ConversationController extends Controller
             ->with([
                 'participants:id,name,avatar_path,avatar_disk,account_type',
                 'participants.roles:id,name',
+                'order.jobRequest:id,public_id,title',
+                'order.items:id,order_id,name_snapshot',
                 'messages' => fn ($query) => $query->with('sender:id,name')->latest()->limit(1),
             ])
             ->orderByDesc('last_message_at')
@@ -58,7 +60,7 @@ class ConversationController extends Controller
     {
         abort_unless($conversation->includesUser($request->user()), 403);
 
-        $conversation->load(['participants:id,name,avatar_path,avatar_disk,account_type', 'participants.roles:id,name']);
+        $conversation->load(['participants:id,name,avatar_path,avatar_disk,account_type', 'participants.roles:id,name', 'order.jobRequest', 'order.items']);
         $messages = $conversation->messages()
             ->with('sender:id,name,avatar_path,avatar_disk')
             ->latest()
@@ -72,12 +74,15 @@ class ConversationController extends Controller
         $otherLastReadAt = $otherUser?->pivot?->last_read_at ? now()->parse($otherUser->pivot->last_read_at) : null;
         $supportConversation = (bool) ($otherUser?->hasAnyRole(['admin', 'superadmin']) && ! $otherUser?->canUseMarketplace());
 
-        return view('conversations.show', compact('conversation', 'messages', 'otherUser', 'otherLastReadAt', 'supportConversation'));
+        $operationOrder = $conversation->order;
+
+        return view('conversations.show', compact('conversation', 'messages', 'otherUser', 'otherLastReadAt', 'supportConversation', 'operationOrder'));
     }
 
     public function store(Request $request, Conversation $conversation): RedirectResponse
     {
         abort_unless($conversation->includesUser($request->user()), 403);
+        abort_unless($conversation->acceptsMessages(), 422, 'Este chat ya no acepta mensajes. Consulta el expediente de disputa o el historial de la operación.');
 
         $validated = $request->validate([
             'body' => ['required', 'string', 'max:2000'],

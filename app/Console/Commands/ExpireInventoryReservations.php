@@ -41,6 +41,7 @@ class ExpireInventoryReservations extends Command
                     'cancelled_at' => now(),
                     'cancellation_reason' => 'La reserva de inventario venció antes del pago.',
                 ]);
+                $order->conversation?->archive();
                 $released++;
             });
         }

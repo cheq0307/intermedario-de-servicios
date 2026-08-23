@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -16,12 +17,18 @@ class Conversation extends Model
         'direct_key',
         'order_id',
         'job_request_id',
+        'type',
+        'state',
         'last_message_at',
+        'archived_at',
     ];
 
     protected function casts(): array
     {
-        return ['last_message_at' => 'datetime'];
+        return [
+            'last_message_at' => 'datetime',
+            'archived_at' => 'datetime',
+        ];
     }
 
     public function getRouteKeyName(): string
@@ -41,8 +48,36 @@ class Conversation extends Model
         return $this->hasMany(Message::class);
     }
 
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    public function jobRequest(): BelongsTo
+    {
+        return $this->belongsTo(JobRequest::class);
+    }
+
     public function includesUser(User $user): bool
     {
         return $this->participants()->whereKey($user->id)->exists();
+    }
+
+    public function isOperation(): bool
+    {
+        return $this->type === 'operation';
+    }
+
+    public function acceptsMessages(): bool
+    {
+        return $this->state === 'active';
+    }
+
+    public function archive(): void
+    {
+        $this->update([
+            'state' => 'archived',
+            'archived_at' => now(),
+        ]);
     }
 }

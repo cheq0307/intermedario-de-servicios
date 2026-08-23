@@ -38,8 +38,7 @@ class ServiceOrderController extends Controller
         $order->load(['buyer:id,name,avatar_path,avatar_disk', 'vendor.user:id,name,avatar_path,avatar_disk', 'jobRequest', 'jobProposal', 'items', 'payments', 'dispute', 'reviews.author:id,name']);
         $this->authorizeParticipant($request, $order);
 
-        $participantIds = collect([$order->buyer_id, $order->vendor->user_id])->sort()->values();
-        $conversation = Conversation::where('direct_key', $participantIds->implode(':'))->first();
+        $conversation = Conversation::where('order_id', $order->id)->first();
 
         return view('orders.show', compact('order', 'conversation'));
     }
@@ -105,6 +104,7 @@ class ServiceOrderController extends Controller
             }
             $lockedOrder->jobRequest?->update(['status' => JobRequestStatus::Completed]);
             $this->recordSystemMessage($lockedOrder, 'El cliente confirmó la entrega. Trabajo completado.', $request->user()->id);
+            $lockedOrder->conversation?->archive();
         });
         $this->notifyCounterpart($order, $request->user()->id, 'Trabajo completado', 'El cliente confirmó la entrega de la contratación.', 'order_completed');
 
@@ -130,7 +130,8 @@ class ServiceOrderController extends Controller
                 ->where('status', PaymentStatus::Pending->value)
                 ->update(['status' => PaymentStatus::Cancelled->value]);
             $lockedOrder->jobRequest?->update(['status' => JobRequestStatus::Cancelled]);
-            $this->recordSystemMessage($lockedOrder, 'La contratación fue cancelada antes de iniciar. Motivo: '.$validated['reason'], $request->user()->id);
+            $this->recordSystemMessage($lockedOrder, 'La contratación fue cancelada antes de iniciar. Motivo: ' . $validated['reason'], $request->user()->id);
+            $lockedOrder->conversation?->archive();
         });
         $this->notifyCounterpart($order, $request->user()->id, 'Contratación cancelada', 'La otra parte canceló la contratación antes de iniciar.', 'order_cancelled');
 
@@ -191,8 +192,7 @@ class ServiceOrderController extends Controller
 
     private function recordSystemMessage(Order $order, string $body, int $actorId): void
     {
-        $participantIds = collect([$order->buyer_id, $order->vendor->user_id])->sort()->values();
-        $conversation = Conversation::where('direct_key', $participantIds->implode(':'))->first();
+        $conversation = Conversation::where('order_id', $order->id)->first();
 
         if (! $conversation) {
             return;

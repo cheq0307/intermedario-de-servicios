@@ -93,6 +93,11 @@ class Order extends Model
         return $this->hasOne(Dispute::class);
     }
 
+    public function conversation(): HasOne
+    {
+        return $this->hasOne(Conversation::class);
+    }
+
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);

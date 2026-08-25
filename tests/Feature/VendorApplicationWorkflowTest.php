@@ -23,7 +23,9 @@ class VendorApplicationWorkflowTest extends TestCase
         $this->actingAs($client)->post(route('capabilities.activate', 'provider'))->assertRedirect(route('profile.edit'));
 
         $this->assertDatabaseHas('vendors', ['user_id' => $client->id, 'status' => 'draft', 'submitted_at' => null]);
-        $this->actingAs($admin)->get(route('admin.index'))->assertOk()->assertSee('0 solicitudes pendientes');
+        $this->actingAs($admin)->get(route('admin.index'))
+            ->assertOk()
+            ->assertViewHas('metrics', fn (array $metrics): bool => $metrics['pending_vendors'] === 0);
     }
 
     public function test_provider_must_verify_email_and_complete_profile_before_submitting(): void
@@ -51,7 +53,10 @@ class VendorApplicationWorkflowTest extends TestCase
 
         $this->assertSame('pending', $vendor->fresh()->status);
         $this->assertNotNull($vendor->fresh()->submitted_at);
-        $this->actingAs($admin)->get(route('admin.index'))->assertOk()->assertSee('1 solicitudes pendientes')->assertDontSee('Servicios Luna');
+        $this->actingAs($admin)->get(route('admin.index'))
+            ->assertOk()
+            ->assertViewHas('metrics', fn (array $metrics): bool => $metrics['pending_vendors'] === 1)
+            ->assertDontSee('Servicios Luna');
     }
 
     public function test_resubmitting_provider_application_notifies_admin_and_points_to_the_exact_record(): void
@@ -82,7 +87,7 @@ class VendorApplicationWorkflowTest extends TestCase
         $this->actingAs($superadmin)->get(route('admin.index'))
             ->assertOk()
             ->assertSee('Notificaciones')
-            ->assertSee('1 solicitudes pendientes');
+            ->assertViewHas('metrics', fn (array $metrics): bool => $metrics['pending_vendors'] === 1);
     }
 
     public function test_editing_a_submitted_profile_returns_it_to_draft(): void

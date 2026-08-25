@@ -79,6 +79,7 @@ class ProfileTest extends TestCase
             ->assertOk()
             ->assertSee($user->email);
     }
+
     public function test_provider_can_update_professional_profile(): void
     {
         $provider = User::factory()->create(['account_type' => 'provider']);
@@ -126,7 +127,7 @@ class ProfileTest extends TestCase
         ], $provider->vendor->fresh()->business_hours);
     }
 
-    public function test_profile_displays_account_capabilities_and_provider_schedule(): void
+    public function test_administrative_profile_hides_paused_commercial_information(): void
     {
         $provider = User::factory()->create(['account_type' => 'provider']);
         $provider->assignRole(Role::findOrCreate('client'));
@@ -151,9 +152,10 @@ class ProfileTest extends TestCase
         $this->actingAs($provider)
             ->get(route('profile.show', $provider))
             ->assertOk()
-            ->assertSee('Usuario y administrador')
-            ->assertSee('Realizando un trabajo')
-            ->assertSee('Horario: Lun');
+            ->assertSee('Cuenta institucional de Plaza Local')
+            ->assertSee('Administrador')
+            ->assertDontSee('Realizando un trabajo')
+            ->assertDontSee('Horario: Lun');
     }
 
     public function test_profile_displays_user_publications(): void

@@ -8,6 +8,7 @@ use App\Models\Listing;
 use App\Models\Post;
 use App\Models\Vendor;
 use App\Services\Marketplace\NotifyMatchingProviders;
+use App\Services\Marketplace\PublicationDraftService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -19,6 +20,10 @@ class PostController extends Controller
 {
     public function store(Request $request): RedirectResponse
     {
+        if (! $request->user()->hasVerifiedEmail()) {
+            return app(PublicationDraftService::class)->saveAndRequestVerification($request);
+        }
+
         $providerTypes = ['portfolio', 'business_update', 'product', 'service', 'promotion'];
         $allowedTypes = $request->user()->canUseMarketplace()
             ? array_merge(['job_request'], $providerTypes)
@@ -72,6 +77,7 @@ class PostController extends Controller
                 if ($post->jobRequest) {
                     app(NotifyMatchingProviders::class)->handle($post->jobRequest);
                 }
+                $request->user()->publicationDraft()->delete();
 
                 return redirect()
                     ->route('dashboard')

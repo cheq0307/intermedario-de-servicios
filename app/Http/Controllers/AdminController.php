@@ -39,9 +39,6 @@ class AdminController extends Controller
             'unread_notifications' => $request->user()->unreadNotifications()->count(),
         ];
         $pendingVendorCount = $metrics['pending_vendors'];
-        $vendors = Vendor::with('user:id,name,email,email_verified_at')
-            ->whereIn('status', ['active', 'suspended'])->where('user_id', '!=', $request->user()->id)
-            ->latest()->paginate(8, ['*'], 'vendors_page')->withQueryString();
         $adminSearch = trim((string) $request->query('admin_q', ''));
         abort_if(mb_strlen($adminSearch) > 100, 422, 'La búsqueda es demasiado larga.');
         $administrators = User::query()
@@ -72,7 +69,7 @@ class AdminController extends Controller
         $auditSubjects = ['User' => 'Usuario', 'Vendor' => 'Proveedor', 'Post' => 'Publicación', 'Community' => 'Comunidad'];
         $isSuperadmin = $request->user()->hasRole('superadmin');
 
-        return view('admin.index', compact('metrics', 'pendingVendorCount', 'vendors', 'administrators', 'adminCandidates', 'adminSearch', 'auditLogs', 'communities', 'categories', 'auditActions', 'auditSubjects', 'isSuperadmin'));
+        return view('admin.index', compact('metrics', 'pendingVendorCount', 'administrators', 'adminCandidates', 'adminSearch', 'auditLogs', 'communities', 'categories', 'auditActions', 'auditSubjects', 'isSuperadmin'));
     }
 
     public function approveVendor(Request $request, Vendor $vendor): RedirectResponse
@@ -348,9 +345,10 @@ class AdminController extends Controller
         $this->authorizeSuperadmin($request);
         abort_if($user->hasRole('superadmin'), 422);
         $user->assignRole(Role::findOrCreate('admin'));
-        $this->audit($request, 'admin.granted', $user);
+        $this->audit($request, 'admin.granted', $user, ['commercial_access_paused' => true]);
+        $request->session()->forget('marketplace_mode');
 
-        return back()->with('status', 'Administrador delegado correctamente.');
+        return redirect(route('admin.index').'#administradores')->with('status', 'Administrador delegado. Su actividad comercial quedó pausada mientras conserve el cargo.');
     }
 
     public function revokeAdmin(Request $request, User $user): RedirectResponse
@@ -358,9 +356,9 @@ class AdminController extends Controller
         $this->authorizeSuperadmin($request);
         abort_if($user->id === $request->user()->id || $user->hasRole('superadmin'), 422);
         $user->removeRole('admin');
-        $this->audit($request, 'admin.revoked', $user);
+        $this->audit($request, 'admin.revoked', $user, ['commercial_access_restored' => true]);
 
-        return back()->with('status', 'Permiso de administrador retirado.');
+        return redirect(route('admin.index').'#administradores')->with('status', 'Permiso retirado. La cuenta recuperó automáticamente sus capacidades comerciales previas.');
     }
 
     private function changeVendorStatus(Request $request, Vendor $vendor, string $status, array $metadata = []): void

@@ -26,6 +26,32 @@ class DashboardController extends Controller
             return redirect()->route('admin.index');
         }
 
+        $draft = $user->publicationDraft()->first();
+        if ($draft?->expires_at?->isPast()) {
+            $draft->delete();
+            $draft = null;
+        }
+
+        if ($user->hasVerifiedEmail() && $draft) {
+            $publishAsDraft = $draft->payload['type'] === 'job_request' ? 'request' : 'offer';
+
+            if ($request->query('borrador') !== 'recuperado') {
+                $request->session()->flashInput($draft->payload);
+
+                return redirect()->route('dashboard', [
+                    'publicar' => $publishAsDraft,
+                    'borrador' => 'recuperado',
+                ])->with(
+                    'status',
+                    'Recuperamos tu publicación. Revisa los datos y publícala; si llevaba fotos o videos, selecciónalos nuevamente.',
+                );
+            }
+
+            if (! $request->session()->hasOldInput()) {
+                $request->session()->flashInput($draft->payload);
+            }
+        }
+
         $publishAs = (string) $request->query('publicar', '');
         $showComposer = in_array($publishAs, ['request', 'offer'], true);
         $activeMode = $publishAs === 'offer' ? 'provider' : 'client';

@@ -13,6 +13,7 @@ use App\Models\Listing;
 use App\Models\Order;
 use App\Models\User;
 use App\Notifications\MarketplaceActivity;
+use App\Services\Marketplace\NegotiationConversationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -29,14 +30,14 @@ class ProductOrderController extends Controller
         return view('orders.product-checkout', compact('listing'));
     }
 
-    public function store(Request $request, Listing $listing, MarketplacePaymentGateway $gateway): RedirectResponse
+    public function store(Request $request, Listing $listing, MarketplacePaymentGateway $gateway, NegotiationConversationService $negotiations): RedirectResponse
     {
         $validated = $request->validate([
             'quantity' => ['required', 'integer', 'min:1', 'max:50'],
             'buyer_notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $order = DB::transaction(function () use ($request, $listing, $validated, $gateway): Order {
+        $order = DB::transaction(function () use ($request, $listing, $validated, $gateway, $negotiations): Order {
             $lockedListing = Listing::with('vendor')->lockForUpdate()->findOrFail($listing->id);
             $this->ensurePurchasable($request, $lockedListing);
 
@@ -104,6 +105,16 @@ class ProductOrderController extends Controller
                 'metadata' => ['order_public_id' => $order->public_id],
             ]);
             $conversation->update(['last_message_at' => now()]);
+
+            if ($lockedListing->post) {
+                $negotiations->closeForAgreement(
+                    $lockedListing->post,
+                    $request->user()->id,
+                    $lockedListing->vendor->user_id,
+                    $order,
+                    $request->user()->id,
+                );
+            }
 
             return $order;
         });

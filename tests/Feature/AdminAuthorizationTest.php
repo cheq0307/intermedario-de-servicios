@@ -25,11 +25,15 @@ class AdminAuthorizationTest extends TestCase
         $target = User::factory()->create();
 
         $this->actingAs($superadmin)->post(route('admin.users.grant', $target))->assertRedirect();
-        $this->assertTrue($target->fresh()->hasRole('admin'));
+        $target->refresh();
+        $this->assertTrue($target->hasRole('admin'));
+        $this->assertFalse($target->canUseMarketplace());
         $this->assertDatabaseHas('audit_logs', ['action' => 'admin.granted', 'subject_id' => $target->id]);
 
         $this->actingAs($superadmin)->delete(route('admin.users.revoke', $target))->assertRedirect();
-        $this->assertFalse($target->fresh()->hasRole('admin'));
+        $target->refresh();
+        $this->assertFalse($target->hasRole('admin'));
+        $this->assertTrue($target->canUseMarketplace());
     }
 
     public function test_delegated_admin_can_approve_and_suspend_vendor_but_cannot_delegate_admins(): void
@@ -51,11 +55,11 @@ class AdminAuthorizationTest extends TestCase
         $vendor->categories()->attach(Category::query()->value('id'));
         $target = User::factory()->create();
 
-        $this->actingAs($admin)->get(route('admin.index'))->assertOk()->assertSee('1 solicitudes pendientes')->assertDontSee('Negocio pendiente');
+        $this->actingAs($admin)->get(route('admin.index'))->assertOk()->assertSee('1 proveedores por revisar')->assertDontSee('Negocio pendiente');
         $this->actingAs($admin)->patch(route('admin.vendors.approve', $vendor))->assertRedirect();
         $this->assertSame('active', $vendor->fresh()->status);
         $this->assertNull($vendor->fresh()->verified_at);
-        $this->actingAs($admin)->get(route('admin.index'))->assertOk()->assertSee('Suspender proveedor')->assertSee('Moderación de proveedores');
+        $this->actingAs($admin)->get(route('admin.vendors.show', $vendor))->assertOk()->assertSee('Suspender proveedor')->assertSee('Moderación');
         $this->actingAs($admin)->post(route('admin.users.grant', $target))->assertForbidden();
 
         $this->actingAs($admin)->patch(route('admin.vendors.suspend', $vendor), ['reason' => 'Documentación comercial inconsistente.'])->assertRedirect();
@@ -131,7 +135,7 @@ class AdminAuthorizationTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.index'))
             ->assertOk()
-            ->assertSee('1 solicitudes pendientes')
+            ->assertSee('1 proveedores por revisar')
             ->assertDontSee('Aprobar proveedor');
 
         $this->patch(route('admin.vendors.approve', $vendor))->assertRedirect();
@@ -139,16 +143,16 @@ class AdminAuthorizationTest extends TestCase
         Notification::assertSentTo($provider, MarketplaceActivity::class);
     }
 
-    public function test_commercial_administrator_sees_responsive_administration_shortcut(): void
+    public function test_administrator_is_redirected_to_its_exclusive_workspace(): void
     {
         $admin = User::factory()->create(['account_type' => 'client']);
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin->assignRole([Role::findOrCreate('client'), Role::findOrCreate('admin')]);
 
         $this->actingAs($admin)
             ->get(route('dashboard'))
-            ->assertOk()
-            ->assertSee('Abrir administración')
-            ->assertSee(route('admin.index'), false);
+            ->assertRedirect(route('admin.index'));
+
+        $this->assertFalse($admin->fresh()->canUseMarketplace());
     }
 
     public function test_administrator_cannot_approve_own_vendor_profile(): void
@@ -186,7 +190,7 @@ class AdminAuthorizationTest extends TestCase
             ->assertSee('Otra persona')
             ->assertDontSee('Cuenta propietaria')
             ->assertSee('Cerrar sesi')
-            ->assertSee('Control global de comunidades')
+            ->assertSee('Cuenta exclusivamente administrativa')
             ->assertDontSee('Explorar plaza')
             ->assertDontSee('Ir a mi cuenta comercial')
             ->assertDontSee('Capacidades comerciales');
@@ -248,7 +252,7 @@ class AdminAuthorizationTest extends TestCase
 
         $this->get(route('admin.index'))
             ->assertOk()
-            ->assertSee('¿Qué puede hacer cada administrador?')
+            ->assertSee('Información y alcance de mi cargo')
             ->assertSee('Comunidad agregada')
             ->assertDontSee('community.created');
     }
@@ -296,7 +300,7 @@ class AdminAuthorizationTest extends TestCase
 
         $response = $this->actingAs($superadmin)->get(route('admin.index'));
         $response->assertOk();
-        foreach (['communities_page=2', 'categories_page=2', 'vendors_page=2', 'administrators_page=2', 'audit_page=2'] as $pageParameter) {
+        foreach (['communities_page=2', 'categories_page=2', 'administrators_page=2', 'audit_page=2'] as $pageParameter) {
             $response->assertSee($pageParameter, false);
         }
     }
@@ -316,7 +320,8 @@ class AdminAuthorizationTest extends TestCase
         $this->get(route('admin.index', ['admin_q' => 'delegada@example.test']))
             ->assertOk()
             ->assertSee($candidate->email)
-            ->assertSee('Hacer administrador');
+            ->assertSee('Hacer administrador')
+            ->assertSee('#administradores', false);
     }
 
     public function test_admin_can_edit_suspend_and_reactivate_a_community_but_cannot_delete_it(): void

@@ -62,16 +62,12 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function canActAsProvider(): bool
     {
-        return $this->hasRole('provider');
+        return $this->canUseMarketplace() && $this->hasRole('provider');
     }
 
     public function canUseMarketplace(): bool
     {
-        if ($this->hasRole('superadmin')) {
-            return false;
-        }
-
-        return ! $this->hasRole('admin') || $this->hasAnyRole(['client', 'provider']);
+        return ! $this->hasAnyRole(['admin', 'superadmin']);
     }
 
     public function supportsMarketplaceMode(string $mode): bool
@@ -96,8 +92,9 @@ class User extends Authenticatable implements MustVerifyEmail
     public function commercialRoleLabel(): string
     {
         return match (true) {
-            $this->canUseMarketplace() => $this->hasRole('admin') ? 'Usuario y administrador' : 'Usuario',
-            default => $this->hasRole('superadmin') ? 'Superadministrador' : 'Administración',
+            $this->hasRole('superadmin') => 'Superadministración',
+            $this->hasRole('admin') => 'Administración',
+            default => 'Usuario',
         };
     }
 
@@ -130,6 +127,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function posts(): HasMany
     {
         return $this->hasMany(Post::class);
+    }
+
+    public function publicationDraft(): HasOne
+    {
+        return $this->hasOne(PublicationDraft::class);
     }
 
     public function vendor(): HasOne

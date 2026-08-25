@@ -14,6 +14,7 @@ use App\Http\Controllers\JobVacancyController;
 use App\Http\Controllers\MarketplaceCapabilityController;
 use App\Http\Controllers\MercadoPagoWebhookController;
 use App\Http\Controllers\MoreController;
+use App\Http\Controllers\NegotiationConversationController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PostalCodeController;
 use App\Http\Controllers\PostController;
@@ -59,6 +60,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/soporte', [SupportController::class, 'store'])->name('support.store');
     Route::get('/soporte/{ticket}', [SupportController::class, 'show'])->name('support.show');
     Route::post('/soporte/{ticket}/respuestas', [SupportController::class, 'reply'])->name('support.reply');
+    Route::post('/publicaciones', [PostController::class, 'store'])->name('posts.store');
     Route::middleware('verified')->group(function () {
         Route::post('/mi-cuenta/capacidades/{capability}', [MarketplaceCapabilityController::class, 'activate'])->name('capabilities.activate');
         Route::get('/mi-empleo', [JobVacancyController::class, 'mine'])->name('vacancies.mine');
@@ -70,7 +72,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/mi-perfil/solicitar-verificacion', [MarketplaceCapabilityController::class, 'submitProviderApplication'])->name('provider-applications.submit');
         Route::post('/mi-perfil/documentos-verificacion', [VendorVerificationDocumentController::class, 'store'])->middleware('throttle:6,1')->name('verification-documents.store');
         Route::get('/documentos-verificacion/{document}', [VendorVerificationDocumentController::class, 'download'])->name('verification-documents.download');
-        Route::post('/publicaciones', [PostController::class, 'store'])->name('posts.store');
         Route::post('/stripe/conectar', [StripeConnectController::class, 'onboard'])->name('stripe.connect');
         Route::get('/stripe/conectar/actualizar', [StripeConnectController::class, 'refresh'])->name('stripe.connect.refresh');
         Route::get('/stripe/conectar/resultado', [StripeConnectController::class, 'returned'])->name('stripe.connect.return');
@@ -97,8 +98,11 @@ Route::middleware('auth')->group(function () {
         Route::patch('/notificaciones/{notification}/abrir', [NotificationController::class, 'open'])->name('notifications.open');
         Route::get('/mensajes', [ConversationController::class, 'index'])->name('conversations.index');
         Route::post('/mensajes/iniciar', [ConversationController::class, 'start'])->name('conversations.start');
+        Route::post('/publicaciones/{post}/conversacion', [NegotiationConversationController::class, 'start'])->name('posts.conversations.start');
         Route::get('/mensajes/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
         Route::post('/mensajes/{conversation}', [ConversationController::class, 'store'])->name('conversations.messages.store');
+        Route::patch('/mensajes/{conversation}/extender', [NegotiationConversationController::class, 'extend'])->name('conversations.extend');
+        Route::patch('/mensajes/{conversation}/terminar', [NegotiationConversationController::class, 'close'])->name('conversations.close');
         Route::get('/solicitudes/{jobRequest}/propuestas', [JobProposalController::class, 'index'])->name('job-proposals.index');
         Route::post('/solicitudes/{jobRequest}/propuestas', [JobProposalController::class, 'store'])->name('job-proposals.store');
         Route::patch('/solicitudes/{jobRequest}/propuestas/{proposal}/aceptar', [JobProposalController::class, 'accept'])->name('job-proposals.accept');

@@ -19,7 +19,7 @@ class MarketplaceCapabilityController extends Controller
         abort_unless(in_array($capability, ['client', 'provider'], true), 404);
 
         $user = $request->user();
-        abort_if($user->hasRole('superadmin'), 403, 'La cuenta superadministradora es exclusivamente administrativa.');
+        abort_if($user->hasAnyRole(['admin', 'superadmin']), 403, 'Las cuentas con autoridad son exclusivamente administrativas mientras conservan el cargo.');
 
         if ($user->supportsMarketplaceMode($capability)) {
             return back()->with('status', 'Esta capacidad ya estaba activa en tu cuenta.');
@@ -107,7 +107,7 @@ class MarketplaceCapabilityController extends Controller
 
     public function switchMode(Request $request, string $mode): RedirectResponse
     {
-        abort_if($request->user()->hasRole('superadmin'), 403, 'La cuenta superadministradora es exclusivamente administrativa.');
+        abort_if($request->user()->hasAnyRole(['admin', 'superadmin']), 403, 'Las cuentas con autoridad son exclusivamente administrativas mientras conservan el cargo.');
         abort_unless(in_array($mode, ['client', 'provider'], true), 404);
         abort_unless($request->user()->supportsMarketplaceMode($mode), 403);
 

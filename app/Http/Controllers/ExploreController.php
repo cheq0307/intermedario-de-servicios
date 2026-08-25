@@ -19,7 +19,7 @@ class ExploreController extends Controller
 {
     public function __invoke(Request $request): View|RedirectResponse
     {
-        if ($request->user()?->hasRole('superadmin')) {
+        if ($request->user()?->hasAnyRole(['admin', 'superadmin'])) {
             return redirect()->route('admin.index');
         }
 

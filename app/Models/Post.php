@@ -86,6 +86,11 @@ class Post extends Model
         return $this->hasMany(PostPromotion::class);
     }
 
+    public function conversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class);
+    }
+
     public function activePromotion(): HasOne
     {
         return $this->hasOne(PostPromotion::class)

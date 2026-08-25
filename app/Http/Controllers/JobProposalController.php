@@ -14,6 +14,7 @@ use App\Models\JobRequest;
 use App\Models\Order;
 use App\Models\User;
 use App\Notifications\MarketplaceActivity;
+use App\Services\Marketplace\NegotiationConversationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -90,7 +91,7 @@ class JobProposalController extends Controller
         return redirect()->route('job-proposals.index', $jobRequest)->with('status', 'Tu propuesta fue enviada correctamente.');
     }
 
-    public function accept(Request $request, JobRequest $jobRequest, JobProposal $proposal, MarketplacePaymentGateway $gateway): RedirectResponse
+    public function accept(Request $request, JobRequest $jobRequest, JobProposal $proposal, MarketplacePaymentGateway $gateway, NegotiationConversationService $negotiations): RedirectResponse
     {
         $this->assertOwnerAndProposal($request, $jobRequest, $proposal);
 
@@ -98,7 +99,7 @@ class JobProposalController extends Controller
             ->where('status', ProposalStatus::Pending->value)
             ->pluck('provider_id');
 
-        $order = DB::transaction(function () use ($request, $jobRequest, $proposal, $gateway): Order {
+        $order = DB::transaction(function () use ($request, $jobRequest, $proposal, $gateway, $negotiations): Order {
             $lockedRequest = JobRequest::query()->lockForUpdate()->findOrFail($jobRequest->id);
             $lockedProposal = JobProposal::query()->with('provider.vendor')->lockForUpdate()->findOrFail($proposal->id);
 
@@ -173,6 +174,17 @@ class JobProposalController extends Controller
                 'metadata' => ['order_public_id' => $order->public_id],
             ]);
             $conversation->update(['last_message_at' => now()]);
+
+            $lockedRequest->loadMissing('post');
+            if ($lockedRequest->post) {
+                $negotiations->closeForAgreement(
+                    $lockedRequest->post,
+                    $lockedRequest->client_id,
+                    $lockedProposal->provider_id,
+                    $order,
+                    $request->user()->id,
+                );
+            }
 
             return $order;
         });

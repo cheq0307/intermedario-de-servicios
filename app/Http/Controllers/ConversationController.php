@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Conversation;
+use App\Services\Marketplace\NegotiationConversationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,8 @@ class ConversationController extends Controller
                 'participants:id,name,avatar_path,avatar_disk,account_type',
                 'participants.roles:id,name',
                 'order.jobRequest:id,public_id,title',
+                'post.listing:id,post_id,name',
+                'post.jobRequest:id,post_id,title',
                 'order.items:id,order_id,name_snapshot',
                 'messages' => fn ($query) => $query->with('sender:id,name')->latest()->limit(1),
             ])
@@ -56,11 +59,12 @@ class ConversationController extends Controller
         return redirect()->route('conversations.show', $conversation);
     }
 
-    public function show(Request $request, Conversation $conversation): View
+    public function show(Request $request, Conversation $conversation, NegotiationConversationService $service): View
     {
         abort_unless($conversation->includesUser($request->user()), 403);
 
-        $conversation->load(['participants:id,name,avatar_path,avatar_disk,account_type', 'participants.roles:id,name', 'order.jobRequest', 'order.items']);
+        $conversation = $service->expireIfNeeded($conversation);
+        $conversation->load(['participants:id,name,avatar_path,avatar_disk,account_type', 'participants.roles:id,name', 'order.jobRequest', 'order.items', 'post.listing', 'post.jobRequest', 'agreementOrder']);
         $messages = $conversation->messages()
             ->with('sender:id,name,avatar_path,avatar_disk')
             ->latest()
@@ -79,9 +83,10 @@ class ConversationController extends Controller
         return view('conversations.show', compact('conversation', 'messages', 'otherUser', 'otherLastReadAt', 'supportConversation', 'operationOrder'));
     }
 
-    public function store(Request $request, Conversation $conversation): RedirectResponse
+    public function store(Request $request, Conversation $conversation, NegotiationConversationService $service): RedirectResponse
     {
         abort_unless($conversation->includesUser($request->user()), 403);
+        $conversation = $service->expireIfNeeded($conversation);
         abort_unless($conversation->acceptsMessages(), 422, 'Este chat ya no acepta mensajes. Consulta el expediente de disputa o el historial de la operación.');
 
         $validated = $request->validate([

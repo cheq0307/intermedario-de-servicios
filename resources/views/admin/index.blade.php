@@ -14,7 +14,6 @@
                 <span class="hidden rounded-full bg-[#FFF1E8] px-4 py-2 text-xs font-black text-[#D85B0B] sm:inline-flex">{{ $isSuperadmin ? 'Superadministrador' : 'Administrador' }}</span>
                 <a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('notifications.index') }}">Notificaciones @if($metrics['unread_notifications'])<span class="ml-1 rounded-full bg-red-500 px-2 py-0.5 text-[10px] text-white">{{ min(99, $metrics['unread_notifications']) }}</span>@endif</a>
                 <a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('admin.users.index') }}">Usuarios</a><a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('admin.vendors.index') }}">Proveedores</a><a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('admin.posts.index') }}">Publicaciones</a><a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('disputes.admin-index') }}">Disputas</a><a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('admin.support.index') }}">Soporte @if($metrics['open_support_tickets'])<span class="ml-1 rounded-full bg-[#F97316] px-2 py-0.5 text-[10px] text-white">{{ min(99,$metrics['open_support_tickets']) }}</span>@endif</a>
-                @unless($isSuperadmin)<a class="rounded-full border border-[#123B4A]/10 bg-white px-4 py-2 text-sm font-black" href="{{ route('explore') }}">Explorar plaza</a>@endunless
                 <form method="POST" action="{{ route('logout') }}">@csrf<button class="rounded-full border border-red-200 bg-white px-4 py-2 text-sm font-black text-red-700" type="submit">Cerrar sesión</button></form>
             </div>
         </div>
@@ -25,34 +24,27 @@
         @if($errors->any())<div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-black text-red-700" role="alert">{{ $errors->first() }}</div>@endif
 
         <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div><p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Espacio administrativo</p><h1 class="mt-2 text-3xl font-black">Control general de Plaza Local</h1><p class="mt-2 max-w-2xl text-sm font-semibold leading-6 text-[#6B7D83]">Controla usuarios, proveedores, operaciones y seguridad desde un solo lugar. Las comunidades futuras se administrarán desde este mismo panel central.</p></div>
-            @if($isSuperadmin)
-                <span class="rounded-full bg-[#E9F7F0] px-5 py-3 text-center text-sm font-black text-[#14734A]">Control global de comunidades</span>
-            @elseif(auth()->user()->canActAsClient() || auth()->user()->canActAsProvider())
-                <a class="rounded-full bg-[#123B4A] px-5 py-3 text-center text-sm font-black text-white" href="{{ route('dashboard') }}">Ir a mi cuenta comercial</a>
-            @else
-                <a class="rounded-full bg-[#123B4A] px-5 py-3 text-center text-sm font-black text-white" href="{{ route('explore') }}">Explorar la plaza</a>
-            @endif
+            <div><p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">{{ $isSuperadmin ? 'Gobierno global' : 'Operación administrativa' }}</p><h1 class="mt-2 text-3xl font-black">{{ $isSuperadmin ? 'Resumen de Plaza Local' : 'Centro de operación' }}</h1><p class="mt-2 max-w-2xl text-sm font-semibold leading-6 text-[#6B7D83]">{{ $isSuperadmin ? 'Supervisa el estado general, las excepciones y la expansión de todas las comunidades.' : 'Atiende revisiones, incidencias y moderación sin mezclar el cargo con actividad comercial.' }}</p></div>
+            <span class="rounded-full bg-[#E9F7F0] px-5 py-3 text-center text-sm font-black text-[#14734A]">Cuenta exclusivamente administrativa</span>
         </div>
 
         <section class="mt-7 grid gap-4 grid-cols-2 lg:grid-cols-6">
-            <a class="rounded-3xl border border-[#123B4A]/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5" href="{{ route('admin.users.index') }}"><strong class="text-3xl">{{ $metrics['users'] }}</strong><p class="mt-2 text-sm font-bold text-[#6B7D83]">Usuarios</p><span class="mt-3 block text-xs font-black text-[#14734A]">Abrir directorio →</span></a>
-            <a class="rounded-3xl border border-[#123B4A]/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5" href="{{ route('admin.vendors.index') }}"><strong class="text-3xl">{{ $metrics['vendors'] }}</strong><p class="mt-2 text-sm font-bold text-[#6B7D83]">Proveedores</p><span class="mt-3 block text-xs font-black text-[#14734A]">Gestionar →</span></a>
-            <a class="rounded-3xl border border-[#123B4A]/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5" href="{{ route('admin.posts.index') }}"><strong class="text-3xl">{{ $metrics['active_posts'] }}</strong><p class="mt-2 text-sm font-bold text-[#6B7D83]">Publicaciones activas</p><span class="mt-3 block text-xs font-black text-[#14734A]">Moderar →</span></a>
             <a class="rounded-3xl border border-[#F97316]/20 bg-white p-5 shadow-sm transition hover:-translate-y-0.5" href="{{ route('admin.vendors.index', ['status' => 'pending']) }}"><strong class="text-3xl">{{ $metrics['pending_vendors'] }}</strong><p class="mt-2 text-sm font-bold text-[#6B7D83]">Pendientes</p><span class="mt-3 block text-xs font-black text-[#D85B0B]">Revisar →</span></a>
             <a class="rounded-3xl border border-[#123B4A]/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5" href="{{ route('disputes.admin-index') }}"><strong class="text-3xl">{{ $metrics['open_disputes'] }}</strong><p class="mt-2 text-sm font-bold text-[#6B7D83]">Disputas abiertas</p><span class="mt-3 block text-xs font-black text-[#14734A]">Atender →</span></a>
+            <a class="rounded-3xl border border-[#123B4A]/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5" href="{{ route('admin.support.index') }}"><strong class="text-3xl">{{ $metrics['open_support_tickets'] }}</strong><p class="mt-2 text-sm font-bold text-[#6B7D83]">Casos de soporte</p><span class="mt-3 block text-xs font-black text-[#14734A]">Responder →</span></a>
             <div class="rounded-3xl border border-[#123B4A]/10 bg-white p-5 shadow-sm"><strong class="text-3xl">{{ $metrics['active_orders'] }}</strong><p class="mt-2 text-sm font-bold text-[#6B7D83]">Órdenes activas</p><span class="mt-3 block text-xs font-bold text-[#8A999E]">Resumen operativo</span></div>
+            <a class="rounded-3xl border border-[#123B4A]/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5" href="{{ route('admin.users.index') }}"><strong class="text-3xl">{{ $metrics['users'] }}</strong><p class="mt-2 text-sm font-bold text-[#6B7D83]">Usuarios</p><span class="mt-3 block text-xs font-black text-[#14734A]">Abrir directorio →</span></a>
+            <a class="rounded-3xl border border-[#123B4A]/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5" href="{{ route('admin.posts.index') }}"><strong class="text-3xl">{{ $metrics['active_posts'] }}</strong><p class="mt-2 text-sm font-bold text-[#6B7D83]">Publicaciones activas</p><span class="mt-3 block text-xs font-black text-[#14734A]">Moderar →</span></a>
         </section>
 
-        <section class="mt-8 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6">
-            <p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Autoridad y responsabilidades</p>
-            <h2 class="mt-1 text-xl font-black">¿Qué puede hacer cada administrador?</h2>
-            <div class="mt-5 grid gap-4 lg:grid-cols-2">
-                <article class="rounded-2xl bg-[#E9F7F0] p-5"><h3 class="font-black text-[#14734A]">Superadministrador · control global</h3><p class="mt-2 text-sm font-semibold leading-6 text-[#536A72]">Dirige toda Plaza Local: crea comunidades, delega o retira administradores, consulta métricas globales, supervisa auditoría y atiende excepciones. Esta cuenta no compra ni vende.</p></article>
-                <article class="rounded-2xl bg-[#FAF8F4] p-5"><h3 class="font-black">Administrador · operación</h3><p class="mt-2 text-sm font-semibold leading-6 text-[#536A72]">Registra comunidades, revisa proveedores, solicita correcciones, aprueba o suspende perfiles y atiende disputas. No puede nombrar otros administradores ni obtener control de superadministrador.</p></article>
-            </div>
-        </section>
+        <details class="mt-6 rounded-2xl border border-[#123B4A]/10 bg-white px-5 py-4">
+            <summary class="cursor-pointer font-black">Información y alcance de mi cargo</summary>
+            <p class="mt-3 max-w-3xl text-sm font-semibold leading-6 text-[#536A72]">{{ $isSuperadmin ? 'Tienes control global: expansión territorial, delegación de administradores, métricas, auditoría y excepciones. No realizas compras, ventas ni publicaciones con esta cuenta.' : 'Puedes revisar proveedores, moderar publicaciones, administrar comunidades y rubros, atender soporte y disputas. No puedes delegar administradores ni acceder a actividad comercial mientras conserves el cargo.' }}</p>
+        </details>
 
+        <details class="mt-8 rounded-[1.75rem] border border-[#123B4A]/10 bg-white" id="configuracion">
+            <summary class="cursor-pointer list-none px-6 py-5"><span class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Configuración</span><span class="mt-1 block text-xl font-black">Territorio, códigos postales y rubros</span><span class="mt-2 block text-sm font-semibold text-[#6B7D83]">Abre esta sección únicamente cuando necesites cambiar el catálogo global.</span></summary>
+            <div class="border-t border-[#123B4A]/10 px-6 pb-6">
             <div class="mt-5 rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] p-4">
                 <div class="flex flex-wrap items-center justify-between gap-3"><div><p class="text-sm font-black">Catálogo postal listo</p><p class="mt-1 text-xs font-semibold text-[#6B7D83]">{{ number_format($metrics['postal_codes']) }} asentamientos disponibles para autocompletar comunidades.</p></div><span class="rounded-full bg-[#E9F7F0] px-3 py-1 text-xs font-black text-[#14734A]">Mantenimiento global</span></div>
                 @if($isSuperadmin)
@@ -128,67 +120,36 @@
             </div>
             @if($categories->hasPages())<div class="mt-5">{{ $categories->links() }}</div>@endif
         </section>
+            </div>
+        </details>
 
-        <section class="mt-8 rounded-[1.75rem] border border-[#F97316]/20 bg-white p-5 shadow-sm sm:p-6" id="aprobaciones">
-            <div class="flex flex-wrap items-center justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Avisos de revisión</p><h2 class="mt-1 text-xl font-black">{{ $pendingVendorCount }} solicitudes pendientes</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Esta tarjeta solo avisa el trabajo pendiente. La información completa y las decisiones están concentradas en el módulo de proveedores.</p></div><a class="rounded-full bg-[#123B4A] px-5 py-3 text-sm font-black text-white" href="{{ route('admin.vendors.index', ['status' => 'pending']) }}">Abrir pendientes</a></div>
+        <section class="mt-8 rounded-[1.75rem] border border-[#F97316]/20 bg-white p-5 shadow-sm sm:p-6" id="bandeja-operativa">
+            <div><p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Bandeja operativa</p><h2 class="mt-1 text-xl font-black">Asuntos que requieren atención</h2></div>
+            <div class="mt-5 grid gap-3 md:grid-cols-3">
+                <a class="rounded-2xl bg-[#FFF7F0] p-4" href="{{ route('admin.vendors.index', ['status' => 'pending']) }}"><strong>{{ $pendingVendorCount }} proveedores por revisar</strong><span class="mt-2 block text-xs font-black text-[#D85B0B]">Abrir expedientes →</span></a>
+                <a class="rounded-2xl bg-[#FAF8F4] p-4" href="{{ route('disputes.admin-index') }}"><strong>{{ $metrics['open_disputes'] }} disputas abiertas</strong><span class="mt-2 block text-xs font-black text-[#14734A]">Atender casos →</span></a>
+                <a class="rounded-2xl bg-[#FAF8F4] p-4" href="{{ route('admin.support.index') }}"><strong>{{ $metrics['open_support_tickets'] }} casos de soporte</strong><span class="mt-2 block text-xs font-black text-[#14734A]">Responder →</span></a>
+            </div>
         </section>
 
-        <div class="mt-8 grid gap-6 xl:grid-cols-2">
-            <section class="rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6" id="moderacion-proveedores">
-                <p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Confianza y seguridad</p>
-                <h2 class="mt-1 text-xl font-black">Moderación de proveedores</h2>
-                <p class="mt-2 text-sm font-semibold leading-6 text-[#6B7D83]">Suspende un proveedor activo cuando exista una infracción. El motivo queda registrado en auditoría, se notifica al proveedor y sus ofertas dejan de mostrarse.</p>
-                <div class="mt-5 space-y-4">
-                    @forelse($vendors as $vendor)
-                        <article class="rounded-2xl border p-4 {{ $vendor->status === 'suspended' ? 'border-red-200 bg-red-50' : 'border-[#123B4A]/10 bg-[#FAF8F4]' }}">
-                            <div class="flex flex-wrap items-start justify-between gap-3">
-                                <div>
-                                    <strong>{{ $vendor->display_name }}</strong>
-                                    <p class="text-xs font-bold text-[#6B7D83]">{{ $vendor->user->email }}</p>
-                                    <span class="mt-2 inline-flex rounded-full px-3 py-1 text-xs font-black {{ $vendor->status === 'active' ? 'bg-[#E9F7F0] text-[#14734A]' : 'bg-red-100 text-red-700' }}">{{ $vendor->status === 'active' ? 'Activo' : 'Suspendido' }}</span>
-                                </div>
-                                <a class="rounded-full border border-[#123B4A]/15 bg-white px-4 py-2 text-xs font-black" href="{{ route('profile.show', $vendor->user) }}">Ver perfil</a>
-                            </div>
-                            @if($vendor->status === 'suspended')
-                                <div class="mt-3 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-red-800">
-                                    <strong>Motivo:</strong> {{ $vendor->suspension_reason ?: 'Registrado en auditoría antes de esta actualización.' }}
-                                    @if($vendor->suspended_at)<span class="mt-1 block text-xs text-[#6B7D83]">{{ $vendor->suspended_at->format('d/m/Y H:i') }}</span>@endif
-                                </div>
-                                @if($vendor->isReadyForReview())
-                                    <form class="mt-3" method="POST" action="{{ route('admin.vendors.approve', $vendor) }}">@csrf @method('PATCH')<button class="rounded-full bg-[#14734A] px-4 py-2 text-xs font-black text-white" type="submit">Reactivar proveedor</button></form>
-                                @endif
-                            @else
-                                <form class="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]" method="POST" action="{{ route('admin.vendors.suspend', $vendor) }}">@csrf @method('PATCH')
-                                    <label><span class="sr-only">Motivo de suspensión</span><input class="w-full rounded-xl border border-red-200 bg-white px-3 py-2.5 text-sm" name="reason" minlength="10" maxlength="1000" required placeholder="Describe la infracción o motivo (mínimo 10 caracteres)"></label>
-                                    <button class="rounded-full border border-red-300 bg-white px-5 py-2.5 text-xs font-black text-red-700" type="submit">Suspender proveedor</button>
-                                </form>
-                            @endif
-                        </article>
-                    @empty
-                        <p class="rounded-2xl border border-dashed border-[#123B4A]/20 p-6 text-sm font-bold text-[#6B7D83]">Aún no hay proveedores aprobados para moderar.</p>
-                    @endforelse
-                </div>
-                @if($vendors->hasPages())<div class="mt-5">{{ $vendors->links() }}</div>@endif
-            </section>
-            <section class="rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6">
+        @if($isSuperadmin)
+            <section class="mt-8 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6" id="administradores">
                 <h2 class="text-xl font-black">Administradores y delegación</h2>
-                <p class="mt-2 text-sm font-semibold text-[#6B7D83]">Aquí solo aparecen los administradores actuales. Busca por nombre o correo para delegar a otra persona.</p>
-                @if($isSuperadmin)
-                    <form class="mt-5 flex flex-col gap-2 sm:flex-row" method="GET" action="{{ route('admin.index') }}">
+                <p class="mt-2 text-sm font-semibold text-[#6B7D83]">Busca una cuenta existente para delegar autoridad. Sus roles y datos comerciales se conservan, pero quedan pausados mientras sea administradora.</p>
+                <form class="mt-5 flex flex-col gap-2 sm:flex-row" method="GET" action="{{ route('admin.index').'#administradores' }}">
                         <label class="min-w-0 flex-1"><span class="sr-only">Buscar usuario</span><input class="w-full rounded-2xl border border-[#123B4A]/10 bg-[#FAF8F4] px-4 py-3" type="search" name="admin_q" value="{{ $adminSearch }}" minlength="2" maxlength="100" placeholder="Nombre o correo del usuario" required></label>
                         <button class="rounded-full bg-[#123B4A] px-5 py-3 text-sm font-black text-white" type="submit">Buscar usuario</button>
-                        @if($adminSearch !== '')<a class="self-center px-3 text-sm font-black text-[#D85B0B]" href="{{ route('admin.index') }}">Limpiar</a>@endif
-                    </form>
-                    @if($adminSearch !== '')
+                        @if($adminSearch !== '')<a class="self-center px-3 text-sm font-black text-[#D85B0B]" href="{{ route('admin.index').'#administradores' }}">Limpiar</a>@endif
+                </form>
+                @if($adminSearch !== '')
                         <div class="mt-4 space-y-2">
                             <p class="text-xs font-black uppercase tracking-[.12em] text-[#F97316]">Resultados para “{{ $adminSearch }}”</p>
                             @forelse($adminCandidates as $candidate)
-                                <article class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#123B4A]/10 bg-white p-4"><div><strong>{{ $candidate->name }}</strong><p class="mt-1 text-xs font-bold text-[#6B7D83]">{{ $candidate->email }} · {{ $candidate->commercialRoleLabel() }}{{ $candidate->community ? ' · '.$candidate->community->name : '' }}</p></div><form method="POST" action="{{ route('admin.users.grant', $candidate) }}">@csrf<button class="rounded-full bg-[#123B4A] px-4 py-2 text-xs font-black text-white" type="submit">Hacer administrador</button></form></article>
+                                <article class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#123B4A]/10 bg-white p-4"><div><strong>{{ $candidate->name }}</strong><p class="mt-1 text-xs font-bold text-[#6B7D83]">{{ $candidate->email }} · {{ $candidate->commercialRoleLabel() }}{{ $candidate->community ? ' · '.$candidate->community->name : '' }}</p><p class="mt-2 text-xs font-semibold text-[#D85B0B]">Al delegar, su actividad comercial quedará pausada hasta retirar el cargo.</p></div><form method="POST" action="{{ route('admin.users.grant', $candidate) }}">@csrf<button class="rounded-full bg-[#123B4A] px-4 py-2 text-xs font-black text-white" type="submit">Hacer administrador</button></form></article>
                             @empty
                                 <p class="rounded-2xl border border-dashed border-[#123B4A]/20 p-5 text-sm font-bold text-[#6B7D83]">No encontramos usuarios disponibles con ese nombre o correo.</p>
                             @endforelse
                         </div>
-                    @endif
                 @endif
                 <div class="mt-6 space-y-3">
                     <p class="text-xs font-black uppercase tracking-[.12em] text-[#14734A]">Administradores actuales</p>
@@ -200,10 +161,9 @@
                 </div>
                 @if($administrators->hasPages())<div class="mt-5">{{ $administrators->links() }}</div>@endif
             </section>
-        </div>
+        @endif
 
-
-        <section class="mt-6 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6"><h2 class="text-xl font-black">Auditoría reciente</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Registro de quién realizó cada cambio administrativo y sobre qué elemento.</p><div class="mt-4 overflow-x-auto"><table class="w-full min-w-[650px] text-left text-sm"><thead><tr class="text-[#6B7D83]"><th class="p-3">Fecha</th><th class="p-3">Responsable</th><th class="p-3">Qué ocurrió</th><th class="p-3">Elemento afectado</th></tr></thead><tbody>@forelse($auditLogs as $log)<tr class="border-t border-[#123B4A]/10"><td class="p-3">{{ $log->created_at->format('d/m/Y H:i') }}</td><td class="p-3">{{ $log->user?->name ?? 'Sistema' }}</td><td class="p-3 font-black">{{ $auditActions[$log->action] ?? str_replace(['.', '_'], ' ', ucfirst($log->action)) }}</td><td class="p-3">{{ $auditSubjects[class_basename($log->subject_type)] ?? class_basename($log->subject_type) }} #{{ $log->subject_id }}</td></tr>@empty<tr><td class="p-6 text-center font-bold text-[#6B7D83]" colspan="4">Todavía no hay acciones administrativas registradas.</td></tr>@endforelse</tbody></table></div>@if($auditLogs->hasPages())<div class="mt-5">{{ $auditLogs->links() }}</div>@endif</section>
+        <details class="mt-6 rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6"><summary class="cursor-pointer text-xl font-black">Auditoría reciente</summary><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Registro de quién realizó cada cambio administrativo y sobre qué elemento.</p><div class="mt-4 overflow-x-auto"><table class="w-full min-w-[650px] text-left text-sm"><thead><tr class="text-[#6B7D83]"><th class="p-3">Fecha</th><th class="p-3">Responsable</th><th class="p-3">Qué ocurrió</th><th class="p-3">Elemento afectado</th></tr></thead><tbody>@forelse($auditLogs as $log)<tr class="border-t border-[#123B4A]/10"><td class="p-3">{{ $log->created_at->format('d/m/Y H:i') }}</td><td class="p-3">{{ $log->user?->name ?? 'Sistema' }}</td><td class="p-3 font-black">{{ $auditActions[$log->action] ?? str_replace(['.', '_'], ' ', ucfirst($log->action)) }}</td><td class="p-3">{{ $auditSubjects[class_basename($log->subject_type)] ?? class_basename($log->subject_type) }} #{{ $log->subject_id }}</td></tr>@empty<tr><td class="p-6 text-center font-bold text-[#6B7D83]" colspan="4">Todavía no hay acciones administrativas registradas.</td></tr>@endforelse</tbody></table></div>@if($auditLogs->hasPages())<div class="mt-5">{{ $auditLogs->links() }}</div>@endif</details>
     </main>
     <script>
         const postalInput = document.getElementById('community-postal-code');

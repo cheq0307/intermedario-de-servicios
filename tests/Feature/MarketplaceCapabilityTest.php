@@ -125,14 +125,23 @@ class MarketplaceCapabilityTest extends TestCase
 
     }
 
-    public function test_staff_only_dashboard_does_not_offer_commercial_publication(): void
+    public function test_administrator_with_legacy_commercial_roles_is_kept_inside_administration(): void
     {
         $staff = User::factory()->create(['account_type' => 'client']);
-        $staff->assignRole(Role::findOrCreate('admin'));
-        $staff->removeRole('client');
+        $staff->assignRole([
+            Role::findOrCreate('client'),
+            Role::findOrCreate('provider'),
+            Role::findOrCreate('admin'),
+        ]);
 
         $this->actingAs($staff)
             ->get(route('dashboard'))
             ->assertRedirect(route('admin.index'));
+
+        $this->assertFalse($staff->fresh()->canUseMarketplace());
+        $this->assertFalse($staff->fresh()->canActAsClient());
+        $this->assertFalse($staff->fresh()->canActAsProvider());
+        $this->post(route('capabilities.switch', 'provider'))->assertForbidden();
+        $this->get(route('explore'))->assertRedirect(route('admin.index'));
     }
 }

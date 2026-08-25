@@ -385,9 +385,8 @@
                                 @elseif ($canBuyProduct)
                                     <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-[#FAF8F4] hover:text-[#F97316]" href="{{ route('products.checkout', $post->listing) }}">Comprar</a>
                                 @elseif ($canContactSeller)
-                                    <form method="POST" action="{{ route('conversations.start') }}">
+                                    <form method="POST" action="{{ route('posts.conversations.start', $post) }}">
                                         @csrf
-                                        <input type="hidden" name="recipient_id" value="{{ $post->user_id }}">
                                         <button class="rounded-xl px-3 py-2.5 transition hover:bg-[#FAF8F4] hover:text-[#F97316]" type="submit">{{ $post->listing?->price_type?->value === 'quote' ? 'Solicitar cotización' : 'Me interesa' }}</button>
                                     </form>
                                 @endif
@@ -417,6 +416,15 @@
                                         <span class="sr-only">Compartir</span>
                                     </button>
                                 </form>
+                                @if(! $ownsPost)
+                                    <form class="ml-auto" method="POST" action="{{ route('posts.conversations.start', $post) }}">
+                                        @csrf
+                                        <button class="group flex min-h-11 items-center gap-2 rounded-full px-3 transition hover:bg-[#E9F7F0] hover:text-[#14734A]" type="submit" title="Abrir chat sobre esta publicación">
+                                            <svg class="size-6 transition group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a8.4 8.4 0 0 1-9 8.5 9.7 9.7 0 0 1-4-.9L3 21l1.7-4.5A8.3 8.3 0 1 1 21 12Z"/><path stroke-linecap="round" d="M8 12h8M8 9h5"/></svg>
+                                            <span class="sr-only">Abrir chat de esta publicación</span>
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
                         </div>
                         <section id="comment-{{ $post->id }}" class="border-t border-[#123B4A]/8 bg-[#FAF8F4]/60 p-4" data-comment-panel>

@@ -107,10 +107,7 @@
                 </form>
 
                 <div class="ml-auto flex items-center gap-2 sm:gap-3">
-                    <a class="relative grid size-10 place-items-center rounded-full border border-[#123B4A]/10 bg-white" href="{{ route('notifications.index') }}" aria-label="Notificaciones">
-                        <svg viewBox="0 0 24 24" class="size-5 fill-none stroke-current" stroke-width="1.8"><path d="M6 9a6 6 0 0 1 12 0c0 7 3 7 3 8H3c0-1 3-1 3-8M9.5 20h5"/></svg>
-                        @if($unreadCount)<span class="absolute -right-1 -top-1 min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[.62rem] font-black text-white">{{ min(99, $unreadCount) }}</span>@endif
-                    </a>
+                    <x-admin-notification-tray :user="$adminUser" :unread-count="$unreadCount" />
                     <div class="flex items-center gap-3 rounded-full border border-[#123B4A]/10 bg-white py-1.5 pl-1.5 pr-3">
                         <span class="grid size-9 place-items-center rounded-full bg-[#DDEBE7] font-black text-[#123B4A]">{{ mb_strtoupper(mb_substr($adminUser?->name ?? 'A', 0, 1)) }}</span>
                         <span class="hidden min-w-0 sm:block"><strong class="block max-w-36 truncate text-sm">{{ $adminUser?->name }}</strong><span class="block text-[.68rem] font-bold text-[#6B7D83]">{{ $roleLabel }}</span></span>

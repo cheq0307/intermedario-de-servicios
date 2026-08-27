@@ -8,6 +8,7 @@ use App\Models\Vendor;
 use App\Notifications\MarketplaceActivity;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class NotificationCenterTest extends TestCase
@@ -41,6 +42,27 @@ class NotificationCenterTest extends TestCase
         $owner->notify(new MarketplaceActivity('Privada', 'Solo para el dueño.', 'dashboard'));
 
         $this->actingAs($outsider)->patch(route('notifications.open', $owner->notifications()->firstOrFail()->id))->assertNotFound();
+    }
+
+    public function test_admin_dashboard_has_unified_filterable_notification_tray(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin->notify(new MarketplaceActivity('Nuevo caso de soporte', 'Un usuario necesita ayuda.', 'admin.support.index', [], 'support'));
+        $admin->notify(new MarketplaceActivity('Nuevo seguidor', 'Una cuenta comenzó a seguirte.', 'profile.show', ['user' => $admin->id], 'social_follow'));
+
+        $this->actingAs($admin)->get(route('admin.index'))
+            ->assertOk()
+            ->assertSee('data-notification-center', false)
+            ->assertSee('data-notification-panel', false)
+            ->assertSee('Administrativas')
+            ->assertSee('Sociales')
+            ->assertSee('Nuevo caso de soporte')
+            ->assertSee('Nuevo seguidor')
+            ->assertSee('data-notification-category="administrative"', false)
+            ->assertSee('data-notification-category="social"', false)
+            ->assertSee('Marcar todas leídas')
+            ->assertSee('Ver todas las notificaciones');
     }
 
     public function test_client_is_notified_when_provider_submits_proposal(): void

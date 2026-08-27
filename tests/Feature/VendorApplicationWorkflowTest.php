@@ -56,7 +56,8 @@ class VendorApplicationWorkflowTest extends TestCase
         $this->actingAs($admin)->get(route('admin.index'))
             ->assertOk()
             ->assertViewHas('metrics', fn (array $metrics): bool => $metrics['pending_vendors'] === 1)
-            ->assertDontSee('Servicios Luna');
+            ->assertSee('Servicios Luna')
+            ->assertSee('data-notification-category="administrative"', false);
     }
 
     public function test_resubmitting_provider_application_notifies_admin_and_points_to_the_exact_record(): void

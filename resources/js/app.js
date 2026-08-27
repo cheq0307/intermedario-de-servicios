@@ -271,3 +271,41 @@ if (marketMenu && marketMenuOverlay && marketMenuOpen) {
         if (event.key === 'Escape' && marketMenu.getAttribute('aria-hidden') === 'false') setMenuOpen(false);
     });
 }
+
+document.querySelectorAll('[data-notification-center]').forEach((center) => {
+    const trigger = center.querySelector('[data-notification-trigger]');
+    const panel = center.querySelector('[data-notification-panel]');
+    const tabs = [...center.querySelectorAll('[data-notification-tab]')];
+    const items = [...center.querySelectorAll('[data-notification-item]')];
+    const filterEmpty = center.querySelector('[data-notification-filter-empty]');
+
+    if (!(trigger instanceof HTMLButtonElement) || !(panel instanceof HTMLElement)) return;
+
+    const setOpen = (open) => {
+        panel.classList.toggle('hidden', !open);
+        trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+
+    const applyFilter = (filter) => {
+        let visible = 0;
+        items.forEach((item) => {
+            const matches = filter === 'all' || item.dataset.notificationCategory === filter;
+            item.hidden = !matches;
+            if (matches) visible += 1;
+        });
+        tabs.forEach((tab) => tab.setAttribute('aria-selected', tab.dataset.notificationTab === filter ? 'true' : 'false'));
+        if (filterEmpty instanceof HTMLElement) filterEmpty.classList.toggle('hidden', visible !== 0);
+    };
+
+    trigger.addEventListener('click', () => setOpen(panel.classList.contains('hidden')));
+    tabs.forEach((tab) => tab.addEventListener('click', () => applyFilter(tab.dataset.notificationTab ?? 'all')));
+    document.addEventListener('click', (event) => {
+        if (!center.contains(event.target)) setOpen(false);
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !panel.classList.contains('hidden')) {
+            setOpen(false);
+            trigger.focus();
+        }
+    });
+});

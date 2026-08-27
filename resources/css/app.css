@@ -56,6 +56,14 @@
         scrollbar-width: none;
         -ms-overflow-style: none;
     }
+
+    .notification-filter-tab {
+        @apply border-b-2 border-transparent text-[#6B7D83] transition;
+    }
+
+    .notification-filter-tab[aria-selected='true'] {
+        @apply border-[#F97316] text-[#17313A];
+    }
 }
 
 @media (max-width: 639px) {

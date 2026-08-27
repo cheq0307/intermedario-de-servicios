@@ -43,7 +43,7 @@ class AdminVendorReviewTest extends TestCase
             ->assertSee('2221234567')
             ->assertSee('Manejo higiénico')
             ->assertSee($category->name)
-            ->assertSee('Aprobar proveedor')
+            ->assertSee('Habilitar actividad comercial')
             ->assertSee('Solicitar cambios');
     }
 

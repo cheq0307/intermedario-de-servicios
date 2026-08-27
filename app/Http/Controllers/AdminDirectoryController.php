@@ -48,18 +48,23 @@ class AdminDirectoryController extends Controller
         $this->authorizeAdmin($request);
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
-            'role' => ['nullable', Rule::in(['client', 'provider', 'admin', 'superadmin'])],
+            'authority' => ['nullable', Rule::in(['commercial', 'admin', 'superadmin'])],
+            'commercial_status' => ['nullable', Rule::in(['none', 'draft', 'pending', 'active', 'rejected', 'suspended', 'verified'])],
             'community_id' => ['nullable', 'integer', Rule::exists('communities', 'id')],
             'verification' => ['nullable', Rule::in(['verified', 'pending'])],
         ]);
         $term = trim($filters['q'] ?? '');
         $users = User::query()
-            ->with(['roles:id,name', 'community:id,name,municipality'])
+            ->with(['roles:id,name', 'community:id,name,municipality', 'vendor:id,user_id,status,display_name,verified_at,submitted_at'])
             ->when($term !== '', fn (Builder $query) => $query->where(fn (Builder $query) => $query
                 ->where('name', 'like', "%{$term}%")
                 ->orWhere('email', 'like', "%{$term}%")
                 ->orWhere('phone', 'like', "%{$term}%")))
-            ->when($filters['role'] ?? null, fn (Builder $query, string $role) => $query->whereHas('roles', fn (Builder $roles) => $roles->where('name', $role)))
+            ->when(($filters['authority'] ?? null) === 'commercial', fn (Builder $query) => $query->whereDoesntHave('roles', fn (Builder $roles) => $roles->whereIn('name', ['admin', 'superadmin'])))
+            ->when(in_array($filters['authority'] ?? null, ['admin', 'superadmin'], true), fn (Builder $query) => $query->whereHas('roles', fn (Builder $roles) => $roles->where('name', $filters['authority'])))
+            ->when(($filters['commercial_status'] ?? null) === 'none', fn (Builder $query) => $query->doesntHave('vendor'))
+            ->when(($filters['commercial_status'] ?? null) === 'verified', fn (Builder $query) => $query->whereHas('vendor', fn (Builder $vendor) => $vendor->whereNotNull('verified_at')))
+            ->when(in_array($filters['commercial_status'] ?? null, ['draft', 'pending', 'active', 'rejected', 'suspended'], true), fn (Builder $query) => $query->whereHas('vendor', fn (Builder $vendor) => $vendor->where('status', $filters['commercial_status'])))
             ->when($filters['community_id'] ?? null, fn (Builder $query, int|string $community) => $query->where('community_id', $community))
             ->when(($filters['verification'] ?? null) === 'verified', fn (Builder $query) => $query->whereNotNull('email_verified_at'))
             ->when(($filters['verification'] ?? null) === 'pending', fn (Builder $query) => $query->whereNull('email_verified_at'))

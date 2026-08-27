@@ -55,11 +55,11 @@ class AdminAuthorizationTest extends TestCase
         $vendor->categories()->attach(Category::query()->value('id'));
         $target = User::factory()->create();
 
-        $this->actingAs($admin)->get(route('admin.index'))->assertOk()->assertSee('1 proveedores por revisar')->assertDontSee('Negocio pendiente');
+        $this->actingAs($admin)->get(route('admin.index'))->assertOk()->assertSee('1 cuentas por verificar')->assertDontSee('Negocio pendiente');
         $this->actingAs($admin)->patch(route('admin.vendors.approve', $vendor))->assertRedirect();
         $this->assertSame('active', $vendor->fresh()->status);
         $this->assertNull($vendor->fresh()->verified_at);
-        $this->actingAs($admin)->get(route('admin.vendors.show', $vendor))->assertOk()->assertSee('Suspender proveedor')->assertSee('Moderación');
+        $this->actingAs($admin)->get(route('admin.vendors.show', $vendor))->assertOk()->assertSee('Suspender actividad comercial')->assertSee('Moderación');
         $this->actingAs($admin)->post(route('admin.users.grant', $target))->assertForbidden();
 
         $this->actingAs($admin)->patch(route('admin.vendors.suspend', $vendor), ['reason' => 'Documentación comercial inconsistente.'])->assertRedirect();
@@ -135,8 +135,8 @@ class AdminAuthorizationTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.index'))
             ->assertOk()
-            ->assertSee('1 proveedores por revisar')
-            ->assertDontSee('Aprobar proveedor');
+            ->assertSee('1 cuentas por verificar')
+            ->assertDontSee('Habilitar actividad comercial');
 
         $this->patch(route('admin.vendors.approve', $vendor))->assertRedirect();
 
@@ -188,7 +188,7 @@ class AdminAuthorizationTest extends TestCase
             ->get(route('admin.index', ['admin_q' => 'Otra']))
             ->assertOk()
             ->assertSee('Otra persona')
-            ->assertDontSee('Cuenta propietaria')
+            ->assertSee('Cuenta propietaria')
             ->assertSee('Cerrar sesi')
             ->assertSee('Cuenta exclusivamente administrativa')
             ->assertDontSee('Explorar plaza')

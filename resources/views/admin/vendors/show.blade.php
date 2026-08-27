@@ -1,12 +1,3 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Expediente de proveedor - Plaza Local</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body class="min-h-screen bg-[#F3F7F6] text-[#17313A] antialiased">
 @php
     $statusLabels = ['draft' => 'Borrador', 'pending' => 'Pendiente de revisión', 'active' => 'Aprobado', 'rejected' => 'Cambios solicitados', 'suspended' => 'Suspendido'];
     $availabilityLabels = ['available' => 'Disponible para nuevos trabajos', 'busy' => 'Realizando un trabajo', 'unavailable' => 'No disponible temporalmente'];
@@ -15,8 +6,7 @@
     $missing = $vendor->missingReviewRequirements();
     $ready = $vendor->isReadyForReview();
 @endphp
-<header class="border-b border-[#123B4A]/10 bg-white"><div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4"><a class="font-black" href="{{ route('admin.vendors.index', ['status' => $vendor->status]) }}">← Proveedores</a><form method="POST" action="{{ route('logout') }}">@csrf<button class="text-sm font-black" type="submit">Cerrar sesión</button></form></div></header>
-<main class="mx-auto max-w-6xl px-5 py-8">
+<x-admin-layout title="Expediente comercial" section="accounts">
     @if(session('status'))<div class="mb-6 rounded-2xl bg-[#E9F7F0] px-5 py-4 text-sm font-black text-[#14734A]">{{ session('status') }}</div>@endif
     @if($errors->any())<div class="mb-6 rounded-2xl bg-red-50 px-5 py-4 text-sm font-bold text-red-700">{{ $errors->first() }}</div>@endif
 
@@ -61,7 +51,7 @@
                 <section class="rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6 shadow-sm">
                     <h2 class="text-xl font-black">Distintivo de confianza</h2>
                     @if($vendor->verified_at)
-                        <div class="mt-4 rounded-2xl bg-[#E9F7F0] p-4 text-sm text-[#14734A]"><strong>Proveedor verificado</strong><p class="mt-1 font-semibold">Nivel: {{ $vendor->verification_level === 'business' ? 'Identidad y negocio' : 'Identidad' }} · {{ $vendor->verified_at->format('d/m/Y') }}</p></div>
+                        <div class="mt-4 rounded-2xl bg-[#E9F7F0] p-4 text-sm text-[#14734A]"><strong>Actividad comercial verificada</strong><p class="mt-1 font-semibold">Nivel: {{ $vendor->verification_level === 'business' ? 'Identidad y negocio' : 'Identidad' }} · {{ $vendor->verified_at->format('d/m/Y') }}</p></div>
                         @if(auth()->user()->hasRole('superadmin'))<form class="mt-4" method="POST" action="{{ route('admin.vendors.verification.revoke', $vendor) }}">@csrf @method('DELETE')<textarea class="min-h-20 w-full rounded-2xl border border-red-200 px-4 py-3 text-sm" name="reason" minlength="10" maxlength="1000" required placeholder="Motivo para retirar el distintivo"></textarea><button class="mt-3 w-full rounded-full border border-red-200 px-5 py-3 font-black text-red-700" type="submit">Retirar verificación</button></form>@endif
                     @elseif(auth()->user()->hasRole('superadmin'))
                         <p class="mt-2 text-sm font-semibold text-[#6B7D83]">Aprobar el perfil permite operar; este distintivo requiere una revisión adicional. Pagar una tarifa de revisión nunca garantiza obtenerlo.</p>
@@ -73,17 +63,15 @@
             @endif
             @if($vendor->status === 'pending')
                 <section class="rounded-[1.75rem] border border-[#F97316]/20 bg-white p-6 shadow-sm"><h2 class="text-xl font-black">Decisión administrativa</h2><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Aprueba solo después de contrastar toda la información anterior.</p>
-                    @if($ready)<form class="mt-5" method="POST" action="{{ route('admin.vendors.approve', $vendor) }}">@csrf @method('PATCH')<button class="w-full rounded-full bg-[#14734A] px-5 py-3 font-black text-white" type="submit">Aprobar proveedor</button></form>@else<button class="mt-5 w-full cursor-not-allowed rounded-full bg-[#D8DEDB] px-5 py-3 font-black text-[#70817B]" disabled>Faltan requisitos</button>@endif
+                    @if($ready)<form class="mt-5" method="POST" action="{{ route('admin.vendors.approve', $vendor) }}">@csrf @method('PATCH')<button class="w-full rounded-full bg-[#14734A] px-5 py-3 font-black text-white" type="submit">Habilitar actividad comercial</button></form>@else<button class="mt-5 w-full cursor-not-allowed rounded-full bg-[#D8DEDB] px-5 py-3 font-black text-[#70817B]" disabled>Faltan requisitos</button>@endif
                     <form class="mt-4" method="POST" action="{{ route('admin.vendors.reject', $vendor) }}">@csrf @method('PATCH')<label class="text-sm font-black">Cambios que debe realizar</label><textarea class="mt-2 min-h-28 w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm" name="reason" minlength="10" maxlength="1000" required placeholder="Explica con precisión qué información debe corregir o completar."></textarea><button class="mt-3 w-full rounded-full border border-red-200 px-5 py-3 font-black text-red-700" type="submit">Solicitar cambios</button></form>
                 </section>
             @elseif($vendor->status === 'active')
-                <section class="rounded-[1.75rem] border border-red-200 bg-white p-6 shadow-sm"><h2 class="text-xl font-black">Moderación</h2><form class="mt-4" method="POST" action="{{ route('admin.vendors.suspend', $vendor) }}">@csrf @method('PATCH')<textarea class="min-h-24 w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm" name="reason" minlength="10" maxlength="1000" required placeholder="Motivo documentado de la suspensión"></textarea><button class="mt-3 w-full rounded-full bg-red-700 px-5 py-3 font-black text-white" type="submit">Suspender proveedor</button></form></section>
+                <section class="rounded-[1.75rem] border border-red-200 bg-white p-6 shadow-sm"><h2 class="text-xl font-black">Moderación</h2><form class="mt-4" method="POST" action="{{ route('admin.vendors.suspend', $vendor) }}">@csrf @method('PATCH')<textarea class="min-h-24 w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm" name="reason" minlength="10" maxlength="1000" required placeholder="Motivo documentado de la suspensión"></textarea><button class="mt-3 w-full rounded-full bg-red-700 px-5 py-3 font-black text-white" type="submit">Suspender actividad comercial</button></form></section>
             @elseif($vendor->status === 'suspended' && $ready)
-                <section class="rounded-[1.75rem] bg-white p-6 shadow-sm"><p class="text-sm font-semibold">Motivo de suspensión: {{ $vendor->suspension_reason }}</p><form class="mt-4" method="POST" action="{{ route('admin.vendors.approve', $vendor) }}">@csrf @method('PATCH')<button class="w-full rounded-full bg-[#14734A] px-5 py-3 font-black text-white" type="submit">Reactivar proveedor</button></form></section>
+                <section class="rounded-[1.75rem] bg-white p-6 shadow-sm"><p class="text-sm font-semibold">Motivo de suspensión: {{ $vendor->suspension_reason }}</p><form class="mt-4" method="POST" action="{{ route('admin.vendors.approve', $vendor) }}">@csrf @method('PATCH')<button class="w-full rounded-full bg-[#14734A] px-5 py-3 font-black text-white" type="submit">Reactivar actividad comercial</button></form></section>
                 <a class="inline-flex rounded-full border border-[#123B4A]/10 bg-white px-5 py-3 text-sm font-black" href="{{ route('admin.support.index', ['q' => $vendor->user->email]) }}">Buscar casos de soporte de esta cuenta</a>
             @endif
         </aside>
     </div>
-</main>
-</body>
-</html>
+</x-admin-layout>

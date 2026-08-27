@@ -38,7 +38,7 @@ class AdminDirectoryTest extends TestCase
             ->assertOk()
             ->assertSee('Persona Encontrable')
             ->assertDontSee('Persona Distinta')
-            ->assertSee('Directorio administrativo');
+            ->assertSee('Gestión unificada');
     }
 
     public function test_admin_can_filter_the_provider_directory_by_status(): void
@@ -55,7 +55,7 @@ class AdminDirectoryTest extends TestCase
             ->assertOk()
             ->assertSee('Proveedor Pendiente')
             ->assertDontSee('Proveedor Activo')
-            ->assertSee('Directorio administrativo');
+            ->assertSee('Verificación comercial');
     }
 
     public function test_dashboard_metrics_link_to_management_directories(): void
@@ -67,7 +67,9 @@ class AdminDirectoryTest extends TestCase
             ->get(route('admin.index'))
             ->assertOk()
             ->assertSee(route('admin.users.index'), false)
-            ->assertSee(route('admin.vendors.index'), false)
+            ->assertSee(route('admin.jobs.index'), false)
+            ->assertSee(route('admin.operations.index'), false)
+            ->assertDontSee('>Proveedores</a>', false)
             ->assertSee('Abrir directorio');
     }
 

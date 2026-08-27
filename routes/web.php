@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminDirectoryController;
+use App\Http\Controllers\AdminInsightsController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ConversationController;
@@ -127,6 +128,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/administracion/soporte/{ticket}', [SupportController::class, 'show'])->name('admin.support.show');
         Route::patch('/administracion/soporte/{ticket}/estado', [SupportController::class, 'updateStatus'])->name('admin.support.status');
         Route::get('/administracion/usuarios', [AdminDirectoryController::class, 'users'])->name('admin.users.index');
+        Route::get('/administracion/empleo', [AdminInsightsController::class, 'jobs'])->name('admin.jobs.index');
+        Route::get('/administracion/operaciones', [AdminInsightsController::class, 'operations'])->name('admin.operations.index');
+        Route::get('/administracion/publicidad', [AdminInsightsController::class, 'promotions'])->name('admin.promotions.index');
+        Route::get('/administracion/pagos', [AdminInsightsController::class, 'payments'])->name('admin.payments.index');
         Route::get('/administracion/publicaciones', [AdminDirectoryController::class, 'posts'])->name('admin.posts.index');
         Route::patch('/administracion/publicaciones/{post}/retirar', [AdminController::class, 'removePost'])->name('admin.posts.remove');
         Route::get('/administracion/proveedores/{vendor}', [AdminDirectoryController::class, 'showVendor'])->name('admin.vendors.show');

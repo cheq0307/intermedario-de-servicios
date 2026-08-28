@@ -29,13 +29,13 @@
         }) ?? collect();
 @endphp
 
-<div class="relative" data-notification-center>
-    <button class="relative grid size-10 place-items-center rounded-full border border-[#123B4A]/10 bg-white transition hover:bg-[#F4F7F6]" type="button" aria-label="Abrir notificaciones" aria-haspopup="dialog" aria-expanded="false" data-notification-trigger>
+<details class="relative" data-notification-center>
+    <summary class="relative grid size-10 cursor-pointer list-none place-items-center rounded-full border border-[#123B4A]/10 bg-white transition hover:bg-[#F4F7F6]" aria-label="Abrir notificaciones" data-notification-trigger>
         <svg viewBox="0 0 24 24" class="size-5 fill-none stroke-current" stroke-width="1.8"><path d="M6 9a6 6 0 0 1 12 0c0 7 3 7 3 8H3c0-1 3-1 3-8M9.5 20h5"/></svg>
         @if($unreadCount)<span class="absolute -right-1 -top-1 min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[.62rem] font-black text-white">{{ min(99, $unreadCount) }}</span>@endif
-    </button>
+    </summary>
 
-    <section class="absolute right-0 top-12 z-50 hidden w-[min(25rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[#123B4A]/15 bg-white shadow-2xl" role="dialog" aria-label="Vista rápida de notificaciones" data-notification-panel>
+    <section class="absolute right-0 top-12 z-50 w-[min(25rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[#123B4A]/15 bg-white shadow-2xl" role="dialog" aria-label="Vista rápida de notificaciones" data-notification-panel>
         <div class="flex items-center justify-between gap-3 border-b border-[#123B4A]/10 px-4 py-3.5">
             <div>
                 <h2 class="font-black text-[#17313A]">Notificaciones</h2>
@@ -99,4 +99,4 @@
 
         <a class="block border-t border-[#123B4A]/10 px-4 py-3 text-center text-xs font-black text-[#14734A] hover:bg-[#F4F7F6]" href="{{ route('notifications.index') }}">Ver todas las notificaciones</a>
     </section>
-</div>
+</details>

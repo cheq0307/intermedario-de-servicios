@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminAccountController;
 use App\Http\Controllers\AdminDirectoryController;
 use App\Http\Controllers\AdminInsightsController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -48,7 +49,7 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'account.active'])->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     Route::post('/mi-cuenta/modo/{mode}', [MarketplaceCapabilityController::class, 'switchMode'])->name('capabilities.switch');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
@@ -128,6 +129,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/administracion/soporte/{ticket}', [SupportController::class, 'show'])->name('admin.support.show');
         Route::patch('/administracion/soporte/{ticket}/estado', [SupportController::class, 'updateStatus'])->name('admin.support.status');
         Route::get('/administracion/usuarios', [AdminDirectoryController::class, 'users'])->name('admin.users.index');
+        Route::patch('/administracion/usuarios/{user}/suspender', [AdminAccountController::class, 'suspend'])->name('admin.users.suspend');
+        Route::patch('/administracion/usuarios/{user}/reactivar', [AdminAccountController::class, 'reactivate'])->name('admin.users.reactivate');
+        Route::patch('/administracion/usuarios/{user}/baja', [AdminAccountController::class, 'deactivate'])->name('admin.users.deactivate');
         Route::get('/administracion/empleo', [AdminInsightsController::class, 'jobs'])->name('admin.jobs.index');
         Route::get('/administracion/operaciones', [AdminInsightsController::class, 'operations'])->name('admin.operations.index');
         Route::get('/administracion/publicidad', [AdminInsightsController::class, 'promotions'])->name('admin.promotions.index');

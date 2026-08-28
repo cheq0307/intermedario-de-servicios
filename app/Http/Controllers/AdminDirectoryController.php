@@ -50,6 +50,7 @@ class AdminDirectoryController extends Controller
             'q' => ['nullable', 'string', 'max:100'],
             'authority' => ['nullable', Rule::in(['commercial', 'admin', 'superadmin'])],
             'commercial_status' => ['nullable', Rule::in(['none', 'draft', 'pending', 'active', 'rejected', 'suspended', 'verified'])],
+            'account_status' => ['nullable', Rule::in(['active', 'suspended', 'deactivated'])],
             'community_id' => ['nullable', 'integer', Rule::exists('communities', 'id')],
             'verification' => ['nullable', Rule::in(['verified', 'pending'])],
         ]);
@@ -62,6 +63,7 @@ class AdminDirectoryController extends Controller
                 ->orWhere('phone', 'like', "%{$term}%")))
             ->when(($filters['authority'] ?? null) === 'commercial', fn (Builder $query) => $query->whereDoesntHave('roles', fn (Builder $roles) => $roles->whereIn('name', ['admin', 'superadmin'])))
             ->when(in_array($filters['authority'] ?? null, ['admin', 'superadmin'], true), fn (Builder $query) => $query->whereHas('roles', fn (Builder $roles) => $roles->where('name', $filters['authority'])))
+            ->when($filters['account_status'] ?? null, fn (Builder $query, string $status) => $query->where('account_status', $status))
             ->when(($filters['commercial_status'] ?? null) === 'none', fn (Builder $query) => $query->doesntHave('vendor'))
             ->when(($filters['commercial_status'] ?? null) === 'verified', fn (Builder $query) => $query->whereHas('vendor', fn (Builder $vendor) => $vendor->whereNotNull('verified_at')))
             ->when(in_array($filters['commercial_status'] ?? null, ['draft', 'pending', 'active', 'rejected', 'suspended'], true), fn (Builder $query) => $query->whereHas('vendor', fn (Builder $vendor) => $vendor->where('status', $filters['commercial_status'])))

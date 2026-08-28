@@ -23,6 +23,10 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'account_type',
+        'account_status',
+        'account_status_reason',
+        'account_status_changed_at',
+        'account_status_changed_by_user_id',
         'phone',
         'avatar_path',
         'avatar_disk',
@@ -46,6 +50,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'last_seen_at' => 'datetime',
             'two_factor_confirmed_at' => 'datetime',
             'account_type' => AccountType::class,
+            'account_status_changed_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
@@ -67,7 +72,12 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function canUseMarketplace(): bool
     {
-        return ! $this->hasAnyRole(['admin', 'superadmin']);
+        return $this->isAccountActive() && ! $this->hasAnyRole(['admin', 'superadmin']);
+    }
+
+    public function isAccountActive(): bool
+    {
+        return ($this->account_status ?? 'active') === 'active';
     }
 
     public function supportsMarketplaceMode(string $mode): bool

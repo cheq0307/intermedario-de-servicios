@@ -273,18 +273,12 @@ if (marketMenu && marketMenuOverlay && marketMenuOpen) {
 }
 
 document.querySelectorAll('[data-notification-center]').forEach((center) => {
-    const trigger = center.querySelector('[data-notification-trigger]');
     const panel = center.querySelector('[data-notification-panel]');
     const tabs = [...center.querySelectorAll('[data-notification-tab]')];
     const items = [...center.querySelectorAll('[data-notification-item]')];
     const filterEmpty = center.querySelector('[data-notification-filter-empty]');
 
-    if (!(trigger instanceof HTMLButtonElement) || !(panel instanceof HTMLElement)) return;
-
-    const setOpen = (open) => {
-        panel.classList.toggle('hidden', !open);
-        trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
-    };
+    if (!(center instanceof HTMLDetailsElement) || !(panel instanceof HTMLElement)) return;
 
     const applyFilter = (filter) => {
         let visible = 0;
@@ -297,15 +291,14 @@ document.querySelectorAll('[data-notification-center]').forEach((center) => {
         if (filterEmpty instanceof HTMLElement) filterEmpty.classList.toggle('hidden', visible !== 0);
     };
 
-    trigger.addEventListener('click', () => setOpen(panel.classList.contains('hidden')));
     tabs.forEach((tab) => tab.addEventListener('click', () => applyFilter(tab.dataset.notificationTab ?? 'all')));
     document.addEventListener('click', (event) => {
-        if (!center.contains(event.target)) setOpen(false);
+        if (center.open && !center.contains(event.target)) center.open = false;
     });
     document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && !panel.classList.contains('hidden')) {
-            setOpen(false);
-            trigger.focus();
+        if (event.key === 'Escape' && center.open) {
+            center.open = false;
+            center.querySelector('summary')?.focus();
         }
     });
 });

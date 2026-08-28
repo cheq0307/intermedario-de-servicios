@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -57,7 +58,7 @@ class AdminAccountLifecycleTest extends TestCase
         $this->assertSame('active', $client->fresh()->account_status);
     }
 
-    public function test_account_directory_exposes_lifecycle_controls_without_targeting_authorities(): void
+    public function test_account_directory_moves_lifecycle_controls_to_the_account_dashboard(): void
     {
         $superadmin = User::factory()->create();
         $superadmin->assignRole(Role::findOrCreate('superadmin'));
@@ -65,13 +66,55 @@ class AdminAccountLifecycleTest extends TestCase
 
         $this->actingAs($superadmin)->get(route('admin.users.index'))
             ->assertOk()
-            ->assertSee('Estado de cuenta')
+            ->assertSee('Administrar')
+            ->assertSee(route('admin.users.show', $client), false)
+            ->assertDontSee(route('admin.users.suspend', $client), false)
+            ->assertDontSee('Aplicar filtros');
+
+        $this->actingAs($superadmin)->get(route('admin.users.show', $client))
+            ->assertOk()
+            ->assertSee('Control de la cuenta')
             ->assertSee(route('admin.users.suspend', $client), false)
-            ->assertSee(route('admin.users.deactivate', $client), false)
             ->assertSee('Dar de baja');
 
         $this->actingAs($superadmin)->patch(route('admin.users.suspend', $superadmin), [
             'reason' => 'Este intento debe ser rechazado por seguridad.',
         ])->assertStatus(422);
+    }
+
+    public function test_suspended_account_dashboard_offers_reactivation_instead_of_suspension(): void
+    {
+        $superadmin = User::factory()->create();
+        $superadmin->assignRole(Role::findOrCreate('superadmin'));
+        $client = User::factory()->create([
+            'account_status' => 'suspended',
+            'account_status_reason' => 'Revisión administrativa todavía pendiente.',
+        ]);
+
+        $this->actingAs($superadmin)->get(route('admin.users.show', $client))
+            ->assertOk()
+            ->assertSee('Reactivar cuenta')
+            ->assertSee(route('admin.users.reactivate', $client), false)
+            ->assertDontSee('Suspender cuenta');
+    }
+
+    public function test_account_and_commercial_suspensions_are_presented_as_separate_states(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::findOrCreate('admin'));
+        $client = User::factory()->create(['account_status' => 'active']);
+        $vendor = Vendor::create([
+            'user_id' => $client->id,
+            'display_name' => 'Comercio suspendido',
+            'slug' => 'comercio-suspendido',
+            'status' => 'suspended',
+        ]);
+
+        $this->actingAs($admin)->get(route('admin.users.show', $client))
+            ->assertOk()
+            ->assertSee('Actividad comercial suspendida')
+            ->assertSee('Acceso a Plaza Local')
+            ->assertSee('Activa')
+            ->assertSee(route('admin.vendors.show', $vendor), false);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Community;
 use App\Models\Post;
 use App\Models\User;
@@ -76,6 +77,41 @@ class AdminDirectoryController extends Controller
         $communities = Community::query()->orderBy('name')->get(['id', 'name', 'municipality']);
 
         return view('admin.users', compact('users', 'communities', 'filters'));
+    }
+
+    public function showUser(Request $request, User $user): View
+    {
+        $this->authorizeAdmin($request);
+
+        $user->load([
+            'roles:id,name',
+            'community:id,name,municipality,state,postal_code',
+            'vendor.categories:id,name',
+        ])->loadCount([
+            'posts' => fn (Builder $query) => $query->whereNull('removed_at'),
+            'purchases',
+            'jobRequests',
+            'jobProposals',
+            'jobVacancies',
+            'jobApplications',
+            'conversations',
+            'supportTickets',
+            'followers',
+        ]);
+
+        if ($user->vendor) {
+            $user->vendor->loadCount(['listings', 'orders', 'verificationDocuments']);
+        }
+
+        $auditLogs = AuditLog::query()
+            ->with('user:id,name')
+            ->where('subject_type', User::class)
+            ->where('subject_id', $user->id)
+            ->latest('created_at')
+            ->limit(10)
+            ->get();
+
+        return view('admin.users.show', compact('user', 'auditLogs'));
     }
 
     public function vendors(Request $request): View

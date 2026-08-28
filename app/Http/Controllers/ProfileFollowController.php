@@ -13,6 +13,7 @@ class ProfileFollowController extends Controller
     {
         $actor = $request->user();
 
+        abort_if($actor->hasAnyRole(['admin', 'superadmin']) && ! $actor->canUseMarketplace(), 422, 'Las cuentas administrativas no participan en funciones sociales.');
         abort_if($actor->is($user), 422, 'No puedes seguir tu propia cuenta.');
         abort_if($user->hasAnyRole(['admin', 'superadmin']) && ! $user->canUseMarketplace(), 422, 'Las cuentas institucionales no admiten seguidores.');
 

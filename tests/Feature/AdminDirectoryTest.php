@@ -81,6 +81,22 @@ class AdminDirectoryTest extends TestCase
         $this->actingAs($user)->get(route('admin.vendors.index'))->assertForbidden();
     }
 
+    public function test_admin_can_open_a_visual_account_dashboard_with_operational_totals(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::findOrCreate('admin'));
+        $account = User::factory()->create(['name' => 'Cuenta con expediente']);
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.show', $account))
+            ->assertOk()
+            ->assertSee('Expediente de cuenta')
+            ->assertSee('Publicaciones')
+            ->assertSee('Compras')
+            ->assertSee('Empleo')
+            ->assertSee('Actividad administrativa reciente');
+    }
+
     public function test_communities_may_share_a_name_when_their_municipalities_differ(): void
     {
         $admin = User::factory()->create();

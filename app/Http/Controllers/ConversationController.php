@@ -34,6 +34,12 @@ class ConversationController extends Controller
 
     public function start(Request $request): RedirectResponse
     {
+        abort_if(
+            $request->user()->hasAnyRole(['admin', 'superadmin']) && ! $request->user()->canUseMarketplace(),
+            422,
+            'Las cuentas administrativas no inician conversaciones comerciales.',
+        );
+
         $validated = $request->validate([
             'recipient_id' => [
                 'required',

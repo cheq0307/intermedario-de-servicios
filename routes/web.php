@@ -129,6 +129,7 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::get('/administracion/soporte/{ticket}', [SupportController::class, 'show'])->name('admin.support.show');
         Route::patch('/administracion/soporte/{ticket}/estado', [SupportController::class, 'updateStatus'])->name('admin.support.status');
         Route::get('/administracion/usuarios', [AdminDirectoryController::class, 'users'])->name('admin.users.index');
+        Route::get('/administracion/usuarios/{user}', [AdminDirectoryController::class, 'showUser'])->name('admin.users.show');
         Route::patch('/administracion/usuarios/{user}/suspender', [AdminAccountController::class, 'suspend'])->name('admin.users.suspend');
         Route::patch('/administracion/usuarios/{user}/reactivar', [AdminAccountController::class, 'reactivate'])->name('admin.users.reactivate');
         Route::patch('/administracion/usuarios/{user}/baja', [AdminAccountController::class, 'deactivate'])->name('admin.users.deactivate');

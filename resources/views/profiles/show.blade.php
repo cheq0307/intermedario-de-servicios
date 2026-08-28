@@ -45,14 +45,22 @@ $staffLabel=$isStaff ? ($user->hasRole('superadmin')?'Superadministrador':'Admin
 @endif
 @if(!$isOwner)
 <div class="mt-6 rounded-2xl border border-[#F97316]/15 bg-[#FFF8F2] p-4">
-@if(!$isStaff)
-    @guest
-        <a class="mb-3 inline-flex rounded-full border border-[#123B4A] px-6 py-3 font-black text-[#123B4A]" href="{{ route('login') }}">Inicia sesión para seguir</a>
-    @else
-        <form class="mb-3" method="POST" action="{{ route('profiles.follow.toggle', $user) }}">@csrf<button class="rounded-full {{ $isFollowing ? 'border border-[#123B4A] bg-white text-[#123B4A]' : 'bg-[#F97316] text-white' }} px-6 py-3 font-black">{{ $isFollowing ? 'Siguiendo · dejar de seguir' : 'Seguir' }}</button></form>
-    @endguest
+@if($administrativePreview)
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div><strong>Vista administrativa de solo lectura</strong><p class="mt-1 text-sm font-semibold text-[#6B7D83]">Las cuentas administrativas no siguen, contactan ni generan actividad comercial.</p></div>
+        <a class="inline-flex shrink-0 justify-center rounded-full bg-[#123B4A] px-5 py-2.5 text-sm font-black text-white" href="{{ route('admin.users.show', $user) }}">Administrar cuenta</a>
+    </div>
+@else
+    @if(!$isStaff)
+        @guest
+            <a class="mb-3 inline-flex rounded-full border border-[#123B4A] px-6 py-3 font-black text-[#123B4A]" href="{{ route('login') }}">Inicia sesión para seguir</a>
+        @else
+            <form class="mb-3" method="POST" action="{{ route('profiles.follow.toggle', $user) }}">@csrf<button class="rounded-full {{ $isFollowing ? 'border border-[#123B4A] bg-white text-[#123B4A]' : 'bg-[#F97316] text-white' }} px-6 py-3 font-black">{{ $isFollowing ? 'Siguiendo · dejar de seguir' : 'Seguir' }}</button></form>
+        @endguest
+    @endif
+    @if($isStaff)<a class="inline-flex rounded-full bg-[#123B4A] px-6 py-3 font-black text-white" href="{{ route('support.create') }}">Contactar soporte oficial</a>@guest<p class="mt-2 text-xs font-bold text-[#8A6A55]">Inicia sesión para abrir un caso.</p>@endguest @else @guest<a class="inline-flex rounded-full bg-[#123B4A] px-6 py-3 font-black text-white" href="{{ route('register') }}">Regístrate para contactar</a>@else<form method="POST" action="{{ route('conversations.start') }}">@csrf<input type="hidden" name="recipient_id" value="{{ $user->id }}"><button class="rounded-full bg-[#123B4A] px-6 py-3 font-black text-white">Contactar dentro de Plaza Local</button></form>@endguest @endif
 @endif
-@if($isStaff)<a class="inline-flex rounded-full bg-[#123B4A] px-6 py-3 font-black text-white" href="{{ route('support.create') }}">Contactar soporte oficial</a>@guest<p class="mt-2 text-xs font-bold text-[#8A6A55]">Inicia sesión para abrir un caso.</p>@endguest @else @guest<a class="inline-flex rounded-full bg-[#123B4A] px-6 py-3 font-black text-white" href="{{ route('register') }}">Regístrate para contactar</a>@else<form method="POST" action="{{ route('conversations.start') }}">@csrf<input type="hidden" name="recipient_id" value="{{ $user->id }}"><button class="rounded-full bg-[#123B4A] px-6 py-3 font-black text-white">Contactar dentro de Plaza Local</button></form>@endguest @endif</div>
+</div>
 @endif
 </div>
 </section>

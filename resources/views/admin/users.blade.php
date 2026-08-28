@@ -1,27 +1,94 @@
 <x-admin-layout title="Cuentas" section="accounts">
     @php
-        $commercialLabels = ['draft'=>'Borrador','pending'=>'Pendiente de revisión','active'=>'Habilitada','rejected'=>'Requiere cambios','suspended'=>'Suspendida'];
-        $accountLabels = ['active'=>'Activa','suspended'=>'Suspendida','deactivated'=>'Dada de baja'];
+        $commercialLabels = ['draft' => 'Borrador', 'pending' => 'Pendiente de revisión', 'active' => 'Habilitada', 'rejected' => 'Requiere cambios', 'suspended' => 'Suspendida'];
+        $accountLabels = ['active' => 'Activa', 'suspended' => 'Suspendida', 'deactivated' => 'Dada de baja'];
+        $hasFilters = filled($filters['q'] ?? null) || filled($filters['account_status'] ?? null) || filled($filters['commercial_status'] ?? null);
     @endphp
-    @if(session('status'))<div class="mb-6 rounded-2xl bg-[#E9F7F0] px-5 py-4 text-sm font-black text-[#14734A]">{{ session('status') }}</div>@endif
+
+    @if(session('status'))
+        <div class="mb-6 rounded-2xl bg-[#E9F7F0] px-5 py-4 text-sm font-black text-[#14734A]">{{ session('status') }}</div>
+    @endif
+
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div><p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Gestión unificada</p><h1 class="mt-2 text-3xl font-black">Cuentas</h1><p class="mt-2 max-w-3xl font-semibold text-[#6B7D83]">Cada persona usa una sola cuenta para comprar, solicitar, vender u ofrecer. El expediente comercial es un estado de esa cuenta, no otro tipo de usuario.</p></div>
+        <div>
+            <p class="text-xs font-black uppercase tracking-[.16em] text-[#F97316]">Gestión unificada</p>
+            <h1 class="mt-2 text-3xl font-black">Cuentas</h1>
+            <p class="mt-2 max-w-3xl font-semibold text-[#6B7D83]">Consulta identidad, autoridad, estado de acceso y expediente comercial sin tratarlos como tipos de usuario distintos.</p>
+        </div>
         <strong class="rounded-full bg-white px-4 py-2 text-sm shadow-sm">{{ $users->total() }} resultados</strong>
     </div>
 
-    <form class="mt-6 grid gap-3 rounded-3xl border border-[#123B4A]/10 bg-white p-5 shadow-sm md:grid-cols-2 xl:grid-cols-6" method="GET">
-        <input class="rounded-2xl bg-[#F4F7F6] px-4 py-3" type="search" name="q" value="{{ $filters['q'] ?? '' }}" maxlength="100" placeholder="Nombre, correo o teléfono">
-        <select class="rounded-2xl bg-[#F4F7F6] px-4 py-3" name="authority"><option value="">Cualquier autoridad</option><option value="commercial" @selected(($filters['authority'] ?? '') === 'commercial')>Cuenta comercial</option><option value="admin" @selected(($filters['authority'] ?? '') === 'admin')>Administrador</option><option value="superadmin" @selected(($filters['authority'] ?? '') === 'superadmin')>Superadministrador</option></select>
-        <select class="rounded-2xl bg-[#F4F7F6] px-4 py-3" name="account_status"><option value="">Cualquier estado de cuenta</option>@foreach($accountLabels as $value=>$label)<option value="{{ $value }}" @selected(($filters['account_status'] ?? '') === $value)>{{ $label }}</option>@endforeach</select>
-        <select class="rounded-2xl bg-[#F4F7F6] px-4 py-3" name="commercial_status"><option value="">Cualquier estado comercial</option><option value="none" @selected(($filters['commercial_status'] ?? '') === 'none')>Sin expediente</option>@foreach($commercialLabels as $value=>$label)<option value="{{ $value }}" @selected(($filters['commercial_status'] ?? '') === $value)>{{ $label }}</option>@endforeach<option value="verified" @selected(($filters['commercial_status'] ?? '') === 'verified')>Con distintivo verificado</option></select>
-        <select class="rounded-2xl bg-[#F4F7F6] px-4 py-3" name="community_id"><option value="">Todas las comunidades</option>@foreach($communities as $community)<option value="{{ $community->id }}" @selected((string)($filters['community_id'] ?? '') === (string)$community->id)>{{ $community->name }}</option>@endforeach</select>
-        <select class="rounded-2xl bg-[#F4F7F6] px-4 py-3" name="verification"><option value="">Cualquier correo</option><option value="verified" @selected(($filters['verification'] ?? '') === 'verified')>Correo verificado</option><option value="pending" @selected(($filters['verification'] ?? '') === 'pending')>Correo pendiente</option></select>
-        <button class="rounded-full bg-[#123B4A] px-5 py-3 font-black text-white" type="submit">Aplicar filtros</button><a class="self-center text-center text-sm font-black text-[#D85B0B]" href="{{ route('admin.users.index') }}">Limpiar</a>
+    <form class="mt-6 grid gap-3 rounded-3xl border border-[#123B4A]/10 bg-white p-4 shadow-sm md:grid-cols-[minmax(16rem,1fr)_13rem_15rem_auto]" method="GET">
+        <label class="sr-only" for="account-search">Buscar cuenta</label>
+        <input id="account-search" class="rounded-2xl bg-[#F4F7F6] px-4 py-3" type="search" name="q" value="{{ $filters['q'] ?? '' }}" maxlength="100" placeholder="Buscar por nombre, correo o teléfono">
+        <label class="sr-only" for="account-status-filter">Estado de cuenta</label>
+        <select id="account-status-filter" class="rounded-2xl bg-[#F4F7F6] px-4 py-3" name="account_status" onchange="this.form.submit()">
+            <option value="">Todos los accesos</option>
+            @foreach($accountLabels as $value => $label)<option value="{{ $value }}" @selected(($filters['account_status'] ?? '') === $value)>{{ $label }}</option>@endforeach
+        </select>
+        <label class="sr-only" for="commercial-status-filter">Expediente comercial</label>
+        <select id="commercial-status-filter" class="rounded-2xl bg-[#F4F7F6] px-4 py-3" name="commercial_status" onchange="this.form.submit()">
+            <option value="">Todos los expedientes</option>
+            <option value="none" @selected(($filters['commercial_status'] ?? '') === 'none')>Sin expediente</option>
+            @foreach($commercialLabels as $value => $label)<option value="{{ $value }}" @selected(($filters['commercial_status'] ?? '') === $value)>{{ $label }}</option>@endforeach
+            <option value="verified" @selected(($filters['commercial_status'] ?? '') === 'verified')>Con identidad verificada</option>
+        </select>
+        @if($hasFilters)<a class="self-center text-center text-sm font-black text-[#14734A]" href="{{ route('admin.users.index') }}">Limpiar</a>@else<span></span>@endif
     </form>
+    <p class="mt-2 px-2 text-xs font-semibold text-[#6B7D83]">Los estados se filtran al cambiar la selección. Para buscar, escribe y presiona Enter.</p>
 
-    <div class="mt-6 overflow-hidden rounded-3xl border border-[#123B4A]/10 bg-white"><div class="overflow-x-auto"><table class="w-full min-w-[1180px] text-left text-sm"><thead class="bg-[#EDF3F1] text-[#536A72]"><tr><th class="p-4">Cuenta</th><th class="p-4">Autoridad</th><th class="p-4">Comunidad</th><th class="p-4">Correo</th><th class="p-4">Estado de cuenta</th><th class="p-4">Estado comercial</th><th class="p-4">Registro</th><th class="p-4">Acciones</th></tr></thead><tbody>
-        @forelse($users as $user)<tr class="border-t border-[#123B4A]/10"><td class="p-4"><strong>{{ $user->name }}</strong><span class="block text-xs text-[#6B7D83]">{{ $user->email }}{{ $user->phone ? ' · '.$user->phone : '' }}</span></td><td class="p-4">@if($user->hasRole('superadmin'))<span class="font-black text-[#D85B0B]">Superadministrador</span>@elseif($user->hasRole('admin'))<span class="font-black text-[#D85B0B]">Administrador</span>@else Cuenta comercial @endif</td><td class="p-4">{{ $user->community?->name ?? 'Sin comunidad' }}</td><td class="p-4"><span class="rounded-full px-3 py-1 text-xs font-black {{ $user->hasVerifiedEmail() ? 'bg-[#E9F7F0] text-[#14734A]' : 'bg-[#FFF1E8] text-[#D85B0B]' }}">{{ $user->hasVerifiedEmail() ? 'Verificado' : 'Pendiente' }}</span></td><td class="p-4"><span class="rounded-full px-3 py-1 text-xs font-black {{ $user->account_status === 'active' ? 'bg-[#E9F7F0] text-[#14734A]' : ($user->account_status === 'suspended' ? 'bg-[#FFF1E8] text-[#D85B0B]' : 'bg-red-50 text-red-700') }}">{{ $accountLabels[$user->account_status] ?? ucfirst($user->account_status) }}</span></td><td class="p-4">@if(!$user->vendor)<span class="text-[#6B7D83]">Sin expediente</span>@else<span class="rounded-full bg-[#F4F7F6] px-3 py-1 text-xs font-black">{{ $user->vendor->verified_at ? 'Verificada · ' : '' }}{{ $commercialLabels[$user->vendor->status] ?? ucfirst($user->vendor->status) }}</span>@endif</td><td class="p-4">{{ $user->created_at->format('d/m/Y') }}</td><td class="p-4"><div class="flex flex-wrap gap-3"><a class="font-black text-[#14734A]" href="{{ route('profile.show', $user) }}">Perfil público</a>@if($user->vendor && auth()->id() !== $user->id)<a class="font-black text-[#D85B0B]" href="{{ route('admin.vendors.show', $user->vendor) }}">Expediente comercial</a>@endif<x-admin-account-actions :user="$user" /></div></td></tr>
-        @empty<tr><td class="p-10 text-center font-bold text-[#6B7D83]" colspan="8">No hay cuentas con esos filtros.</td></tr>@endforelse
-    </tbody></table></div></div>
+    <div class="mt-6 overflow-hidden rounded-3xl border border-[#123B4A]/10 bg-white">
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[1020px] text-left text-sm">
+                <thead class="bg-[#EDF3F1] text-[#536A72]">
+                    <tr>
+                        <th class="p-4">Cuenta</th>
+                        <th class="p-4">Rol</th>
+                        <th class="p-4">Comunidad</th>
+                        <th class="p-4">Estado</th>
+                        <th class="p-4">Expediente comercial</th>
+                        <th class="p-4">Registro</th>
+                        <th class="p-4">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($users as $user)
+                        @php
+                            $role = $user->hasRole('superadmin') ? 'Superadministrador' : ($user->hasRole('admin') ? 'Administrador' : 'Cuenta normal');
+                            $commercialStatus = $user->vendor ? ($commercialLabels[$user->vendor->status] ?? ucfirst($user->vendor->status)) : '—';
+                        @endphp
+                        <tr class="border-t border-[#123B4A]/10 align-middle">
+                            <td class="p-4">
+                                <strong>{{ $user->name }}</strong>
+                                <span class="mt-1 block text-xs text-[#6B7D83]">{{ $user->email }}{{ $user->phone ? ' · '.$user->phone : '' }}</span>
+                                <span class="mt-1 block text-xs font-semibold {{ $user->hasVerifiedEmail() ? 'text-[#14734A]' : 'text-[#9A5A0A]' }}">{{ $user->hasVerifiedEmail() ? 'Correo verificado' : 'Correo pendiente' }}</span>
+                            </td>
+                            <td class="p-4"><span class="inline-flex rounded-full border border-[#123B4A]/20 px-3 py-1 text-xs font-black text-[#314B54]">{{ $role }}</span></td>
+                            <td class="p-4">{{ $user->community?->name ?? 'Sin comunidad' }}</td>
+                            <td class="p-4">
+                                <span class="inline-flex items-center gap-2 font-bold">
+                                    <span class="size-2 rounded-full {{ $user->account_status === 'active' ? 'bg-[#14734A]' : 'bg-red-600' }}"></span>
+                                    {{ $accountLabels[$user->account_status] ?? ucfirst($user->account_status) }}
+                                </span>
+                            </td>
+                            <td class="p-4">
+                                <span class="{{ $user->vendor?->status === 'suspended' ? 'font-bold text-red-700' : 'text-[#536A72]' }}">{{ $commercialStatus }}</span>
+                                @if($user->vendor?->verified_at)<span class="mt-1 block text-xs font-semibold text-[#14734A]">Identidad verificada</span>@endif
+                            </td>
+                            <td class="p-4">{{ $user->created_at->format('d/m/Y') }}</td>
+                            <td class="p-4 font-black text-[#14734A]">
+                                <a href="{{ route('profile.show', $user) }}">Ver</a>
+                                <span aria-hidden="true"> · </span>
+                                <a href="{{ route('admin.users.show', $user) }}">Administrar</a>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td class="p-10 text-center font-bold text-[#6B7D83]" colspan="7">No hay cuentas con esos filtros.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     @if($users->hasPages())<div class="mt-5">{{ $users->links() }}</div>@endif
 </x-admin-layout>

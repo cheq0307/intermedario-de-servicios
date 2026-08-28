@@ -8,6 +8,7 @@ use App\Models\PostReaction;
 use App\Models\PostShare;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ProfileFollowingTest extends TestCase
@@ -51,6 +52,29 @@ class ProfileFollowingTest extends TestCase
             ->assertSee('Comentarios')
             ->assertSee('Compartidos');
     }
+
+    public function test_administrative_view_of_a_public_profile_is_read_only(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole(Role::findOrCreate('admin'));
+        $profile = User::factory()->create();
+
+        $this->actingAs($admin)->get(route('profile.show', $profile))
+            ->assertOk()
+            ->assertSee('Vista administrativa de solo lectura')
+            ->assertSee(route('admin.users.show', $profile), false)
+            ->assertDontSee('>Seguir</button>', false)
+            ->assertDontSee('Contactar dentro de Plaza Local');
+
+        $this->actingAs($admin)
+            ->post(route('profiles.follow.toggle', $profile))
+            ->assertStatus(422);
+
+        $this->actingAs($admin)
+            ->post(route('conversations.start'), ['recipient_id' => $profile->id])
+            ->assertStatus(422);
+    }
+
     public function test_more_screen_groups_account_tools_without_repeating_profile_in_bottom_navigation(): void
     {
         $user = User::factory()->create();

@@ -70,11 +70,16 @@ class ProfileController extends Controller
             'comments' => PostComment::query()->whereIn('post_id', clone $publishedPostIds)->count(),
             'shares' => PostShare::query()->whereIn('post_id', clone $publishedPostIds)->count(),
         ];
+        $administrativePreview = auth()->check()
+            && auth()->user()->hasAnyRole(['admin', 'superadmin'])
+            && ! auth()->user()->canUseMarketplace()
+            && ! auth()->user()->is($user);
         $isFollowing = auth()->check()
+            && ! $administrativePreview
             && ! auth()->user()->is($user)
             && auth()->user()->following()->whereKey($user->id)->exists();
 
-        return view('profiles.show', compact('user', 'posts', 'rating', 'reviewsCount', 'completedOrdersCount', 'completedOrders', 'reviews', 'tab', 'isStaff', 'socialMetrics', 'isFollowing'));
+        return view('profiles.show', compact('user', 'posts', 'rating', 'reviewsCount', 'completedOrdersCount', 'completedOrders', 'reviews', 'tab', 'isStaff', 'socialMetrics', 'isFollowing', 'administrativePreview'));
     }
 
     public function edit(): View

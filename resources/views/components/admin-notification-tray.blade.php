@@ -56,7 +56,7 @@
             <button class="notification-filter-tab py-3 text-xs font-black" type="button" role="tab" aria-selected="false" data-notification-tab="social">Sociales</button>
         </div>
 
-        <div class="max-h-[26rem] overflow-y-auto" data-notification-list>
+        <div class="max-h-[min(26rem,65vh)] touch-pan-y overflow-y-scroll overscroll-contain [scrollbar-gutter:stable]" data-notification-list>
             @forelse($notificationPreview as $item)
                 @php($notification = $item['model'])
                 <form class="border-b border-[#123B4A]/8 last:border-b-0" method="POST" action="{{ route('notifications.open', $notification->id) }}" data-notification-item data-notification-category="{{ $item['category'] }}">
@@ -100,3 +100,49 @@
         <a class="block border-t border-[#123B4A]/10 px-4 py-3 text-center text-xs font-black text-[#14734A] hover:bg-[#F4F7F6]" href="{{ route('notifications.index') }}">Ver todas las notificaciones</a>
     </section>
 </details>
+
+<script>
+    (() => {
+        const script = document.currentScript;
+        const center = script?.previousElementSibling;
+        if (!(center instanceof HTMLDetailsElement)) return;
+
+        const tabs = [...center.querySelectorAll('[data-notification-tab]')];
+        const items = [...center.querySelectorAll('[data-notification-item]')];
+        const filterEmpty = center.querySelector('[data-notification-filter-empty]');
+        const list = center.querySelector('[data-notification-list]');
+
+        const applyFilter = (filter) => {
+            let visible = 0;
+            items.forEach((item) => {
+                const matches = filter === 'all' || item.dataset.notificationCategory === filter;
+                item.hidden = !matches;
+                if (matches) visible += 1;
+            });
+            tabs.forEach((tab) => tab.setAttribute('aria-selected', tab.dataset.notificationTab === filter ? 'true' : 'false'));
+            if (filterEmpty instanceof HTMLElement) filterEmpty.classList.toggle('hidden', visible !== 0);
+            if (list instanceof HTMLElement) list.scrollTop = 0;
+        };
+
+        tabs.forEach((tab) => tab.addEventListener('click', () => applyFilter(tab.dataset.notificationTab ?? 'all')));
+        document.addEventListener('click', (event) => {
+            if (center.open && !center.contains(event.target)) center.open = false;
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && center.open) {
+                center.open = false;
+                center.querySelector('summary')?.focus();
+            }
+        });
+
+        list?.addEventListener('wheel', (event) => {
+            if (!(list instanceof HTMLElement) || list.scrollHeight <= list.clientHeight) return;
+            const atTop = list.scrollTop <= 0;
+            const atBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 1;
+            if ((event.deltaY < 0 && atTop) || (event.deltaY > 0 && atBottom)) return;
+
+            event.preventDefault();
+            list.scrollTop += event.deltaY;
+        }, { passive: false });
+    })();
+</script>

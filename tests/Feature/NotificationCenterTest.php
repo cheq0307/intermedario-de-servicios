@@ -35,6 +35,37 @@ class NotificationCenterTest extends TestCase
             ->assertSee('Leída');
     }
 
+    public function test_notification_center_uses_simple_filters_and_keeps_conversations_separate(): void
+    {
+        $user = User::factory()->create();
+        $user->notify(new MarketplaceActivity('Cuenta por verificar', 'Revisión administrativa pendiente.', 'dashboard', [], 'vendor_application'));
+        $user->notify(new MarketplaceActivity('Nuevo seguidor', 'Una persona comenzó a seguirte.', 'profile.show', ['user' => $user->id], 'social_follow'));
+
+        $this->actingAs($user)->get(route('notifications.index'))
+            ->assertOk()
+            ->assertSee('Todas')
+            ->assertSee('Administrativas')
+            ->assertSee('Sociales')
+            ->assertDontSee('Conversaciones')
+            ->assertSee('Cuenta por verificar')
+            ->assertSee('Nuevo seguidor');
+
+        $this->actingAs($user)->get(route('notifications.index', ['filter' => 'social']))
+            ->assertOk()
+            ->assertSee('Nuevo seguidor')
+            ->assertDontSee('Cuenta por verificar');
+
+        $this->actingAs($user)->get(route('notifications.index', ['filter' => 'administrative']))
+            ->assertOk()
+            ->assertSee('Cuenta por verificar')
+            ->assertDontSee('Nuevo seguidor');
+
+        $this->actingAs($user)->get(route('conversations.index'))
+            ->assertOk()
+            ->assertSee('Conversaciones')
+            ->assertDontSee('Notificaciones');
+    }
+
     public function test_user_cannot_open_another_users_notification(): void
     {
         $owner = User::factory()->create();

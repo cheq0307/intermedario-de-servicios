@@ -11,10 +11,26 @@ class NotificationController extends Controller
 {
     public function index(Request $request): View
     {
-        $notifications = $request->user()->notifications()->paginate(20);
+        $filter = $request->string('filter')->toString();
+        if (! in_array($filter, ['administrative', 'social'], true)) {
+            $filter = 'all';
+        }
+
+        $notificationsQuery = $request->user()->notifications();
+
+        if ($filter === 'social') {
+            $notificationsQuery->where('data->kind', 'like', 'social_%');
+        } elseif ($filter === 'administrative') {
+            $notificationsQuery->where(function ($query): void {
+                $query->whereNull('data->kind')
+                    ->orWhere('data->kind', 'not like', 'social_%');
+            });
+        }
+
+        $notifications = $notificationsQuery->paginate(20)->withQueryString();
         $unreadCount = $request->user()->unreadNotifications()->count();
 
-        return view('notifications.index', compact('notifications', 'unreadCount'));
+        return view('notifications.index', compact('notifications', 'unreadCount', 'filter'));
     }
 
     public function open(Request $request, string $notification): RedirectResponse

@@ -9,7 +9,12 @@
 <body class="min-h-screen pb-24 bg-[#FAF8F4] text-[#17313A] antialiased">
     <x-market-nav :back-url="route('dashboard')" />
     <main class="mx-auto max-w-4xl px-5 py-9">
-        <nav class="mb-5 grid grid-cols-2 rounded-2xl bg-[#E8ECEA] p-1"><a class="rounded-xl px-4 py-3 text-center text-sm font-black text-[#536A72]" href="{{ route('conversations.index') }}">Conversaciones @if(auth()->user()->unreadConversationsCount())<span class="ml-1 rounded-full bg-red-500 px-2 py-0.5 text-white">{{ auth()->user()->unreadConversationsCount() }}</span>@endif</a><a class="rounded-xl bg-white px-4 py-3 text-center text-sm font-black shadow-sm" href="{{ route('notifications.index') }}">Notificaciones @if($unreadCount)<span class="ml-1 rounded-full bg-[#F97316] px-2 py-0.5 text-white">{{ $unreadCount }}</span>@endif</a></nav><div class="flex flex-wrap items-end justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Actividad importante</p><h1 class="mt-2 text-3xl font-black">Notificaciones</h1><p class="mt-2 text-sm font-bold text-[#6B7D83]">{{ $unreadCount ? $unreadCount.' sin leer' : 'No tienes avisos pendientes' }} · Abrir un aviso lo marca como leído.</p></div>@if($unreadCount)<form method="POST" action="{{ route('notifications.read-all') }}">@csrf @method('PATCH')<button class="rounded-full border border-[#123B4A]/10 bg-white px-5 py-2.5 text-sm font-black" type="submit">Marcar todas como leídas</button></form>@endif</div>
+        <div class="flex flex-wrap items-end justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Actividad importante</p><h1 class="mt-2 text-3xl font-black">Notificaciones</h1><p class="mt-2 text-sm font-bold text-[#6B7D83]">{{ $unreadCount ? $unreadCount.' sin leer' : 'No tienes avisos pendientes' }} · Abrir un aviso lo marca como leído.</p></div>@if($unreadCount)<form method="POST" action="{{ route('notifications.read-all') }}">@csrf @method('PATCH')<button class="rounded-full border border-[#123B4A]/10 bg-white px-5 py-2.5 text-sm font-black" type="submit">Marcar todas como leídas</button></form>@endif</div>
+        <nav class="mt-6 flex gap-2 overflow-x-auto pb-1" aria-label="Filtrar notificaciones">
+            @foreach(['all' => 'Todas', 'administrative' => 'Administrativas', 'social' => 'Sociales'] as $filterKey => $filterLabel)
+                <a class="shrink-0 rounded-full border px-4 py-2 text-sm font-black transition {{ $filter === $filterKey ? 'border-[#123B4A] bg-[#123B4A] text-white' : 'border-[#123B4A]/10 bg-white text-[#536A72] hover:border-[#123B4A]/30' }}" href="{{ $filterKey === 'all' ? route('notifications.index') : route('notifications.index', ['filter' => $filterKey]) }}" @if($filter === $filterKey) aria-current="page" @endif>{{ $filterLabel }}</a>
+            @endforeach
+        </nav>
         @if(session('status'))<p class="mt-5 rounded-2xl bg-[#E9F7F0] p-4 text-sm font-black text-[#14734A]">{{ session('status') }}</p>@endif
         <div class="mt-7 space-y-3">
             @forelse($notifications as $notification)
@@ -34,12 +39,12 @@
                     </button>
                 </form>
             @empty
-                <div class="rounded-[1.75rem] border border-dashed border-[#123B4A]/20 bg-white/60 p-12 text-center"><h2 class="text-xl font-black">Todo tranquilo por aquí</h2><p class="mt-2 text-sm font-bold text-[#6B7D83]">Los cambios importantes de propuestas, pedidos y disputas aparecerán aquí.</p></div>
+                <div class="rounded-[1.75rem] border border-dashed border-[#123B4A]/20 bg-white/60 p-12 text-center"><h2 class="text-xl font-black">No hay avisos en este filtro</h2><p class="mt-2 text-sm font-bold text-[#6B7D83]">Puedes revisar otra categoría de notificaciones.</p></div>
             @endforelse
         </div>
         @if($notifications->hasPages())<div class="mt-6">{{ $notifications->links() }}</div>@endif
         <div class="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-[1.5rem] border border-[#123B4A]/10 bg-white p-5"><div><h2 class="font-black">¿Necesitas ayuda?</h2><p class="mt-1 text-sm font-semibold text-[#6B7D83]">Abre un caso y conserva toda la conversación con soporte.</p></div><a class="rounded-full bg-[#123B4A] px-5 py-3 text-sm font-black text-white" href="{{ route('support.create') }}">Contactar soporte</a></div>
     </main>
-<x-bottom-nav active="messages" />
+<x-bottom-nav />
 </body>
 </html>

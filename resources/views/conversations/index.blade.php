@@ -3,8 +3,7 @@
 <body class="min-h-screen bg-[#FAF8F4] pb-24 text-[#17313A] antialiased">
 <x-market-nav :back-url="route('dashboard')" />
 <main class="mx-auto max-w-4xl px-4 py-7 sm:px-5">
-    <div><p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Comunicación protegida</p><h1 class="mt-2 text-3xl font-black">Mensajes</h1><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Cada publicación, operación y conversación directa conserva su propio contexto.</p></div>
-    <nav class="mt-5 grid grid-cols-2 rounded-2xl bg-[#E8ECEA] p-1" aria-label="Mensajes y notificaciones"><a class="rounded-xl bg-white px-4 py-3 text-center text-sm font-black shadow-sm" href="{{ route('conversations.index') }}">Conversaciones @if(auth()->user()->unreadConversationsCount())<span class="ml-1 inline-flex min-w-5 justify-center rounded-full bg-red-500 px-1.5 text-xs leading-5 text-white">{{ auth()->user()->unreadConversationsCount() }}</span>@endif</a><a class="rounded-xl px-4 py-3 text-center text-sm font-black text-[#536A72]" href="{{ route('notifications.index') }}">Notificaciones @if(auth()->user()->unreadNotifications()->count())<span class="ml-1 inline-flex min-w-5 justify-center rounded-full bg-[#F97316] px-1.5 text-xs leading-5 text-white">{{ auth()->user()->unreadNotifications()->count() }}</span>@endif</a></nav>
+    <div><p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Comunicación protegida</p><h1 class="mt-2 text-3xl font-black">Conversaciones</h1><p class="mt-2 text-sm font-semibold text-[#6B7D83]">Cada publicación, operación y conversación directa conserva su propio contexto.</p></div>
     <section class="mt-5 overflow-hidden rounded-[2rem] border border-[#123B4A]/10 bg-white shadow-sm">
         @forelse($conversations as $conversation)
             @php

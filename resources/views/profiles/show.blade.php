@@ -66,8 +66,8 @@ $staffLabel=$isStaff ? ($user->hasRole('superadmin')?'Superadministrador':'Admin
 </section>
 
 @if(!$isStaff)
-<nav class="mt-7 flex gap-2 overflow-x-auto pb-2" aria-label="Secciones del perfil">
-@foreach(['offers'=>'Lo que ofrece','needs'=>'Lo que necesita','work'=>'Trabajos realizados','reviews'=>'Reseñas'] as $key=>$label)<a class="shrink-0 rounded-full px-5 py-2.5 text-sm font-black {{ $tab===$key?'bg-[#123B4A] text-white':'border bg-white' }}" href="{{ route('profile.show',[$user,'tab'=>$key]) }}">{{ $label }}</a>@endforeach
+<nav class="mt-7 grid grid-cols-4 border-b border-[#123B4A]/15" aria-label="Secciones del perfil">
+@foreach(['offers'=>'Lo que ofrece','needs'=>'Lo que necesita','work'=>'Trabajos realizados','reviews'=>'Reseñas'] as $key=>$label)<a class="min-w-0 border-b-2 px-1 py-3 text-center text-[11px] font-black leading-tight sm:px-3 sm:text-sm {{ $tab===$key?'border-[#F97316] text-[#123B4A]':'border-transparent text-[#536A72]' }}" href="{{ route('profile.show',[$user,'tab'=>$key]) }}" @if($tab===$key) aria-current="page" @endif>{{ $label }}</a>@endforeach
 </nav>
 <section class="mt-3">
 @if(in_array($tab,['offers','needs']))

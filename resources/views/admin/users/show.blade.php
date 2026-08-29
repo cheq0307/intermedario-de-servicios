@@ -4,6 +4,7 @@
         $commercialLabels = ['draft' => 'Borrador', 'pending' => 'Pendiente de revisión', 'active' => 'Habilitada', 'rejected' => 'Requiere cambios', 'suspended' => 'Suspendida'];
         $role = $user->hasRole('superadmin') ? 'Superadministrador' : ($user->hasRole('admin') ? 'Administrador' : 'Cuenta normal');
         $commercialStatus = $user->vendor ? ($commercialLabels[$user->vendor->status] ?? ucfirst($user->vendor->status)) : '—';
+        $commercialReady = $user->vendor?->isReadyForReview() ?? false;
     @endphp
 
     @if(session('status'))<div class="mb-6 rounded-2xl bg-[#E9F7F0] px-5 py-4 text-sm font-black text-[#14734A]">{{ session('status') }}</div>@endif
@@ -61,7 +62,14 @@
                     <div><dt class="font-bold text-[#6B7D83]">Publicaciones comerciales</dt><dd class="mt-1 font-black">{{ $user->vendor->listings_count }}</dd></div>
                     <div><dt class="font-bold text-[#6B7D83]">Órdenes</dt><dd class="mt-1 font-black">{{ $user->vendor->orders_count }}</dd></div>
                 </dl>
-                <a class="mt-5 inline-flex rounded-full bg-[#123B4A] px-5 py-2.5 text-sm font-black text-white" href="{{ route('admin.vendors.show', $user->vendor) }}">Administrar expediente comercial</a>
+                <div class="mt-5 flex flex-wrap gap-3">
+                    @if($user->vendor->status === 'suspended' && $commercialReady)
+                        <form method="POST" action="{{ route('admin.vendors.approve', $user->vendor) }}">@csrf @method('PATCH')<button class="rounded-full bg-[#14734A] px-5 py-2.5 text-sm font-black text-white" type="submit">Reactivar actividad comercial</button></form>
+                    @elseif($user->vendor->status === 'suspended')
+                        <span class="self-center text-xs font-bold text-red-700">Faltan requisitos antes de reactivar.</span>
+                    @endif
+                    <a class="inline-flex rounded-full border border-[#123B4A] px-5 py-2.5 text-sm font-black text-[#123B4A]" href="{{ route('admin.vendors.show', $user->vendor) }}">Administrar expediente</a>
+                </div>
             @endif
         </section>
     </div>

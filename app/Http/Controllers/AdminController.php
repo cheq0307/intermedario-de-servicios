@@ -84,11 +84,18 @@ class AdminController extends Controller
         $vendor->loadMissing('user');
         abort_unless($vendor->user?->hasVerifiedEmail(), 422, 'El proveedor debe verificar su correo antes de ser aprobado.');
         abort_if($vendor->missingReviewRequirements() !== [], 422, 'El proveedor todavía debe completar: '.implode(', ', $vendor->missingReviewRequirements()).'.');
+        $wasSuspended = $vendor->status === 'suspended';
         $vendor->user->assignRole(Role::findOrCreate('provider'));
         $this->changeVendorStatus($request, $vendor, 'active');
-        $vendor->user->notify(new MarketplaceActivity('Tu perfil de proveedor fue aprobado', 'Ya puedes publicar ofertas y enviar propuestas en Plaza Local.', 'profile.show', ['user' => $vendor->user_id], 'vendor_approved'));
+        $vendor->user->notify(new MarketplaceActivity(
+            $wasSuspended ? 'Tu actividad comercial fue reactivada' : 'Tu perfil de proveedor fue aprobado',
+            'Ya puedes publicar ofertas y enviar propuestas en Plaza Local.',
+            'profile.show',
+            ['user' => $vendor->user_id],
+            $wasSuspended ? 'vendor_reactivated' : 'vendor_approved',
+        ));
 
-        return back()->with('status', 'Proveedor aprobado y notificado.');
+        return back()->with('status', $wasSuspended ? 'Actividad comercial reactivada y usuario notificado.' : 'Proveedor aprobado y notificado.');
     }
 
     public function rejectVendor(Request $request, Vendor $vendor): RedirectResponse
@@ -112,7 +119,13 @@ class AdminController extends Controller
         $validated = $request->validate(['reason' => ['required', 'string', 'min:10', 'max:1000']]);
         $this->changeVendorStatus($request, $vendor, 'suspended', ['reason' => $validated['reason']]);
         $vendor->loadMissing('user');
-        $vendor->user?->notify(new MarketplaceActivity('Tu perfil de proveedor fue suspendido', 'Motivo: '.$validated['reason'], 'profile.show', ['user' => $vendor->user_id], 'vendor_suspended'));
+        $vendor->user?->notify(new MarketplaceActivity(
+            'Tu actividad comercial fue suspendida',
+            'Motivo: '.$validated['reason'].' Puedes solicitar una revisión desde soporte.',
+            'support.create',
+            ['category' => 'provider_suspension'],
+            'vendor_suspended',
+        ));
 
         return back()->with('status', 'Proveedor suspendido y notificado.');
     }

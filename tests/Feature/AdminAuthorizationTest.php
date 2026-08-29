@@ -67,6 +67,27 @@ class AdminAuthorizationTest extends TestCase
         $this->assertSame('Documentación comercial inconsistente.', $vendor->fresh()->suspension_reason);
         $this->assertNotNull($vendor->fresh()->suspended_at);
         $this->assertSame(2, AuditLog::where('user_id', $admin->id)->count());
+
+        $suspensionNotification = $provider->notifications()->get()
+            ->first(fn ($notification) => ($notification->data['kind'] ?? null) === 'vendor_suspended');
+        $this->assertNotNull($suspensionNotification);
+        $this->assertSame('support.create', $suspensionNotification->data['route_name']);
+        $this->assertSame(['category' => 'provider_suspension'], $suspensionNotification->data['route_parameters']);
+
+        $this->actingAs($provider)
+            ->patch(route('notifications.open', $suspensionNotification))
+            ->assertRedirect(route('support.create', ['category' => 'provider_suspension']));
+
+        $this->actingAs($admin)->get(route('admin.users.show', $provider))
+            ->assertOk()
+            ->assertSee('Reactivar actividad comercial')
+            ->assertSee(route('admin.vendors.approve', $vendor), false);
+
+        $this->actingAs($admin)->patch(route('admin.vendors.approve', $vendor))->assertRedirect();
+        $this->assertSame('active', $vendor->fresh()->status);
+        $this->assertNotNull($provider->notifications()->get()->first(
+            fn ($notification) => ($notification->data['kind'] ?? null) === 'vendor_reactivated'
+        ));
     }
 
     public function test_provider_can_be_approved_without_fiscal_or_verification_documents(): void

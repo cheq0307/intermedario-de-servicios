@@ -6,16 +6,25 @@ use App\Models\Post;
 use App\Models\PostComment;
 use App\Notifications\MarketplaceActivity;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class PostEngagementController extends Controller
 {
-    public function comments(Post $post): View
+    public function comments(Request $request, Post $post): View|JsonResponse
     {
         abort_if($post->removed_at !== null, 404);
         $post->load('user:id,name');
-        $comments = $post->comments()->with('user:id,name,avatar_path,avatar_disk')->paginate(20);
+        $comments = $post->comments()->with('user:id,name,avatar_path,avatar_disk')->paginate($request->expectsJson() ? 10 : 20);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'html' => view('comments._items', compact('post', 'comments'))->render(),
+                'next_page_url' => $comments->nextPageUrl(),
+                'remaining' => max(0, $comments->total() - ($comments->currentPage() * $comments->perPage())),
+            ]);
+        }
 
         return view('comments.index', compact('post', 'comments'));
     }

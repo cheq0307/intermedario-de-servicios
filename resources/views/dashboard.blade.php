@@ -428,10 +428,12 @@
                             </div>
                         </div>
                         <section id="comment-{{ $post->id }}" class="border-t border-[#123B4A]/8 bg-[#FAF8F4]/60 p-4" data-comment-panel>
-                            @foreach($post->comments as $comment)
-                                <div class="mb-3 flex items-start justify-between gap-3 rounded-2xl bg-white px-4 py-3"><div><strong class="text-sm">{{ $comment->user->name }}</strong><p class="mt-1 line-clamp-3 text-sm leading-6 text-[#536A72]">{{ $comment->body }}</p>@if($comment->updated_at->gt($comment->created_at))<span class="text-[10px] font-bold text-[#8A999E]">Editado</span>@endif</div>@if($comment->user_id === $currentUser->id || $post->user_id === $currentUser->id || $currentUser->hasAnyRole(['admin','superadmin']))<form method="POST" action="{{ route('posts.comments.destroy', $comment) }}">@csrf @method('DELETE')<button class="text-xs font-black text-red-600" type="submit">Eliminar</button></form>@endif</div>
-                            @endforeach
-                            @if($post->comments_count > $post->comments->count())<a class="mb-3 block text-sm font-black text-[#14734A]" href="{{ route('posts.comments.index', $post) }}">Ver los {{ $post->comments_count }} comentarios</a>@endif
+                            <div data-comment-list aria-live="polite">
+                                @include('comments._items', ['comments' => $post->comments, 'post' => $post])
+                            </div>
+                            @if($post->comments_count > $post->comments->count())
+                                <button class="mb-3 block text-sm font-black text-[#14734A] hover:underline disabled:cursor-wait disabled:opacity-60" type="button" data-comments-load data-comments-url="{{ route('posts.comments.index', $post) }}" data-comments-total="{{ $post->comments_count }}">Ver los {{ $post->comments_count }} comentarios</button>
+                            @endif
                             @if($post->comments_enabled)<form class="flex gap-2" method="POST" action="{{ route('posts.comments.store', $post) }}">@csrf<input class="min-w-0 flex-1 rounded-full border border-[#123B4A]/10 bg-white px-4 py-2.5 text-sm outline-none" name="body" maxlength="1000" required placeholder="Escribe un comentario"><button class="rounded-full bg-[#123B4A] px-4 py-2 text-xs font-black text-white" type="submit">Publicar</button></form>@endif
                         </section>
                     </article>

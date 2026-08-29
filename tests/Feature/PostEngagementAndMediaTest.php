@@ -95,4 +95,28 @@ class PostEngagementAndMediaTest extends TestCase
         $this->assertDatabaseHas('post_comments', ['id' => $comment->id, 'body' => 'Comentario corregido por su autor.']);
         $this->actingAs($outsider)->patch(route('posts.comments.update', $comment), ['body' => 'Intento de edición no autorizado.'])->assertForbidden();
     }
+
+    public function test_feed_loads_more_comments_inline_without_linking_to_another_page(): void
+    {
+        $author = User::factory()->create();
+        $viewer = User::factory()->create();
+        $post = Post::create(['user_id' => $author->id, 'type' => 'job_request', 'body' => 'Publicación con comentarios progresivos.', 'published_at' => now()]);
+
+        foreach (range(1, 15) as $number) {
+            PostComment::create(['post_id' => $post->id, 'user_id' => $viewer->id, 'body' => "Respuesta progresiva {$number}"]);
+        }
+
+        $this->actingAs($viewer)->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('data-comments-load', false)
+            ->assertSee('data-comments-url="'.route('posts.comments.index', $post).'"', false)
+            ->assertDontSee('href="'.route('posts.comments.index', $post).'"', false);
+
+        $this->actingAs($viewer)
+            ->getJson(route('posts.comments.index', $post))
+            ->assertOk()
+            ->assertJsonPath('remaining', 5)
+            ->assertJsonPath('next_page_url', route('posts.comments.index', ['post' => $post, 'page' => 2]))
+            ->assertSee('Respuesta progresiva', false);
+    }
 }

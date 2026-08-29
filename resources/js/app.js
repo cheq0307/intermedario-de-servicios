@@ -105,6 +105,43 @@ document.querySelectorAll('[data-comment-toggle]').forEach((button) => button.ad
     document.getElementById(button.dataset.commentToggle)?.querySelector('input[name="body"]')?.focus();
 }));
 
+document.querySelectorAll('[data-comments-load]').forEach((button) => button.addEventListener('click', async () => {
+    const panel = button.closest('[data-comment-panel]');
+    const list = panel?.querySelector('[data-comment-list]');
+    const url = button.dataset.commentsUrl;
+    if (!(list instanceof HTMLElement) || !url || button.disabled) return;
+
+    button.disabled = true;
+    const previousLabel = button.textContent;
+    button.textContent = 'Cargando comentarios…';
+
+    try {
+        const response = await fetch(url, { headers: { Accept: 'application/json' } });
+        if (!response.ok) throw new Error('comments-load-failed');
+        const data = await response.json();
+
+        if (button.dataset.commentsLoaded !== 'true') {
+            list.replaceChildren();
+            button.dataset.commentsLoaded = 'true';
+        }
+        list.insertAdjacentHTML('beforeend', data.html);
+
+        if (data.next_page_url) {
+            button.dataset.commentsUrl = data.next_page_url;
+            button.textContent = data.remaining > 0 ? `Ver ${data.remaining} comentarios más` : 'Ver más comentarios';
+            button.disabled = false;
+        } else {
+            button.remove();
+        }
+    } catch (_) {
+        button.textContent = 'No se pudieron cargar. Intenta de nuevo';
+        button.disabled = false;
+        window.setTimeout(() => {
+            if (button.isConnected) button.textContent = previousLabel;
+        }, 3000);
+    }
+}));
+
 document.querySelectorAll('[data-share-form]').forEach((form) => form.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!navigator.share) {

@@ -40,9 +40,16 @@ class NotificationController extends Controller
         $item->markAsRead();
 
         $routeName = $item->data['route_name'] ?? 'dashboard';
+        $routeParameters = $item->data['route_parameters'] ?? [];
+
+        if (($item->data['kind'] ?? null) === 'vendor_suspended') {
+            $routeName = 'support.create';
+            $routeParameters = ['category' => 'provider_suspension'];
+        }
+
         abort_unless(is_string($routeName) && app('router')->has($routeName), 422, 'La notificación no tiene un destino válido.');
 
-        return redirect()->route($routeName, $item->data['route_parameters'] ?? []);
+        return redirect()->route($routeName, $routeParameters);
     }
 
     public function readAll(Request $request): RedirectResponse

@@ -15,6 +15,24 @@ class NotificationCenterTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_legacy_vendor_suspension_notification_opens_support_review(): void
+    {
+        $user = User::factory()->create();
+        $user->notify(new MarketplaceActivity(
+            'Tu perfil de proveedor fue suspendido',
+            'Motivo documentado.',
+            'profile.show',
+            ['user' => $user->id],
+            'vendor_suspended',
+        ));
+        $notification = $user->notifications()->firstOrFail();
+
+        $this->actingAs($user)
+            ->patch(route('notifications.open', $notification))
+            ->assertRedirect(route('support.create', ['category' => 'provider_suspension']));
+        $this->assertNotNull($notification->fresh()->read_at);
+    }
+
     public function test_user_can_view_and_open_own_notification(): void
     {
         $user = User::factory()->create();

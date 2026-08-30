@@ -11,9 +11,10 @@ use App\Models\PostComment;
 use App\Models\PostReaction;
 use App\Models\PostShare;
 use App\Models\User;
+use App\ViewData\ProfileEditData;
+use App\ViewData\ProfileShowData;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -79,16 +80,23 @@ class ProfileController extends Controller
             && ! auth()->user()->is($user)
             && auth()->user()->following()->whereKey($user->id)->exists();
 
-        return view('profiles.show', compact('user', 'posts', 'rating', 'reviewsCount', 'completedOrdersCount', 'completedOrders', 'reviews', 'tab', 'isStaff', 'socialMetrics', 'isFollowing', 'administrativePreview'));
+        $profile = ProfileShowData::from($user, request()->user(), $isStaff);
+        $isOwner = $profile->isOwner;
+        $isProvider = $profile->isProvider;
+        $vendor = $profile->vendor;
+        $staffLabel = $profile->roleLabel;
+
+        return view('profiles.show', compact('user', 'profile', 'isOwner', 'isStaff', 'isProvider', 'vendor', 'staffLabel', 'posts', 'rating', 'reviewsCount', 'completedOrdersCount', 'completedOrders', 'reviews', 'tab', 'socialMetrics', 'isFollowing', 'administrativePreview'));
     }
 
     public function edit(): View
     {
-        $user = request()->user()->load(['vendor.categories', 'vendor.verificationDocuments', 'community', 'categoryPreferences']);
+        $user = request()->user()->load(['vendor.categories', 'vendor.verificationDocuments', 'community', 'interests']);
         $communities = Community::query()->where('is_active', true)->orderBy('name')->get();
         $categories = Category::query()->where('is_active', true)->orderBy('name')->get();
+        $profileForm = ProfileEditData::from($user);
 
-        return view('profiles.edit', compact('user', 'communities', 'categories'));
+        return view('profiles.edit', compact('user', 'communities', 'categories', 'profileForm'));
     }
 
     public function update(UpdateProfileRequest $request): RedirectResponse
@@ -113,7 +121,7 @@ class ProfileController extends Controller
                 fn (int $categoryId) => [$categoryId => ['interest_score' => 100, 'behavior_score' => 0]],
             )->all());
 
-            if ($request->boolean('offers_services') || $user->vendor) {
+            if ($user->vendor) {
                 $vendorData = collect($validated)->only([
                     'display_name',
                     'description',
@@ -131,15 +139,11 @@ class ProfileController extends Controller
                     'timezone' => config('marketplace.business_timezone'),
                 ];
 
-                $vendor = $user->vendor()->updateOrCreate(
-                    ['user_id' => $user->id],
-                    array_merge($vendorData, [
-                        'slug' => $user->vendor?->slug ?? Str::slug($validated['display_name']).'-'.$user->id,
-                        'phone' => $user->phone,
-                        'email' => $user->email,
-                        'status' => $user->vendor?->status ?? 'draft',
-                    ]),
-                );
+                $vendor = $user->vendor;
+                $vendor->update(array_merge($vendorData, [
+                    'phone' => $user->phone,
+                    'email' => $user->email,
+                ]));
 
                 $vendor->categories()->sync($validated['offered_categories'] ?? []);
 

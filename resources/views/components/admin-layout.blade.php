@@ -43,13 +43,13 @@
     <title>{{ $title }} - Plaza Local</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-[#F4F7F6] text-[#17313A] antialiased">
+<body class="min-h-screen bg-brand-page text-brand-ink antialiased">
 @endonce
 
 <div class="min-h-screen lg:grid lg:grid-cols-[17rem_minmax(0,1fr)]">
-    <aside class="hidden min-h-screen border-r border-white/10 bg-[#102F39] text-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
+    <aside class="hidden min-h-screen border-r border-white/10 bg-brand-navy-deep text-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
         <a class="flex items-center gap-3 border-b border-white/10 px-6 py-6 font-black" href="{{ route('admin.index') }}">
-            <span class="grid size-10 place-items-center rounded-2xl bg-[#F97316] text-white">P</span>
+            <span class="grid size-10 place-items-center rounded-2xl bg-brand-orange text-white">P</span>
             <span><span class="block text-base">Plaza Local</span><span class="mt-0.5 block text-[.65rem] font-bold uppercase tracking-[.18em] text-white/55">Administración</span></span>
         </a>
 
@@ -58,7 +58,7 @@
                 <p class="mb-2 mt-5 px-3 text-[.65rem] font-black uppercase tracking-[.18em] text-white/45 first:mt-0">{{ $group }}</p>
                 <div class="space-y-1">
                     @foreach($items as $item)
-                        <a class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition {{ $section === $item['key'] ? 'bg-white text-[#102F39] shadow-sm' : 'text-white/75 hover:bg-white/10 hover:text-white' }}" href="{{ $item['href'] }}">
+                        <a class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition {{ $section === $item['key'] ? 'bg-white text-brand-navy-deep shadow-sm' : 'text-white/75 hover:bg-white/10 hover:text-white' }}" href="{{ $item['href'] }}">
                             <span class="grid size-6 place-items-center" aria-hidden="true">
                                 @switch($item['icon'])
                                     @case('grid')<svg viewBox="0 0 24 24" class="size-5 fill-none stroke-current" stroke-width="1.8"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>@break
@@ -75,7 +75,7 @@
                                 @endswitch
                             </span>
                             <span class="min-w-0 flex-1">{{ $item['label'] }}</span>
-                            @if($item['badge'] ?? null)<span class="rounded-full bg-[#F97316] px-2 py-0.5 text-[.65rem] text-white">{{ min(99, $item['badge']) }}</span>@endif
+                            @if($item['badge'] ?? null)<span class="rounded-full bg-brand-orange px-2 py-0.5 text-[.65rem] text-white">{{ min(99, $item['badge']) }}</span>@endif
                         </a>
                     @endforeach
                 </div>
@@ -84,33 +84,33 @@
 
         <form class="border-t border-white/10 p-4" method="POST" action="{{ route('logout') }}">
             @csrf
-            <button class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-black text-[#FFB3AE] hover:bg-red-500/10" type="submit"><span aria-hidden="true">↪</span>Cerrar sesión</button>
+            <button class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-black text-brand-danger-pale hover:bg-red-500/10" type="submit"><span aria-hidden="true">↪</span>Cerrar sesión</button>
         </form>
     </aside>
 
     <div class="min-w-0">
-        <header class="sticky top-0 z-40 border-b border-[#123B4A]/10 bg-white/95 backdrop-blur-xl">
+        <header class="sticky top-0 z-40 border-b border-brand/10 bg-white/95 backdrop-blur-xl">
             <div class="flex min-h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
                 <details class="relative lg:hidden">
-                    <summary class="grid size-10 cursor-pointer list-none place-items-center rounded-xl border border-[#123B4A]/10 bg-white" aria-label="Abrir menú administrativo"><span class="text-xl">☰</span></summary>
-                    <div class="fixed inset-x-3 top-[4.5rem] max-h-[calc(100vh-6rem)] overflow-y-auto rounded-3xl border border-[#123B4A]/10 bg-[#102F39] p-4 text-white shadow-2xl">
+                    <summary class="grid size-10 cursor-pointer list-none place-items-center rounded-xl border border-brand/10 bg-white" aria-label="Abrir menú administrativo"><span class="text-xl">☰</span></summary>
+                    <div class="fixed inset-x-3 top-[4.5rem] max-h-[calc(100vh-6rem)] overflow-y-auto rounded-3xl border border-brand/10 bg-brand-navy-deep p-4 text-white shadow-2xl">
                         @foreach($navGroups as $group => $items)
                             <p class="mb-2 mt-4 px-2 text-[.65rem] font-black uppercase tracking-[.16em] text-white/45 first:mt-0">{{ $group }}</p>
-                            @foreach($items as $item)<a class="mb-1 flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-bold {{ $section === $item['key'] ? 'bg-white text-[#102F39]' : 'text-white/80' }}" href="{{ $item['href'] }}"><span>{{ $item['label'] }}</span>@if($item['badge'] ?? null)<span class="rounded-full bg-[#F97316] px-2 py-0.5 text-[.65rem] text-white">{{ min(99, $item['badge']) }}</span>@endif</a>@endforeach
+                            @foreach($items as $item)<a class="mb-1 flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-bold {{ $section === $item['key'] ? 'bg-white text-brand-navy-deep' : 'text-white/80' }}" href="{{ $item['href'] }}"><span>{{ $item['label'] }}</span>@if($item['badge'] ?? null)<span class="rounded-full bg-brand-orange px-2 py-0.5 text-[.65rem] text-white">{{ min(99, $item['badge']) }}</span>@endif</a>@endforeach
                         @endforeach
-                        <form class="mt-4 border-t border-white/10 pt-3" method="POST" action="{{ route('logout') }}">@csrf<button class="w-full rounded-xl px-3 py-2.5 text-left text-sm font-black text-[#FFB3AE]" type="submit">Cerrar sesión</button></form>
+                        <form class="mt-4 border-t border-white/10 pt-3" method="POST" action="{{ route('logout') }}">@csrf<button class="w-full rounded-xl px-3 py-2.5 text-left text-sm font-black text-brand-danger-pale" type="submit">Cerrar sesión</button></form>
                     </div>
                 </details>
 
                 <form class="hidden max-w-md flex-1 sm:flex" method="GET" action="{{ route('admin.users.index') }}">
-                    <label class="flex w-full items-center gap-3 rounded-2xl bg-[#F4F7F6] px-4 py-2.5"><svg viewBox="0 0 24 24" class="size-5 fill-none stroke-[#536A72]" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg><span class="sr-only">Buscar cuenta</span><input class="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm outline-none ring-0" type="search" name="q" maxlength="100" placeholder="Buscar cuenta por nombre, correo o teléfono"></label>
+                    <label class="flex w-full items-center gap-3 rounded-2xl bg-brand-page px-4 py-2.5"><svg viewBox="0 0 24 24" class="size-5 fill-none stroke-brand-copy" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg><span class="sr-only">Buscar cuenta</span><input class="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm outline-none ring-0" type="search" name="q" maxlength="100" placeholder="Buscar cuenta por nombre, correo o teléfono"></label>
                 </form>
 
                 <div class="ml-auto flex items-center gap-2 sm:gap-3">
                     <x-admin-notification-tray :user="$adminUser" :unread-count="$unreadCount" />
-                    <div class="flex items-center gap-3 rounded-full border border-[#123B4A]/10 bg-white py-1.5 pl-1.5 pr-3">
-                        <span class="grid size-9 place-items-center rounded-full bg-[#DDEBE7] font-black text-[#123B4A]">{{ mb_strtoupper(mb_substr($adminUser?->name ?? 'A', 0, 1)) }}</span>
-                        <span class="hidden min-w-0 sm:block"><strong class="block max-w-36 truncate text-sm">{{ $adminUser?->name }}</strong><span class="block text-[.68rem] font-bold text-[#6B7D83]">{{ $roleLabel }}</span></span>
+                    <div class="flex items-center gap-3 rounded-full border border-brand/10 bg-white py-1.5 pl-1.5 pr-3">
+                        <span class="grid size-9 place-items-center rounded-full bg-brand-teal-surface font-black text-brand">{{ mb_strtoupper(mb_substr($adminUser?->name ?? 'A', 0, 1)) }}</span>
+                        <span class="hidden min-w-0 sm:block"><strong class="block max-w-36 truncate text-sm">{{ $adminUser?->name }}</strong><span class="block text-[.68rem] font-bold text-brand-muted">{{ $roleLabel }}</span></span>
                     </div>
                 </div>
             </div>

@@ -69,8 +69,8 @@ if (passwordInput && passwordConfirmation && passwordRequirements) {
             const item = passwordRequirements.querySelector(`[data-password-rule="${name}"]`);
             const valid = passes(passwordInput.value, passwordConfirmation.value);
 
-            item?.classList.toggle('text-[#168458]', valid);
-            item?.classList.toggle('text-[#75857f]', !valid);
+            item?.classList.toggle('text-brand-success', valid);
+            item?.classList.toggle('text-brand-muted', !valid);
 
             if (item?.firstElementChild) {
                 item.firstElementChild.textContent = valid ? '\u2713' : '\u2022';
@@ -90,11 +90,13 @@ if (mediaInput && mediaPreview) {
         mediaPreview.replaceChildren();
         [...mediaInput.files].slice(0, 6).forEach((file) => {
             const url = URL.createObjectURL(file);
-            const element = file.type.startsWith('video/') ? document.createElement('video') : document.createElement('img');
+            const isVideo = file.type.startsWith('video/');
+            const element = isVideo ? document.createElement('video') : document.createElement('img');
             element.src = url;
             element.className = 'h-32 w-full rounded-2xl bg-black object-cover';
             if (element instanceof HTMLVideoElement) element.controls = true;
-            element.addEventListener('load', () => URL.revokeObjectURL(url), { once: true });
+            element.addEventListener(isVideo ? 'loadeddata' : 'load', () => URL.revokeObjectURL(url), { once: true });
+            element.addEventListener('error', () => URL.revokeObjectURL(url), { once: true });
             mediaPreview.append(element);
         });
         mediaPreview.hidden = mediaInput.files.length === 0;
@@ -219,7 +221,7 @@ document.querySelectorAll('[data-postal-assistant]').forEach((assistant) => {
             } else {
                 status.textContent = `${location}. El CP existe, pero todavía no hay una comunidad habilitada exactamente ahí; selecciona la más cercana.`;
             }
-            status.className = 'mt-2 text-xs font-bold text-[#14734A]';
+            status.className = 'mt-2 text-xs font-bold text-brand-success';
         } catch (_) {
             status.textContent = 'No pudimos consultar el CP en este momento. Selecciona tu comunidad manualmente.';
             status.className = 'mt-2 text-xs font-bold text-red-600';
@@ -278,6 +280,144 @@ document.querySelectorAll('[data-market-carousel]').forEach((carousel) => {
     });
     start();
 });
+
+const supportThread = document.querySelector('[data-support-thread]');
+
+if (supportThread instanceof HTMLElement) {
+    const messagesList = supportThread.querySelector('[data-support-messages]');
+    const messagesUrl = supportThread.dataset.messagesUrl;
+    const statusLabel = supportThread.querySelector('[data-support-status]');
+    const connectionLabel = supportThread.querySelector('[data-support-connection]');
+    const replyContainer = supportThread.querySelector('[data-support-reply-container]');
+    const replyForm = supportThread.querySelector('[data-support-reply-form]');
+    let lastMessageId = Number.parseInt(supportThread.dataset.lastMessageId ?? '0', 10) || 0;
+    let pollTimer = null;
+    let requestInFlight = false;
+
+    const updateTicket = (ticket) => {
+        if (!ticket) return;
+        if (statusLabel) statusLabel.textContent = ticket.status_label;
+        if (replyContainer instanceof HTMLElement) replyContainer.hidden = ticket.is_closed;
+    };
+
+    const appendMessage = (message) => {
+        if (!(messagesList instanceof HTMLElement) || messagesList.querySelector(`[data-support-message-id="${message.id}"]`)) return;
+
+        const wasNearBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 180;
+        const article = document.createElement('article');
+        article.className = `flex ${message.is_staff ? 'justify-start' : 'justify-end'}`;
+        article.dataset.supportMessageId = String(message.id);
+
+        const bubble = document.createElement('div');
+        bubble.className = `max-w-[85%] rounded-3xl p-5 ${message.is_staff ? 'border border-brand/10 bg-white' : 'bg-brand-success-soft'}`;
+
+        const sender = document.createElement('p');
+        sender.className = `text-xs font-black uppercase tracking-wide ${message.is_staff ? 'text-brand-danger-warm' : 'text-brand-success'}`;
+        sender.textContent = message.is_staff ? `Soporte · ${message.sender_name}` : message.sender_name;
+
+        const body = document.createElement('p');
+        body.className = 'mt-2 whitespace-pre-line text-sm font-semibold leading-6';
+        body.textContent = message.body;
+
+        const time = document.createElement('time');
+        time.className = 'mt-3 block text-xs font-bold text-brand-caption';
+        time.dateTime = message.sent_at_iso;
+        time.textContent = message.sent_at;
+
+        bubble.append(sender, body, time);
+        article.append(bubble);
+        messagesList.append(article);
+        lastMessageId = Math.max(lastMessageId, Number(message.id));
+        supportThread.dataset.lastMessageId = String(lastMessageId);
+
+        if (wasNearBottom || message.is_mine) article.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    };
+
+    const schedulePoll = (delay = document.hidden ? 15000 : 3500) => {
+        if (pollTimer !== null) window.clearTimeout(pollTimer);
+        pollTimer = window.setTimeout(pollMessages, delay);
+    };
+
+    const pollMessages = async () => {
+        if (!messagesUrl || requestInFlight) return schedulePoll();
+        requestInFlight = true;
+
+        try {
+            const url = new URL(messagesUrl, window.location.origin);
+            url.searchParams.set('after_id', String(lastMessageId));
+            const response = await fetch(url, {
+                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                cache: 'no-store',
+            });
+            if (!response.ok) throw new Error('support-poll-failed');
+            const data = await response.json();
+            data.messages.forEach(appendMessage);
+            lastMessageId = Math.max(lastMessageId, Number(data.last_id ?? 0));
+            updateTicket(data.ticket);
+            if (connectionLabel) connectionLabel.textContent = 'Actualización automática activa';
+            requestInFlight = false;
+            schedulePoll(data.has_more ? 0 : undefined);
+        } catch (_) {
+            requestInFlight = false;
+            if (connectionLabel) connectionLabel.textContent = 'Reconectando actualizaciones…';
+            schedulePoll(8000);
+        }
+    };
+
+    if (replyForm instanceof HTMLFormElement) {
+        replyForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const submit = replyForm.querySelector('[data-support-reply-submit]');
+            const errorLabel = replyForm.querySelector('[data-support-reply-error]');
+            const textarea = replyForm.querySelector('textarea[name="body"]');
+            if (!(textarea instanceof HTMLTextAreaElement) || submit?.disabled) return;
+
+            if (errorLabel instanceof HTMLElement) {
+                errorLabel.hidden = true;
+                errorLabel.textContent = '';
+            }
+            if (submit instanceof HTMLButtonElement) {
+                submit.disabled = true;
+                submit.textContent = 'Enviando…';
+            }
+
+            try {
+                const response = await fetch(replyForm.action, {
+                    method: 'POST',
+                    body: new FormData(replyForm),
+                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    const validationMessage = Object.values(data.errors ?? {}).flat()[0];
+                    throw new Error(validationMessage ?? data.message ?? 'No se pudo enviar la respuesta.');
+                }
+
+                appendMessage(data.message);
+                updateTicket(data.ticket);
+                textarea.value = '';
+                textarea.focus();
+                if (connectionLabel) connectionLabel.textContent = 'Respuesta enviada · actualización automática activa';
+            } catch (error) {
+                if (errorLabel instanceof HTMLElement) {
+                    errorLabel.textContent = error.message || 'No se pudo enviar la respuesta. Intenta nuevamente.';
+                    errorLabel.hidden = false;
+                }
+            } finally {
+                if (submit instanceof HTMLButtonElement) {
+                    submit.disabled = false;
+                    submit.textContent = 'Enviar respuesta';
+                }
+            }
+        });
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (pollTimer !== null) window.clearTimeout(pollTimer);
+        schedulePoll(document.hidden ? 15000 : 0);
+    });
+    pollMessages();
+}
 
 const marketMenu = document.querySelector('[data-market-menu]');
 const marketMenuOverlay = document.querySelector('[data-market-menu-overlay]');

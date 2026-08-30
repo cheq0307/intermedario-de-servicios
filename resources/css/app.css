@@ -9,6 +9,107 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+    --color-brand: #123b4a;
+    --color-brand-deep: #0f3d3e;
+    --color-brand-ink: #17313a;
+    --color-brand-body: #16241f;
+    --color-brand-copy: #536a72;
+    --color-brand-copy-strong: #314b54;
+    --color-brand-muted: #6b7d83;
+    --color-brand-muted-warm: #6b7a72;
+    --color-brand-line: #e7e1d2;
+    --color-brand-surface: #faf8f4;
+    --color-brand-page: #f4f7f6;
+    --color-brand-cream: #f7f3ea;
+    --color-brand-success: #14734a;
+    --color-brand-success-soft: #e9f7f0;
+    --color-brand-teal: #1f6f5c;
+    --color-brand-orange: #f97316;
+    --color-brand-coral: #e8734d;
+    --color-brand-orange-soft: #fff1e8;
+    --color-brand-orange-dark: #a94708;
+    --color-brand-orange-muted: #8a6a55;
+    --color-brand-warning: #9a5a0a;
+    --color-brand-warning-soft: #fff4d6;
+    --color-brand-warning-copy: #79551e;
+    --color-brand-danger-warm: #d85b0b;
+    --color-brand-avatar: #e4eeea;
+    --color-brand-avatar-soft: #e8f1ee;
+    --color-brand-caption: #8a999e;
+    --color-brand-gold: #e6a700;
+    --color-brand-cover-gold: #e3b23c;
+    --color-brand-coral-line: #f0cba9;
+    --color-brand-coral-soft: #fceee3;
+    --color-brand-peach: #ffb36b;
+    --color-brand-navy-deep: #102f39;
+    --color-brand-forest-deep: #17352b;
+    --color-brand-forest: #176344;
+    --color-brand-forest-strong: #1f6b4f;
+    --color-brand-success-bright: #22a06b;
+    --color-brand-forest-hover: #244b3e;
+    --color-brand-forest-muted: #45635a;
+    --color-brand-earth: #5d4a29;
+    --color-brand-slate: #64787f;
+    --color-brand-earth-strong: #6d522d;
+    --color-brand-sage-muted: #6f827b;
+    --color-brand-disabled-copy: #70817b;
+    --color-brand-sage: #70aa8e;
+    --color-brand-form-muted: #75857f;
+    --color-brand-slate-soft: #7a8c91;
+    --color-brand-sage-copy: #7b8d86;
+    --color-brand-gold-copy: #7c5b1c;
+    --color-brand-earth-orange: #8b4c21;
+    --color-brand-amber-deep: #8b5117;
+    --color-brand-warning-deep: #8b5b00;
+    --color-brand-placeholder: #8b9c96;
+    --color-brand-disabled: #a4b0b4;
+    --color-brand-line-strong: #aab5b1;
+    --color-brand-amber: #b45309;
+    --color-brand-coral-dark: #b9552d;
+    --color-brand-orange-burnt: #c65316;
+    --color-brand-coral-strong: #d2693c;
+    --color-brand-disabled-surface: #d8dedb;
+    --color-brand-sage-surface: #dbeae3;
+    --color-brand-avatar-strong: #dceae6;
+    --color-brand-teal-surface: #ddebe7;
+    --color-brand-success-pale: #ddece4;
+    --color-brand-success-highlight: #ddf3e8;
+    --color-brand-danger-coral: #e24b35;
+    --color-brand-orange-vivid: #e8660c;
+    --color-brand-success-surface: #e2f1e9;
+    --color-brand-neutral-line: #e5e9e7;
+    --color-brand-success-mist: #e6f1eb;
+    --color-brand-neutral-surface: #e8ecea;
+    --color-brand-mint-soft: #e9f3ee;
+    --color-brand-info-soft: #eaf3f7;
+    --color-brand-neutral-soft: #edf3f1;
+    --color-brand-green-cream: #eef1e8;
+    --color-brand-neutral-faint: #eef3f1;
+    --color-brand-success-faint: #eff8f5;
+    --color-brand-neutral-page: #f0f2f1;
+    --color-brand-neutral-page-soft: #f1f3f2;
+    --color-brand-gold-soft: #f2c66d;
+    --color-brand-neutral-canvas: #f4f6f5;
+    --color-brand-gold-pale: #f5d48d;
+    --color-brand-forest-cream: #f7f5ef;
+    --color-brand-page-soft: #f7f9f8;
+    --color-brand-peach-muted: #f9b36b;
+    --color-brand-gold-highlight: #f9d889;
+    --color-brand-peach-strong: #ffb067;
+    --color-brand-danger-pale: #ffb3ae;
+    --color-brand-amber-soft: #fff7e9;
+    --color-brand-orange-faint: #fff7f0;
+    --color-brand-gold-faint: #fff8e6;
+    --color-brand-coral-faint: #fff8f2;
+    --color-brand-warning-faint: #fff9e7;
+    --color-brand-orange-page: #fff9f3;
+    --color-stripe: #635bff;
+    --shadow-market-search: 0 24px 70px rgb(23 53 43 / 13%);
+    --shadow-market-feature: 0 35px 90px rgb(23 53 43 / 25%);
+    --shadow-market-card-hover: 0 18px 45px rgb(23 53 43 / 10%);
+    --shadow-profile-card: 0 10px 35px rgb(15 61 62 / 8%);
+    --shadow-feed-card: 0 4px 18px rgb(18 59 74 / 5%);
+    --shadow-bottom-navigation: 0 -10px 30px rgb(18 59 74 / 8%);
 }
 
 @layer base {
@@ -28,7 +129,7 @@
 
 @layer base {
     body {
-        background-color: #faf8f4;
+        background-color: var(--color-brand-surface);
     }
 
     details > summary::-webkit-details-marker {
@@ -38,11 +139,11 @@
 
 @layer components {
     .market-surface {
-        @apply rounded-3xl border border-[#123B4A]/10 bg-white shadow-sm;
+        @apply rounded-3xl border border-brand/10 bg-white shadow-sm;
     }
 
     .market-tabs {
-        @apply flex overflow-x-auto border-b border-[#123B4A]/10;
+        @apply flex overflow-x-auto border-b border-brand/10;
         scrollbar-width: none;
         -ms-overflow-style: none;
     }
@@ -58,11 +159,19 @@
     }
 
     .notification-filter-tab {
-        @apply border-b-2 border-transparent text-[#6B7D83] transition;
+        @apply border-b-2 border-transparent text-brand-muted transition;
     }
 
     .notification-filter-tab[aria-selected='true'] {
-        @apply border-[#F97316] text-[#17313A];
+        @apply border-brand-orange text-brand-ink;
+    }
+
+    .profile-cover {
+        background: linear-gradient(115deg, var(--color-brand-deep) 0%, var(--color-brand-teal) 48%, var(--color-brand-cover-gold) 100%);
+    }
+
+    .conversation-thread-background {
+        background: radial-gradient(circle at top, var(--color-brand-avatar-soft), transparent 45%);
     }
 }
 

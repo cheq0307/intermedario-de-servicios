@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Marketplace\Enums\BusinessDay;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -103,6 +104,20 @@ class Vendor extends Model
             && isset($hours['opens_at'], $hours['closes_at']);
     }
 
+    public function businessHoursLabel(): ?string
+    {
+        if (! $this->businessHoursConfigured()) {
+            return null;
+        }
+
+        $hours = $this->business_hours;
+        $labels = collect($hours['days'])
+            ->map(fn (string $day): string => BusinessDay::tryFrom($day)?->shortLabel() ?? $day)
+            ->join(', ');
+
+        return $labels.' · '.$hours['opens_at'].'–'.$hours['closes_at'];
+    }
+
     public function isWithinBusinessHours(?CarbonInterface $moment = null): ?bool
     {
         if (! $this->businessHoursConfigured()) {
@@ -164,7 +179,8 @@ class Vendor extends Model
         return collect($required)->every(fn (string $type): bool => in_array($type, $approvedTypes, true));
     }
 
-    public function categories(): BelongsToMany    {
+    public function categories(): BelongsToMany
+    {
         return $this->belongsToMany(Category::class)->withTimestamps();
     }
 }

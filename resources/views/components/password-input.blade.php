@@ -13,7 +13,7 @@
     <div class="relative mt-2">
         <input
             id="{{ $id }}"
-            class="w-full rounded-2xl border border-[#17352b]/15 bg-white px-4 py-3.5 pr-28 outline-none transition focus:border-[#1f6b4f] focus:ring-4 focus:ring-[#1f6b4f]/10"
+            class="w-full rounded-2xl border border-brand-forest-deep/15 bg-white px-4 py-3.5 pr-28 outline-none transition focus:border-brand-forest-strong focus:ring-4 focus:ring-brand-forest-strong/10"
             type="password"
             name="{{ $name }}"
             required
@@ -24,7 +24,7 @@
             @if($requirements === 'confirmation') data-password-confirmation @endif
         >
         <button
-            class="absolute right-2 top-1/2 inline-flex min-h-10 -translate-y-1/2 appearance-none items-center gap-2 rounded-xl border-0 bg-[#E9F3EE] px-3 text-sm font-black text-[#176344] shadow-none transition hover:bg-[#DDECE4] focus:outline-none focus:ring-2 focus:ring-[#1f6b4f]/25"
+            class="absolute right-2 top-1/2 inline-flex min-h-10 -translate-y-1/2 appearance-none items-center gap-2 rounded-xl border-0 bg-brand-mint-soft px-3 text-sm font-black text-brand-forest shadow-none transition hover:bg-brand-success-pale focus:outline-none focus:ring-2 focus:ring-brand-forest-strong/25"
             type="button"
             data-password-toggle="{{ $id }}"
             aria-label="Mostrar {{ mb_strtolower($label) }}"

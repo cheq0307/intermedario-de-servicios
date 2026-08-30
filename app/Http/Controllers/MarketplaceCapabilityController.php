@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Marketplace\Enums\MarketplaceCapability;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Models\Vendor;
@@ -16,17 +17,18 @@ class MarketplaceCapabilityController extends Controller
 {
     public function activate(Request $request, string $capability): RedirectResponse
     {
-        abort_unless(in_array($capability, ['client', 'provider'], true), 404);
+        $selectedCapability = MarketplaceCapability::tryFrom($capability);
+        abort_unless($selectedCapability, 404);
 
         $user = $request->user();
         abort_if($user->hasAnyRole(['admin', 'superadmin']), 403, 'Las cuentas con autoridad son exclusivamente administrativas mientras conservan el cargo.');
 
-        if ($user->supportsMarketplaceMode($capability)) {
+        if ($user->supportsMarketplaceMode($selectedCapability->value)) {
             return back()->with('status', 'Esta capacidad ya estaba activa en tu cuenta.');
         }
 
-        DB::transaction(function () use ($user, $capability): void {
-            if ($capability === 'provider') {
+        DB::transaction(function () use ($user, $selectedCapability): void {
+            if ($selectedCapability === MarketplaceCapability::Provider) {
                 // La capacidad técnica se concede únicamente después de la aprobación administrativa.
                 Vendor::firstOrCreate(
                     ['user_id' => $user->id],
@@ -43,9 +45,9 @@ class MarketplaceCapabilityController extends Controller
             }
         });
 
-        $request->session()->put('marketplace_mode', $capability);
+        $request->session()->put('marketplace_mode', $selectedCapability->value);
 
-        $message = $capability === 'provider'
+        $message = $selectedCapability === MarketplaceCapability::Provider
             ? 'Tu perfil de proveedor quedó en borrador. Complétalo y envíalo a verificación cuando esté listo.'
             : 'La capacidad de cliente quedó activa; ya puedes comprar y publicar solicitudes.';
 
@@ -108,12 +110,13 @@ class MarketplaceCapabilityController extends Controller
     public function switchMode(Request $request, string $mode): RedirectResponse
     {
         abort_if($request->user()->hasAnyRole(['admin', 'superadmin']), 403, 'Las cuentas con autoridad son exclusivamente administrativas mientras conservan el cargo.');
-        abort_unless(in_array($mode, ['client', 'provider'], true), 404);
-        abort_unless($request->user()->supportsMarketplaceMode($mode), 403);
+        $selectedMode = MarketplaceCapability::tryFrom($mode);
+        abort_unless($selectedMode, 404);
+        abort_unless($request->user()->supportsMarketplaceMode($selectedMode->value), 403);
 
-        $request->session()->put('marketplace_mode', $mode);
+        $request->session()->put('marketplace_mode', $selectedMode->value);
 
-        return back()->with('status', $mode === 'provider'
+        return back()->with('status', $selectedMode === MarketplaceCapability::Provider
             ? 'Ahora estás usando Plaza Local como proveedor.'
             : 'Ahora estás usando Plaza Local como cliente.');
     }

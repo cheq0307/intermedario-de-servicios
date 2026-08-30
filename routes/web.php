@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminAccountController;
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminDirectoryController;
 use App\Http\Controllers\AdminInsightsController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -61,6 +61,7 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     Route::get('/soporte/nueva', [SupportController::class, 'create'])->name('support.create');
     Route::post('/soporte', [SupportController::class, 'store'])->name('support.store');
     Route::get('/soporte/{ticket}', [SupportController::class, 'show'])->name('support.show');
+    Route::get('/soporte/{ticket}/mensajes', [SupportController::class, 'messages'])->name('support.messages.index');
     Route::post('/soporte/{ticket}/respuestas', [SupportController::class, 'reply'])->name('support.reply');
     Route::post('/publicaciones', [PostController::class, 'store'])->name('posts.store');
     Route::middleware('verified')->group(function () {

@@ -68,6 +68,24 @@ class ProfileTest extends TestCase
             ->assertSee($user->email);
     }
 
+    public function test_public_profile_shows_location_without_the_redundant_capability_phrase(): void
+    {
+        $community = Community::create([
+            'name' => 'San Juan Tetla',
+            'municipality' => 'Chiautzingo',
+            'state' => 'Puebla',
+            'default_radius_km' => 8,
+            'is_active' => true,
+        ]);
+        $user = User::factory()->create(['community_id' => $community->id]);
+
+        $this->get(route('profile.show', $user))
+            ->assertOk()
+            ->assertSee('San Juan Tetla')
+            ->assertDontSee('Compra, solicita y participa en la comunidad')
+            ->assertDontSee('Ofrece productos o servicios');
+    }
+
     public function test_administrator_can_see_email_for_account_support(): void
     {
         $admin = User::factory()->create();
@@ -92,7 +110,6 @@ class ProfileTest extends TestCase
         $community = Community::create(['name' => 'Centro', 'municipality' => 'Mi comunidad', 'default_radius_km' => 8, 'is_active' => true]);
 
         $this->actingAs($provider)->put(route('profile.update'), [
-            'offers_services' => 1,
             'offered_categories' => [Category::query()->value('id')],
             'name' => 'Mario Hernández',
             'phone' => '5551234567',
@@ -125,6 +142,41 @@ class ProfileTest extends TestCase
             'closes_at' => '18:00',
             'timezone' => 'America/Mexico_City',
         ], $provider->vendor->fresh()->business_hours);
+    }
+
+    public function test_query_string_cannot_enable_or_create_a_commercial_profile(): void
+    {
+        $user = User::factory()->create(['account_type' => 'client']);
+
+        $this->actingAs($user)
+            ->get(route('profile.edit', ['ofrecer' => 1]))
+            ->assertOk()
+            ->assertSee('Agregar mis servicios')
+            ->assertSee(route('capabilities.activate', 'provider'), false)
+            ->assertDontSee('Servicios, productos o actividades que ofreces');
+
+        $this->assertDatabaseMissing('vendors', ['user_id' => $user->id]);
+    }
+
+    public function test_forged_profile_fields_cannot_create_a_commercial_profile(): void
+    {
+        $user = User::factory()->create(['account_type' => 'client']);
+        $community = Community::query()->firstOrFail();
+
+        $this->actingAs($user)->put(route('profile.update'), [
+            'name' => 'Cuenta actualizada',
+            'community_id' => $community->id,
+            'offers_services' => 1,
+            'display_name' => 'Proveedor inyectado',
+            'offered_categories' => [Category::query()->value('id')],
+            'availability_status' => 'available',
+            'business_days' => ['monday'],
+            'business_opens_at' => '09:00',
+            'business_closes_at' => '18:00',
+        ])->assertRedirect(route('profile.show', $user));
+
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'name' => 'Cuenta actualizada']);
+        $this->assertDatabaseMissing('vendors', ['user_id' => $user->id]);
     }
 
     public function test_administrative_profile_hides_paused_commercial_information(): void

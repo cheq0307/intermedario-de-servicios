@@ -6,36 +6,36 @@
     <title>Mis operaciones - Plaza Local</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen pb-24 bg-[#FAF8F4] text-[#17313A] antialiased">
+<body class="min-h-screen pb-24 bg-brand-surface text-brand-ink antialiased">
     @php($statusLabels = ['accepted' => 'Contratación aceptada', 'in_progress' => 'En progreso', 'delivered' => 'Esperando confirmación', 'completed' => 'Completado', 'cancelled' => 'Cancelado', 'disputed' => 'En disputa'])
     @php($statusLabels = array_merge($statusLabels, ['awaiting_payment' => 'Pendiente de pago', 'paid' => 'Pagado', 'ready' => 'Listo para entregar']))
     <x-market-nav :back-url="route('more.index')" />
     <main class="mx-auto max-w-5xl px-5 py-9">
-        <p class="text-xs font-black uppercase tracking-[.18em] text-[#F97316]">Contrataciones</p>
+        <p class="text-xs font-black uppercase tracking-[.18em] text-brand-orange">Contrataciones</p>
         <h1 class="mt-2 text-3xl font-black">Mis operaciones</h1>
-        <p class="mt-3 max-w-2xl leading-7 text-[#6B7D83]">Sigue compras y contrataciones sin confundirlas con las vacantes de empleo.</p><nav class="mt-5 flex gap-2"><a class="rounded-full px-5 py-2.5 text-sm font-black {{ $role === 'client' ? 'bg-[#123B4A] text-white' : 'border bg-white' }}" href="{{ route('orders.index', ['como' => 'client']) }}">Como cliente</a><a class="rounded-full px-5 py-2.5 text-sm font-black {{ $role === 'provider' ? 'bg-[#123B4A] text-white' : 'border bg-white' }}" href="{{ route('orders.index', ['como' => 'provider']) }}">Como proveedor</a></nav>
+        <p class="mt-3 max-w-2xl leading-7 text-brand-muted">Sigue compras y contrataciones sin confundirlas con las vacantes de empleo.</p><nav class="mt-5 flex gap-2"><a class="rounded-full px-5 py-2.5 text-sm font-black {{ $role === 'client' ? 'bg-brand text-white' : 'border bg-white' }}" href="{{ route('orders.index', ['como' => 'client']) }}">Como cliente</a><a class="rounded-full px-5 py-2.5 text-sm font-black {{ $role === 'provider' ? 'bg-brand text-white' : 'border bg-white' }}" href="{{ route('orders.index', ['como' => 'provider']) }}">Como proveedor</a></nav>
 
         <div class="mt-8 space-y-4">
             @forelse ($orders as $order)
                 @php($isBuyer = $order->buyer_id === auth()->id())
                 @php($isProduct = $order->fulfillment_type === 'pickup')
-                <a class="block rounded-[1.75rem] border border-[#123B4A]/10 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-[#F97316]/25" href="{{ route('orders.show', $order) }}">
+                <a class="block rounded-[1.75rem] border border-brand/10 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-orange/25" href="{{ route('orders.show', $order) }}">
                     <div class="flex flex-wrap items-start justify-between gap-4">
                         <div>
-                            <span class="rounded-full bg-[#E8F1EE] px-3 py-1.5 text-xs font-black text-[#14734A]">{{ $isProduct ? ($isBuyer ? 'Compraste' : 'Te compraron') : ($isBuyer ? 'Contrataste' : 'Te contrataron') }}</span>
+                            <span class="rounded-full bg-brand-avatar-soft px-3 py-1.5 text-xs font-black text-brand-success">{{ $isProduct ? ($isBuyer ? 'Compraste' : 'Te compraron') : ($isBuyer ? 'Contrataste' : 'Te contrataron') }}</span>
                             <h2 class="mt-3 text-xl font-black">{{ $order->jobRequest?->title ?? $order->items->first()?->name_snapshot ?? 'Trabajo local' }}</h2>
-                            <p class="mt-2 text-sm font-bold text-[#6B7D83]">Con {{ $isBuyer ? $order->vendor->display_name : $order->buyer->name }}</p>
+                            <p class="mt-2 text-sm font-bold text-brand-muted">Con {{ $isBuyer ? $order->vendor->display_name : $order->buyer->name }}</p>
                         </div>
                         <div class="text-right">
                             <strong class="block text-xl">${{ number_format($order->total_amount / 100, 2) }} MXN</strong>
-                            <span class="mt-2 inline-block rounded-full bg-[#FFF1E8] px-3 py-1.5 text-xs font-black text-[#D85B0B]">{{ $statusLabels[$order->status->value] ?? ucfirst($order->status->value) }}</span>
+                            <span class="mt-2 inline-block rounded-full bg-brand-orange-soft px-3 py-1.5 text-xs font-black text-brand-danger-warm">{{ $statusLabels[$order->status->value] ?? ucfirst($order->status->value) }}</span>
                         </div>
                     </div>
                 </a>
             @empty
-                <div class="rounded-[1.75rem] border border-dashed border-[#123B4A]/20 bg-white/60 px-6 py-14 text-center">
+                <div class="rounded-[1.75rem] border border-dashed border-brand/20 bg-white/60 px-6 py-14 text-center">
                     <h2 class="text-xl font-black">Todavía no tienes contrataciones</h2>
-                    <p class="mt-2 text-sm font-bold text-[#6B7D83]">Aparecerán aquí cuando una propuesta sea aceptada.</p>
+                    <p class="mt-2 text-sm font-bold text-brand-muted">Aparecerán aquí cuando una propuesta sea aceptada.</p>
                 </div>
             @endforelse
         </div>

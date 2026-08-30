@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Marketplace\Enums\SupportTicketStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,14 +21,6 @@ class SupportTicket extends Model
         'general' => 'Ayuda general',
     ];
 
-    public const STATUSES = [
-        'open' => 'Abierto',
-        'in_progress' => 'En revisión',
-        'waiting_user' => 'Esperando respuesta del usuario',
-        'resolved' => 'Resuelto',
-        'closed' => 'Cerrado',
-    ];
-
     protected $fillable = [
         'user_id', 'vendor_id', 'assigned_admin_id', 'category', 'subject', 'status',
         'last_message_at', 'resolved_at',
@@ -35,7 +28,11 @@ class SupportTicket extends Model
 
     protected function casts(): array
     {
-        return ['last_message_at' => 'datetime', 'resolved_at' => 'datetime'];
+        return [
+            'status' => SupportTicketStatus::class,
+            'last_message_at' => 'datetime',
+            'resolved_at' => 'datetime',
+        ];
     }
 
     public function user(): BelongsTo
@@ -70,6 +67,6 @@ class SupportTicket extends Model
 
     public function getStatusLabelAttribute(): string
     {
-        return self::STATUSES[$this->status] ?? ucfirst($this->status);
+        return $this->status->label();
     }
 }

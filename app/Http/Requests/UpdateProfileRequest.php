@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Domain\Marketplace\Enums\BusinessDay;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,7 +19,6 @@ class UpdateProfileRequest extends FormRequest
             'name' => ['required', 'string', 'max:120'],
             'interests' => ['nullable', 'array', 'max:10'],
             'interests.*' => ['integer', 'distinct', Rule::exists('categories', 'id')->where('is_active', true)],
-            'offers_services' => ['nullable', 'boolean'],
             'offered_categories' => ['nullable', 'array', 'max:10'],
             'offered_categories.*' => ['integer', 'distinct', Rule::exists('categories', 'id')->where('is_active', true)],
             'phone' => ['nullable', 'regex:/^\d{10}$/'],
@@ -27,7 +27,7 @@ class UpdateProfileRequest extends FormRequest
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ];
 
-        if ($this->boolean('offers_services') || $this->user()->vendor) {
+        if ($this->user()->vendor) {
             $rules = array_merge($rules, [
                 'offered_categories' => ['required', 'array', 'min:1', 'max:10'],
                 'display_name' => ['required', 'string', 'max:120'],
@@ -37,7 +37,7 @@ class UpdateProfileRequest extends FormRequest
                 'years_experience' => ['nullable', 'integer', 'min:0', 'max:80'],
                 'availability_status' => ['required', Rule::in(['available', 'busy', 'unavailable'])],
                 'business_days' => ['required', 'array', 'min:1'],
-                'business_days.*' => ['required', 'distinct', Rule::in(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'])],
+                'business_days.*' => ['required', 'distinct', Rule::in(BusinessDay::values())],
                 'business_opens_at' => ['required', 'date_format:H:i'],
                 'business_closes_at' => ['required', 'date_format:H:i', 'after:business_opens_at'],
                 'certifications' => ['nullable', 'string', 'max:1000'],

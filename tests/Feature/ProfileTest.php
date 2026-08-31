@@ -82,8 +82,10 @@ class ProfileTest extends TestCase
         $this->get(route('profile.show', $user))
             ->assertOk()
             ->assertSee('San Juan Tetla')
+            ->assertSee('Chiautzingo, Puebla')
             ->assertDontSee('Compra, solicita y participa en la comunidad')
-            ->assertDontSee('Ofrece productos o servicios');
+            ->assertDontSee('Ofrece productos o servicios')
+            ->assertDontSee('radio local');
     }
 
     public function test_administrator_can_see_email_for_account_support(): void

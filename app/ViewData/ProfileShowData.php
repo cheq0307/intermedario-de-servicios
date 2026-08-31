@@ -39,7 +39,7 @@ final readonly class ProfileShowData
             roleLabel: $staffLabel ?: $user->commercialRoleLabel(),
             intro: $isStaff
                 ? 'Cuenta institucional de Plaza Local'
-                : ($user->community?->display_label ?: 'Ubicación por definir'),
+                : ($user->community?->public_location_label ?: 'Ubicación por definir'),
             description: $isStaff
                 ? 'Esta cuenta representa al equipo de administración. No publica ofertas, no contrata servicios y no recibe reseñas comerciales.'
                 : ($vendor?->description ?: $user->bio ?: 'Esta persona todavía está completando su presentación.'),

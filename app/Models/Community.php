@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Community extends Model
@@ -23,11 +23,11 @@ class Community extends Model
         ];
     }
 
-
     public function jobRequests(): BelongsToMany
     {
         return $this->belongsToMany(JobRequest::class)->withTimestamps();
     }
+
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
@@ -35,10 +35,16 @@ class Community extends Model
 
     public function getDisplayLabelAttribute(): string
     {
-        $place = $this->state ? "{$this->municipality}, {$this->state}" : $this->municipality;
         $distance = 'radio local de '.number_format((float) $this->default_radius_km, 1).' km';
 
-        return "{$this->name} · {$place} · {$distance}";
+        return "{$this->public_location_label} · {$distance}";
+    }
+
+    public function getPublicLocationLabelAttribute(): string
+    {
+        $place = $this->state ? "{$this->municipality}, {$this->state}" : $this->municipality;
+
+        return collect([$this->name, $place])->filter()->implode(' · ');
     }
 
     public function hasCoordinates(): bool

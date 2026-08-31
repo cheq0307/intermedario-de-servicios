@@ -34,7 +34,7 @@ class PostController extends Controller
             'type' => ['required', 'string', Rule::in($allowedTypes)],
             'body' => ['required', 'string', 'min:10', 'max:1500'],
             'media' => ['nullable', 'array', 'max:6'],
-            'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('is_active', true)],
+            'category_id' => ['required', 'integer', Rule::exists('categories', 'id')->where('is_active', true)],
             'community_ids' => ['nullable', 'array', 'max:25'],
             'community_ids.*' => ['integer', 'distinct', Rule::exists('communities', 'id')->where('is_active', true)],
             'media.*' => ['file', 'mimetypes:image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm', 'max:51200'],

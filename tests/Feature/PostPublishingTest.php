@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
 use App\Models\Post;
 use App\Models\User;
 use App\Models\Vendor;
@@ -20,6 +21,7 @@ class PostPublishingTest extends TestCase
         $response = $this->actingAs($provider)->post(route('posts.store'), [
             'submission_token' => (string) Str::uuid(),
             'type' => 'service',
+            'category_id' => $this->categoryId(),
             'title' => 'Instalación eléctrica',
             'price_type' => 'starting_at',
             'price' => '850.50',
@@ -49,6 +51,7 @@ class PostPublishingTest extends TestCase
         $this->actingAs($provider)->post(route('posts.store'), [
             'submission_token' => (string) Str::uuid(),
             'type' => 'product',
+            'category_id' => $this->categoryId(),
             'title' => 'Paquete de hojas blancas',
             'price_type' => 'fixed',
             'price' => '95',
@@ -71,6 +74,7 @@ class PostPublishingTest extends TestCase
             $this->actingAs($provider)->post(route('posts.store'), [
                 'submission_token' => (string) Str::uuid(),
                 'type' => 'service',
+                'category_id' => $this->categoryId(),
                 'title' => $title,
                 'price_type' => 'quote',
                 'body' => 'Servicio distinto publicado por la misma cuenta para la comunidad.',
@@ -89,6 +93,7 @@ class PostPublishingTest extends TestCase
             $this->actingAs($provider)->post(route('posts.store'), [
                 'submission_token' => (string) Str::uuid(),
                 'type' => 'job_request',
+                'category_id' => $this->categoryId(),
                 'title' => $title,
                 'urgency' => 'normal',
                 'body' => 'Esta solicitud demuestra que una sola cuenta también puede pedir ayuda.',
@@ -106,6 +111,7 @@ class PostPublishingTest extends TestCase
         $this->actingAs($client)->post(route('posts.store'), [
             'submission_token' => (string) Str::uuid(),
             'type' => 'job_request',
+            'category_id' => $this->categoryId(),
             'title' => 'Reparar una fuga de agua',
             'budget_min' => '300',
             'budget_max' => '700.50',
@@ -124,6 +130,7 @@ class PostPublishingTest extends TestCase
         $this->assertDatabaseHas('posts', [
             'user_id' => $client->id,
             'type' => 'job_request',
+            'category_id' => $this->categoryId(),
         ]);
     }
 
@@ -136,6 +143,7 @@ class PostPublishingTest extends TestCase
             ->post(route('posts.store'), [
                 'submission_token' => (string) Str::uuid(),
                 'type' => 'product',
+                'category_id' => $this->categoryId(),
                 'body' => 'Estoy intentando publicar un producto como cliente.',
             ])
             ->assertRedirect(route('dashboard'))
@@ -149,6 +157,7 @@ class PostPublishingTest extends TestCase
         $payload = [
             'submission_token' => $token,
             'type' => 'job_request',
+            'category_id' => $this->categoryId(),
             'title' => 'Necesito reparar una tubería',
             'budget_min' => '500',
             'budget_max' => '1000',
@@ -169,6 +178,25 @@ class PostPublishingTest extends TestCase
         $this->assertDatabaseCount('job_requests', 1);
         $this->assertDatabaseCount('posts', 1);
         $this->assertDatabaseHas('posts', ['submission_token' => $token]);
+    }
+
+    public function test_a_new_publication_requires_a_primary_category(): void
+    {
+        $client = User::factory()->create(['account_type' => 'client']);
+
+        $this->actingAs($client)
+            ->from(route('dashboard'))
+            ->post(route('posts.store'), [
+                'submission_token' => (string) Str::uuid(),
+                'type' => 'job_request',
+                'title' => 'Necesito apoyo con una reparación',
+                'urgency' => 'normal',
+                'body' => 'Descripción suficientemente clara de la solicitud local.',
+            ])
+            ->assertRedirect(route('dashboard'))
+            ->assertSessionHasErrors('category_id');
+
+        $this->assertDatabaseCount('posts', 0);
     }
 
     public function test_published_posts_appear_in_the_feed(): void
@@ -194,6 +222,7 @@ class PostPublishingTest extends TestCase
         $response = $this->actingAs($provider)->post(route('posts.store'), [
             'submission_token' => (string) Str::uuid(),
             'type' => 'service',
+            'category_id' => $this->categoryId(),
             'body' => 'Servicio profesional todavía pendiente de aprobación.',
             'title' => 'Servicio pendiente',
             'price_type' => 'quote',
@@ -211,5 +240,13 @@ class PostPublishingTest extends TestCase
         Vendor::create(['user_id' => $provider->id, 'display_name' => $provider->name, 'slug' => 'aprobado-'.$provider->id, 'status' => 'active']);
 
         return $provider;
+    }
+
+    private function categoryId(): int
+    {
+        return Category::query()->firstOrCreate(
+            ['slug' => 'servicios-locales'],
+            ['name' => 'Servicios locales', 'is_active' => true],
+        )->id;
     }
 }

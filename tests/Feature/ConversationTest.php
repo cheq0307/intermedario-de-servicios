@@ -2,9 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
 use App\Models\Conversation;
+use App\Models\Listing;
+use App\Models\Post;
 use App\Models\User;
+use App\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class ConversationTest extends TestCase
@@ -36,13 +41,14 @@ class ConversationTest extends TestCase
             'conversation_id' => $conversation->id,
             'sender_id' => $sender->id,
             'body' => 'Hola, ¿sigues disponible?',
-        ]);        $this->assertSame(1, $recipient->unreadConversationsCount());
-
+        ]);
+        $this->assertSame(1, $recipient->unreadConversationsCount());
 
         $this->actingAs($recipient)
             ->get(route('conversations.show', $conversation))
             ->assertOk()
-            ->assertSee('Hola, ¿sigues disponible?');        $this->assertSame(0, $recipient->unreadConversationsCount());
+            ->assertSee('Hola, ¿sigues disponible?');
+        $this->assertSame(0, $recipient->unreadConversationsCount());
         $this->actingAs($sender)->get(route('conversations.show', $conversation))->assertOk()->assertSee('Visto');
 
     }
@@ -51,7 +57,7 @@ class ConversationTest extends TestCase
     {
         [$sender, $recipient, $direct] = $this->directConversation();
         $operation = Conversation::create([
-            'public_id' => (string) \Illuminate\Support\Str::uuid(),
+            'public_id' => (string) Str::uuid(),
             'type' => 'operation',
             'state' => 'archived',
             'archived_at' => now(),
@@ -65,6 +71,7 @@ class ConversationTest extends TestCase
             ->post(route('conversations.messages.store', $direct), ['body' => 'El chat directo sigue activo'])
             ->assertRedirect();
     }
+
     public function test_outsider_cannot_read_or_write_conversation(): void
     {
         [, , $conversation] = $this->directConversation();
@@ -82,6 +89,54 @@ class ConversationTest extends TestCase
         $this->actingAs($sender)
             ->post(route('conversations.start'), ['recipient_id' => $recipient->id])
             ->assertRedirect(route('verification.notice'));
+    }
+
+    public function test_message_index_loads_a_negotiation_linked_to_a_real_listing(): void
+    {
+        $owner = User::factory()->create();
+        $interested = User::factory()->create();
+        $category = Category::firstOrCreate(
+            ['slug' => 'comida-bebidas'],
+            ['name' => 'Comida y bebidas', 'is_active' => true],
+        );
+        $vendor = Vendor::create([
+            'user_id' => $owner->id,
+            'display_name' => 'Taquizas El Centro',
+            'slug' => 'taquizas-el-centro',
+            'status' => 'active',
+        ]);
+        $listing = Listing::create([
+            'vendor_id' => $vendor->id,
+            'category_id' => $category->id,
+            'type' => 'service',
+            'name' => 'Carrito de tacos para fiestas',
+            'slug' => 'carrito-de-tacos-para-fiestas',
+            'description' => 'Servicio de taquiza para eventos.',
+            'price_type' => 'quote',
+            'is_active' => true,
+        ]);
+        $post = Post::create([
+            'user_id' => $owner->id,
+            'vendor_id' => $vendor->id,
+            'listing_id' => $listing->id,
+            'category_id' => $category->id,
+            'type' => 'service',
+            'body' => $listing->description,
+            'published_at' => now(),
+        ]);
+        $conversation = Conversation::create([
+            'public_id' => (string) Str::uuid(),
+            'post_id' => $post->id,
+            'type' => 'negotiation',
+            'state' => 'active',
+            'expires_at' => now()->addWeek(),
+        ]);
+        $conversation->participants()->attach([$owner->id, $interested->id]);
+
+        $this->actingAs($interested)
+            ->get(route('conversations.index'))
+            ->assertOk()
+            ->assertSee('Carrito de tacos para fiestas');
     }
 
     private function directConversation(): array

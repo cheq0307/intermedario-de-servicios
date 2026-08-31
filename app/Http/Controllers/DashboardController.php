@@ -114,7 +114,7 @@ class DashboardController extends Controller
             ->values();
 
         $posts = Post::query()
-            ->with(['user.community', 'listing.category', 'jobRequest.category', 'jobRequest.communities', 'media', 'comments' => fn ($query) => $query->with('user:id,name,avatar_path,avatar_disk')->limit(2)])
+            ->with(['user.community', 'category', 'listing.category', 'jobRequest.category', 'jobRequest.communities', 'media', 'comments' => fn ($query) => $query->with('user:id,name,avatar_path,avatar_disk')->limit(2)])
             ->withCount(['reactions', 'comments', 'shares'])
             ->withExists(['reactions as reacted_by_user' => fn ($query) => $query->where('user_id', $user->id)])
             ->whereNotNull('published_at')
@@ -124,22 +124,15 @@ class DashboardController extends Controller
                 $query->whereNotIn('type', ['portfolio', 'business_update', 'product', 'service', 'promotion'])
                     ->orWhereDoesntHave('user.vendor', fn ($vendorQuery) => $vendorQuery->where('status', 'suspended'));
             })
-            ->when($module === 'food', fn ($query) => $query->where(function ($query): void {
-                $query->whereHas('listing.category', fn ($category) => $category->where('slug', 'comida-bebidas'))
-                    ->orWhereHas('jobRequest.category', fn ($category) => $category->where('slug', 'comida-bebidas'));
-            }))
-            ->when($module === 'transport', fn ($query) => $query->where(function ($query): void {
-                $query->whereHas('listing.category', fn ($category) => $category->where('slug', 'transporte-taxi'))
-                    ->orWhereHas('jobRequest.category', fn ($category) => $category->where('slug', 'transporte-taxi'));
-            }))
+            ->when($module === 'food', fn ($query) => $query->whereHas('category', fn ($category) => $category->where('slug', 'comida-bebidas')))
+            ->when($module === 'transport', fn ($query) => $query->whereHas('category', fn ($category) => $category->where('slug', 'transporte-taxi')))
             ->when($module === 'products', fn ($query) => $query->whereIn('type', ['product', 'promotion']))
             ->when($module === 'services', fn ($query) => $query
                 ->whereIn('type', ['service', 'job_request', 'portfolio', 'business_update'])
-                ->whereDoesntHave('listing.category', fn ($category) => $category->whereIn('slug', ['comida-bebidas', 'transporte-taxi']))
-                ->whereDoesntHave('jobRequest.category', fn ($category) => $category->whereIn('slug', ['comida-bebidas', 'transporte-taxi'])))
+                ->whereDoesntHave('category', fn ($category) => $category->whereIn('slug', ['comida-bebidas', 'transporte-taxi'])))
             ->when($feedTypes !== null, fn ($query) => $query->whereIn('type', $feedTypes))
             ->when($feed === 'for_you' && $preferredCategoryIds !== [], fn ($query) => $query->orderByRaw(
-                'CASE WHEN EXISTS (SELECT 1 FROM listings WHERE listings.id = posts.listing_id AND listings.category_id IN ('.implode(',', array_map('intval', $preferredCategoryIds)).')) OR EXISTS (SELECT 1 FROM job_requests WHERE job_requests.id = posts.job_request_id AND job_requests.category_id IN ('.implode(',', array_map('intval', $preferredCategoryIds)).')) THEN 0 ELSE 1 END'
+                'CASE WHEN posts.category_id IN ('.implode(',', array_map('intval', $preferredCategoryIds)).') THEN 0 ELSE 1 END'
             ))
             ->latest('published_at')
             ->latest('id')

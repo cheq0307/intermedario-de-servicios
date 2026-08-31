@@ -12,12 +12,20 @@
         $currentUser = auth()->user();
         $isProvider = $activeMode === 'provider';
         $typeLabels = [
-            'portfolio' => 'Trabajo realizado',
-            'business_update' => 'Novedad',
-            'product' => 'Producto',
-            'service' => 'Servicio',
-            'promotion' => 'Promoción',
-            'job_request' => 'Busco ayuda',
+            'portfolio' => 'TRABAJO REALIZADO',
+            'business_update' => 'NOVEDAD',
+            'product' => 'PRODUCTO',
+            'service' => 'SERVICIO',
+            'promotion' => 'PROMOCIÓN',
+            'job_request' => 'SOLICITUD',
+        ];
+        $typeBadgeClasses = [
+            'portfolio' => 'bg-brand text-white',
+            'business_update' => 'bg-brand-neutral-soft text-brand-copy-strong',
+            'product' => 'bg-brand-orange-soft text-brand-orange-dark',
+            'service' => 'bg-brand-success-soft text-brand-success',
+            'promotion' => 'bg-brand-warning-soft text-brand-warning-copy',
+            'job_request' => 'bg-brand-coral-faint text-brand-danger-warm',
         ];
         $moduleLabels = [
             'food' => 'Comida',
@@ -164,7 +172,7 @@
                             'business_update' => 'Novedad',
                         ] : ['job_request' => 'Busco ayuda'] as $value => $label)
                             <label class="shrink-0 cursor-pointer">
-                                <input class="peer sr-only" type="radio" name="type" value="{{ $value }}" {{ old('type', $isProvider ? 'service' : 'job_request') === $value ? 'checked' : '' }}>
+                                <input class="peer sr-only" type="radio" name="type" value="{{ $value }}" data-publication-type data-label="{{ $typeLabels[$value] }}" {{ old('type', $isProvider ? 'service' : 'job_request') === $value ? 'checked' : '' }}>
                                 <span class="block rounded-full border border-brand/10 px-4 py-2 text-xs font-black text-brand-copy transition peer-checked:border-brand-orange peer-checked:bg-brand-orange-soft peer-checked:text-brand-danger-warm">{{ $label }}</span>
                             </label>
                         @endforeach
@@ -241,10 +249,16 @@
                     @endif
 
                     <label class="block">
-                        <span class="text-sm font-black">Rubro o temática</span>
-                        <select class="mt-2 w-full rounded-2xl border border-brand/10 bg-brand-surface px-4 py-3 text-sm font-semibold" name="category_id" required><option value="">Selecciona un rubro</option>@foreach($categories as $category)<option value="{{ $category->id }}" @selected((string) old('category_id') === (string) $category->id)>{{ $category->name }}</option>@endforeach</select>
+                        <span class="text-sm font-black">Rubro principal</span>
+                        <select class="mt-2 w-full rounded-2xl border border-brand/10 bg-brand-surface px-4 py-3 text-sm font-semibold" name="category_id" data-publication-category required><option value="">Selecciona un rubro</option>@foreach($categories as $category)<option value="{{ $category->id }}" @selected((string) old('category_id') === (string) $category->id)>{{ $category->name }}</option>@endforeach</select>
+                        <span class="mt-1 block text-xs font-semibold text-brand-muted">Define el área donde se descubrirá la publicación. Ejemplo: Servicio · Comida y bebidas.</span>
                         @error('category_id')<span class="mt-1 block text-sm font-bold text-red-600">{{ $message }}</span>@enderror
                     </label>
+                    <div class="flex flex-wrap items-center gap-2 rounded-2xl border border-brand/10 bg-brand-page-soft px-4 py-3 text-xs" data-publication-classification-preview>
+                        <span class="font-bold text-brand-muted">Así se clasificará:</span>
+                        <strong class="rounded-full bg-white px-3 py-1 text-brand" data-publication-preview-type>TIPO</strong>
+                        <strong class="rounded-full bg-white px-3 py-1 text-brand-copy" data-publication-preview-category>Selecciona un rubro</strong>
+                    </div>
                     @unless($isProvider)
                         <fieldset><legend class="text-sm font-black">Localidades donde quieres recibir propuestas</legend><p class="mt-1 text-xs font-semibold text-brand-muted">Las personas del mismo rubro también podrán verla fuera de esta selección.</p><div class="mt-3 grid gap-2 sm:grid-cols-2">
                             @foreach($communities as $community)<label class="cursor-pointer"><input class="peer sr-only" type="checkbox" name="community_ids[]" value="{{ $community->id }}" @checked(in_array($community->id, old('community_ids', [$currentUser->community_id])))><span class="block rounded-2xl border border-brand/10 bg-brand-surface px-4 py-3 text-sm font-black peer-checked:border-brand-success peer-checked:bg-brand-success-soft peer-checked:text-brand-success">{{ $community->name }}<small class="mt-1 block font-semibold">{{ $community->municipality }}</small></span></label>@endforeach
@@ -270,11 +284,6 @@
 
             @endif
             <section id="actividad" class="scroll-mt-24 space-y-4">
-                <div class="px-1 pt-1">
-                    <h2 class="text-xl font-black">{{ $feedLabels[$feed] ?? 'Para ti' }}</h2>
-                    @if($currentUser->community)<p class="mt-1 text-xs font-semibold text-brand-muted">{{ $currentUser->community->name }} · lo más relevante primero</p>@endif
-                </div>
-
                 <nav class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Filtros de actividad">
                     @foreach($feedLabels as $feedKey => $feedLabel)
                         <a class="shrink-0 rounded-full border px-4 py-2 text-xs font-bold transition {{ $feed === $feedKey ? 'border-brand-orange bg-brand-orange text-white' : 'border-brand/10 bg-white text-brand-copy hover:border-brand-orange/40 hover:text-brand-danger-warm' }}" href="{{ route('dashboard', ['module' => $module, 'feed' => $feedKey]).'#actividad' }}" @if($feed === $feedKey) aria-current="page" @endif>{{ $feedLabel }}</a>
@@ -282,6 +291,11 @@
                 </nav>
 
                 @forelse ($posts as $post)
+                    @php
+                        $postCategory = $post->category ?? $post->listing?->category ?? $post->jobRequest?->category;
+                        $postTypeLabel = $typeLabels[$post->type] ?? 'PUBLICACIÓN';
+                        $postTypeBadgeClass = $typeBadgeClasses[$post->type] ?? 'bg-brand-neutral-soft text-brand-copy-strong';
+                    @endphp
                     <article id="post-{{ $post->id }}" class="scroll-mt-24 overflow-hidden rounded-[1.5rem] border border-brand/10 bg-white shadow-feed-card">
                         <div class="p-4 sm:p-5">
                             <div class="flex items-start justify-between gap-4">
@@ -295,7 +309,7 @@
                                     </a>
                                     <div class="min-w-0">
                                         <h3 class="truncate font-black"><a class="hover:text-brand-orange" href="{{ route('profile.show', $post->user) }}">{{ $post->user->name }}</a></h3>
-                                        <p class="mt-0.5 text-xs font-semibold text-brand-muted">{{ $post->published_at->diffForHumans() }} · {{ $post->type === 'job_request' ? 'Solicitud' : ($typeLabels[$post->type] ?? 'Oferta') }}@if($post->user->community) · {{ $post->user->community->name }}@endif</p>
+                                        <p class="mt-0.5 text-xs font-semibold text-brand-muted">{{ $post->published_at->diffForHumans() }}@if($post->user->community) · {{ $post->user->community->name }}@endif</p>
                                     </div>
                                 </div>
                                 <details class="relative shrink-0">
@@ -307,7 +321,17 @@
                                 </details>
                             </div>
 
-                            <p class="mt-4 whitespace-pre-line text-[15px] font-medium leading-7 text-brand-copy-strong">{{ $post->body }}</p>
+                            <div class="mt-3 flex flex-wrap items-center gap-2" aria-label="Clasificación de la publicación">
+                                <span class="rounded-full px-3 py-1 text-[10px] font-black tracking-wide {{ $postTypeBadgeClass }}">{{ $postTypeLabel }}</span>
+                                <span class="rounded-full border border-brand/10 bg-brand-surface px-3 py-1 text-[10px] font-black text-brand-copy">RUBRO · {{ $postCategory?->name ?? 'POR ACTUALIZAR' }}</span>
+                            </div>
+
+                            @if($post->listing)
+                                <h4 class="mt-4 text-lg font-black text-brand">{{ $post->listing->name }}</h4>
+                            @elseif($post->jobRequest)
+                                <h4 class="mt-4 text-lg font-black text-brand">{{ $post->jobRequest->title }}</h4>
+                            @endif
+                            <p class="mt-2 whitespace-pre-line text-[15px] font-medium leading-7 text-brand-copy-strong">{{ $post->body }}</p>
                             @if($post->media->isNotEmpty())
                                 <div class="mt-5 grid gap-2 {{ $post->media->count() > 1 ? 'grid-cols-2' : 'grid-cols-1' }}">
                                     @foreach($post->media as $media)
@@ -322,8 +346,7 @@
 
                             @if ($post->listing)
                                 <div class="mt-4 border-t border-brand/10 pt-4">
-                                    <h4 class="text-lg font-black text-brand">{{ $post->listing->name }}</h4>
-                                    <p class="mt-1 text-sm font-black text-brand-success">
+                                    <p class="text-sm font-black text-brand-success">
                                         @if ($post->listing->price_type->value === 'quote')
                                             Cotización
                                         @else
@@ -339,9 +362,8 @@
                                     $maximumBudget = $post->jobRequest->budget_max_amount;
                                 @endphp
                                 <div class="mt-4 border-t border-brand/10 pt-4">
-                                    <h4 class="text-lg font-black text-brand">{{ $post->jobRequest->title }}</h4>
                                     @if ($minimumBudget !== null || $maximumBudget !== null)
-                                        <p class="mt-1 text-sm font-black text-brand-success">
+                                        <p class="text-sm font-black text-brand-success">
                                             Presupuesto:
                                             @if ($minimumBudget !== null && $maximumBudget !== null)
                                                 ${{ number_format($minimumBudget / 100, 2) }}–${{ number_format($maximumBudget / 100, 2) }} MXN

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
 use App\Models\Post;
 use App\Models\PublicationDraft;
 use App\Models\User;
@@ -17,9 +18,11 @@ class PublicationDraftTest extends TestCase
     public function test_unverified_user_recovers_publication_after_verifying_email(): void
     {
         $user = User::factory()->unverified()->create(['account_type' => 'client']);
+        $category = Category::create(['name' => 'Hogar', 'slug' => 'hogar', 'is_active' => true]);
         $payload = [
             'submission_token' => (string) Str::uuid(),
             'type' => 'job_request',
+            'category_id' => $category->id,
             'body' => 'Necesito reparar una fuga de agua debajo del fregadero.',
             'title' => 'Reparación de fuga',
             'urgency' => 'soon',

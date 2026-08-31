@@ -281,6 +281,26 @@ document.querySelectorAll('[data-market-carousel]').forEach((carousel) => {
     start();
 });
 
+document.querySelectorAll('[data-publication-classification-preview]').forEach((preview) => {
+    const form = preview.closest('form');
+    const typeOutput = preview.querySelector('[data-publication-preview-type]');
+    const categoryOutput = preview.querySelector('[data-publication-preview-category]');
+    const typeInputs = form?.querySelectorAll('[data-publication-type]') ?? [];
+    const categoryInput = form?.querySelector('[data-publication-category]');
+
+    const updatePreview = () => {
+        const selectedType = [...typeInputs].find((input) => input.checked);
+        if (typeOutput) typeOutput.textContent = selectedType?.dataset.label ?? 'TIPO';
+        if (categoryOutput && categoryInput instanceof HTMLSelectElement) {
+            categoryOutput.textContent = categoryInput.selectedOptions[0]?.textContent || 'Selecciona un rubro';
+        }
+    };
+
+    typeInputs.forEach((input) => input.addEventListener('change', updatePreview));
+    categoryInput?.addEventListener('change', updatePreview);
+    updatePreview();
+});
+
 const supportThread = document.querySelector('[data-support-thread]');
 
 if (supportThread instanceof HTMLElement) {

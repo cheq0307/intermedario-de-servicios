@@ -20,8 +20,8 @@ class ConversationController extends Controller
                 'participants:id,name,avatar_path,avatar_disk,account_type',
                 'participants.roles:id,name',
                 'order.jobRequest:id,public_id,title',
-                'post.listing:id,post_id,name',
-                'post.jobRequest:id,post_id,title',
+                'post.listing:id,name',
+                'post.jobRequest:id,title',
                 'order.items:id,order_id,name_snapshot',
                 'messages' => fn ($query) => $query->with('sender:id,name')->latest()->limit(1),
             ])

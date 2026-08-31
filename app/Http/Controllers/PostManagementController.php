@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Marketplace\Enums\JobRequestStatus;
+use App\Models\Category;
 use App\Models\Post;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,11 +16,12 @@ class PostManagementController extends Controller
 {
     public function edit(Request $request, Post $post): View
     {
-        $post->load(['listing.vendor', 'jobRequest.proposals']);
+        $post->load(['category', 'listing.vendor', 'jobRequest.proposals']);
         $this->authorizeOwner($request, $post);
         $this->ensureEditable($post);
+        $categories = Category::query()->where('is_active', true)->orderBy('name')->get();
 
-        return view('posts.edit', compact('post'));
+        return view('posts.edit', compact('post', 'categories'));
     }
 
     public function update(Request $request, Post $post): RedirectResponse
@@ -29,7 +31,10 @@ class PostManagementController extends Controller
             $this->authorizeOwner($request, $lockedPost);
             $this->ensureEditable($lockedPost);
 
-            $validated = $request->validate(['body' => ['required', 'string', 'min:10', 'max:1500']]);
+            $validated = $request->validate([
+                'category_id' => ['required', 'integer', Rule::exists('categories', 'id')->where('is_active', true)],
+                'body' => ['required', 'string', 'min:10', 'max:1500'],
+            ]);
 
             if ($lockedPost->listing) {
                 $details = $request->validate([
@@ -41,6 +46,7 @@ class PostManagementController extends Controller
                 $lockedPost->listing->update([
                     'name' => $details['title'],
                     'description' => $validated['body'],
+                    'category_id' => $validated['category_id'],
                     'price_type' => $details['price_type'],
                     'price_amount' => $this->minorUnits($details['price'] ?? null),
                     'stock' => $lockedPost->listing->type->value === 'product' ? ($details['stock'] ?? null) : null,
@@ -59,6 +65,7 @@ class PostManagementController extends Controller
                 $lockedPost->jobRequest->update([
                     'title' => $details['title'],
                     'description' => $validated['body'],
+                    'category_id' => $validated['category_id'],
                     'budget_min_amount' => $this->minorUnits($details['budget_min'] ?? null),
                     'budget_max_amount' => $this->minorUnits($details['budget_max'] ?? null),
                     'urgency' => $details['urgency'],
@@ -66,7 +73,7 @@ class PostManagementController extends Controller
                 ]);
             }
 
-            $lockedPost->update(['body' => $validated['body']]);
+            $lockedPost->update(['category_id' => $validated['category_id'], 'body' => $validated['body']]);
         });
 
         return redirect()->route('dashboard')->with('status', 'Publicación actualizada correctamente.');

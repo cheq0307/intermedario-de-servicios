@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
 use App\Models\Post;
 use App\Models\PostComment;
 use App\Models\PostMedia;
@@ -45,10 +46,12 @@ class PostEngagementAndMediaTest extends TestCase
     {
         Storage::fake('public');
         $client = User::factory()->create(['account_type' => 'client']);
+        $category = Category::create(['name' => 'Hogar', 'slug' => 'hogar', 'is_active' => true]);
 
         $this->actingAs($client)->post(route('posts.store'), [
             'submission_token' => (string) Str::uuid(),
             'type' => 'job_request',
+            'category_id' => $category->id,
             'title' => 'Reparar una puerta',
             'urgency' => 'normal',
             'body' => 'Necesito reparar una puerta de madera que no cierra.',
@@ -64,9 +67,11 @@ class PostEngagementAndMediaTest extends TestCase
     {
         Storage::fake('public');
         $client = User::factory()->create(['account_type' => 'client']);
+        $category = Category::create(['name' => 'Hogar', 'slug' => 'hogar', 'is_active' => true]);
         $this->actingAs($client)->from(route('dashboard'))->post(route('posts.store'), [
             'submission_token' => (string) Str::uuid(),
             'type' => 'job_request',
+            'category_id' => $category->id,
             'title' => 'Trabajo de prueba',
             'urgency' => 'normal',
             'body' => 'Solicitud valida con un archivo que no esta permitido.',

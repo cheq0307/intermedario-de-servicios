@@ -17,6 +17,7 @@ class Post extends Model
         'vendor_id',
         'listing_id',
         'job_request_id',
+        'category_id',
         'submission_token',
         'type',
         'body',
@@ -59,6 +60,11 @@ class Post extends Model
     public function jobRequest(): BelongsTo
     {
         return $this->belongsTo(JobRequest::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
     }
 
     public function media(): HasMany

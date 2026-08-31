@@ -17,8 +17,6 @@ class UpdateProfileRequest extends FormRequest
     {
         $rules = [
             'name' => ['required', 'string', 'max:120'],
-            'interests' => ['nullable', 'array', 'max:10'],
-            'interests.*' => ['integer', 'distinct', Rule::exists('categories', 'id')->where('is_active', true)],
             'offered_categories' => ['nullable', 'array', 'max:10'],
             'offered_categories.*' => ['integer', 'distinct', Rule::exists('categories', 'id')->where('is_active', true)],
             'phone' => ['nullable', 'regex:/^\d{10}$/'],

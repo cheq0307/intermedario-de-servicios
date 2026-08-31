@@ -56,6 +56,7 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     Route::get('/mas', MoreController::class)->name('more.index');
     Route::get('/mi-perfil/editar', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/mi-perfil', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/mi-perfil/intereses', [ProfileController::class, 'updateInterests'])->name('profile.interests.update');
     Route::post('/perfiles/{user}/seguir', [ProfileFollowController::class, 'toggle'])->name('profiles.follow.toggle');
     Route::get('/soporte', [SupportController::class, 'index'])->name('support.index');
     Route::get('/soporte/nueva', [SupportController::class, 'create'])->name('support.create');

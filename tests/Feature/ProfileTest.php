@@ -181,6 +181,51 @@ class ProfileTest extends TestCase
         $this->assertDatabaseMissing('vendors', ['user_id' => $user->id]);
     }
 
+    public function test_interests_can_be_updated_without_revalidating_legacy_profile_fields(): void
+    {
+        $user = User::factory()->create([
+            'account_type' => 'client',
+            'phone' => '22216272334443',
+        ]);
+        $selected = Category::query()->firstOrCreate(
+            ['slug' => 'comida-bebidas'],
+            ['name' => 'Comida y bebidas', 'is_active' => true],
+        );
+        $behaviorOnly = Category::query()->firstOrCreate(
+            ['slug' => 'tecnologia'],
+            ['name' => 'Tecnología', 'is_active' => true],
+        );
+        $user->categoryPreferences()->sync([
+            $behaviorOnly->id => ['interest_score' => 100, 'behavior_score' => 35],
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('profile.interests.update'), ['interests' => [$selected->id]])
+            ->assertRedirect(route('profile.edit'))
+            ->assertSessionHas('status');
+
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'phone' => '22216272334443']);
+        $this->assertDatabaseHas('user_category_preferences', [
+            'user_id' => $user->id,
+            'category_id' => $selected->id,
+            'interest_score' => 100,
+            'behavior_score' => 0,
+        ]);
+        $this->assertDatabaseHas('user_category_preferences', [
+            'user_id' => $user->id,
+            'category_id' => $behaviorOnly->id,
+            'interest_score' => 0,
+            'behavior_score' => 35,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('profile.edit'))
+            ->assertOk()
+            ->assertSee(route('profile.interests.update'), false)
+            ->assertSee('form="profile-interests-form"', false)
+            ->assertSee('Guardar intereses');
+    }
+
     public function test_administrative_profile_hides_paused_commercial_information(): void
     {
         $provider = User::factory()->create(['account_type' => 'provider']);

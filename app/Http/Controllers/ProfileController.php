@@ -14,7 +14,9 @@ use App\Models\User;
 use App\ViewData\ProfileEditData;
 use App\ViewData\ProfileShowData;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -117,10 +119,6 @@ class ProfileController extends Controller
 
             $user->update($userData);
 
-            $user->categoryPreferences()->sync(collect($validated['interests'] ?? [])->mapWithKeys(
-                fn (int $categoryId) => [$categoryId => ['interest_score' => 100, 'behavior_score' => 0]],
-            )->all());
-
             if ($user->vendor) {
                 $vendorData = collect($validated)->only([
                     'display_name',
@@ -159,5 +157,34 @@ class ProfileController extends Controller
         });
 
         return redirect()->route('profile.show', $user)->with('status', 'Tu perfil se actualizó correctamente.');
+    }
+
+    public function updateInterests(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'interests' => ['nullable', 'array', 'max:10'],
+            'interests.*' => ['integer', 'distinct', Rule::exists('categories', 'id')->where('is_active', true)],
+        ]);
+        $user = $request->user();
+        $selectedCategoryIds = collect($validated['interests'] ?? [])
+            ->map(fn ($categoryId): int => (int) $categoryId)
+            ->unique()
+            ->values();
+
+        $preferences = $user->categoryPreferences()->get();
+        $syncData = $preferences->mapWithKeys(function (Category $category) use ($selectedCategoryIds): array {
+            return [$category->id => [
+                'interest_score' => $selectedCategoryIds->contains((int) $category->id) ? 100 : 0,
+                'behavior_score' => (int) $category->pivot->behavior_score,
+            ]];
+        })->all();
+
+        foreach ($selectedCategoryIds as $categoryId) {
+            $syncData[$categoryId] ??= ['interest_score' => 100, 'behavior_score' => 0];
+        }
+
+        $user->categoryPreferences()->sync($syncData);
+
+        return redirect()->route('profile.edit')->with('status', 'Tus intereses se actualizaron correctamente.');
     }
 }

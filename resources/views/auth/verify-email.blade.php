@@ -12,6 +12,9 @@
     @if (session('status') === 'verification-link-sent')
         <div class="mt-6 rounded-2xl border border-brand-success-bright/20 bg-brand-success-soft px-4 py-3 text-sm font-bold text-brand-success">{{ config('mail.default') === 'log' ? 'Generamos un enlace nuevo en el registro local.' : 'Enviamos un enlace nuevo. Revisa también la carpeta de spam.' }}</div>
     @endif
+    @if (session('verification_delivery_failed'))
+        <div class="mt-6 rounded-2xl border border-brand-coral/20 bg-brand-coral-soft px-4 py-3 text-sm font-bold text-brand-coral-strong" role="alert">No pudimos conectarnos al servicio de correo. Tu cuenta sigue activa; inténtalo nuevamente más tarde.</div>
+    @endif
 
     <form class="mt-8" method="POST" action="{{ route('verification.send') }}">
         @csrf

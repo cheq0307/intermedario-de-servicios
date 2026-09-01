@@ -15,6 +15,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Role;
+use Throwable;
 
 class RegisteredUserController extends Controller
 {
@@ -67,10 +68,21 @@ class RegisteredUserController extends Controller
             return $user;
         });
 
-        event(new Registered($user));
+        $verificationDeliveryFailed = false;
+        try {
+            event(new Registered($user));
+        } catch (Throwable $exception) {
+            report($exception);
+            $verificationDeliveryFailed = true;
+        }
+
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('dashboard');
+        $response = redirect()->route('dashboard');
+
+        return $verificationDeliveryFailed
+            ? $response->with('verification_delivery_failed', true)
+            : $response;
     }
 }

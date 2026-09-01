@@ -57,11 +57,16 @@
                     {{ session('status') }}
                 </div>
             @endif
+            @if (session('verification_delivery_failed'))
+                <div class="rounded-2xl border border-brand-orange/20 bg-brand-orange-soft px-5 py-4 text-sm font-bold text-brand-orange-dark" role="alert">
+                    Tu cuenta está lista, pero no pudimos enviar el correo de verificación. Puedes seguir explorando e intentarlo nuevamente más tarde.
+                </div>
+            @endif
 
             @if (! $currentUser->hasVerifiedEmail())
                 <div class="rounded-2xl border border-brand-orange/20 bg-brand-orange-soft px-5 py-4" role="status">
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div><p class="font-black text-brand-orange-dark">Verifica tu correo</p><p class="mt-1 text-sm font-semibold text-brand-orange-muted">Te enviamos un enlace a {{ $currentUser->email }}. Podr&aacute;s explorar y completar tu perfil, pero necesitas verificarlo antes de publicar.</p></div>
+                        <div><p class="font-black text-brand-orange-dark">Verifica tu correo</p><p class="mt-1 text-sm font-semibold text-brand-orange-muted">@if(session('verification_delivery_failed')) El envío a {{ $currentUser->email }} falló temporalmente. @else Te enviamos un enlace a {{ $currentUser->email }}. @endif Podr&aacute;s explorar y completar tu perfil, pero necesitas verificarlo antes de publicar.</p></div>
                         <form method="POST" action="{{ route('verification.send') }}">@csrf<button class="shrink-0 rounded-full bg-brand-orange px-5 py-2.5 text-sm font-black text-white" type="submit">Reenviar correo</button></form>
                     </div>
                 </div>

@@ -5,9 +5,12 @@ namespace Tests\Feature;
 use App\Models\Community;
 use App\Models\User;
 use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Contracts\Notifications\Dispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
+use Mockery\MockInterface;
+use RuntimeException;
 use Tests\TestCase;
 
 class EmailVerificationTest extends TestCase
@@ -85,5 +88,40 @@ class EmailVerificationTest extends TestCase
             ->assertRedirect();
 
         Notification::assertSentTo($user, VerifyEmail::class);
+    }
+
+    public function test_registration_survives_a_verification_mail_transport_failure(): void
+    {
+        $this->mock(Dispatcher::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('send')->once()->andThrow(new RuntimeException('SMTP unavailable'));
+        });
+
+        $response = $this->post('/register', [
+            'community_id' => Community::query()->value('id'),
+            'name' => 'Cuenta sin correo disponible',
+            'email' => 'smtp-failure@example.test',
+            'password' => 'Seguro123',
+            'password_confirmation' => 'Seguro123',
+        ]);
+
+        $response
+            ->assertRedirect('/dashboard')
+            ->assertSessionHas('verification_delivery_failed', true);
+        $this->assertAuthenticated();
+        $this->assertDatabaseHas('users', ['email' => 'smtp-failure@example.test']);
+    }
+
+    public function test_resending_verification_returns_a_controlled_warning_when_mail_fails(): void
+    {
+        $this->mock(Dispatcher::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('send')->once()->andThrow(new RuntimeException('SMTP unavailable'));
+        });
+        $user = User::factory()->unverified()->create();
+
+        $this->actingAs($user)
+            ->from(route('verification.notice'))
+            ->post(route('verification.send'))
+            ->assertRedirect(route('verification.notice'))
+            ->assertSessionHas('verification_delivery_failed', true);
     }
 }

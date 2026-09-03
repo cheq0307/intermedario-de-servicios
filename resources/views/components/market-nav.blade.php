@@ -4,7 +4,7 @@
     $administrativeOnly = $navUser?->hasRole('superadmin') || ($navUser?->hasRole('admin') && ! $navUser?->canUseMarketplace());
     $accountUrl = $navUser ? ($administrativeOnly ? route('admin.index') : route('profile.show', $navUser)) : route('login');
 @endphp
-<header class="sticky top-0 z-40 border-b border-brand/10 bg-white/95 backdrop-blur-xl">
+<header class="sticky top-0 z-40 border-b border-brand/10 bg-white/95 backdrop-blur-xl" @if($navUser) data-activity-summary-url="{{ route('activity.summary') }}" @endif>
     <div class="mx-auto flex max-w-5xl items-center gap-2 px-3 py-3 sm:gap-3 sm:px-5">
         @if($backUrl)
             <a class="grid size-10 shrink-0 place-items-center rounded-full border border-brand/10 bg-white text-brand shadow-sm" href="{{ $backUrl }}" aria-label="Regresar"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg></a>
@@ -25,7 +25,7 @@
             </div>
         </div>
         @if($showNotifications && $navUser && ! $administrativeOnly)
-            <a class="relative grid size-11 shrink-0 place-items-center rounded-full text-brand-copy hover:bg-brand-success-soft" href="{{ route('notifications.index') }}" aria-label="Notificaciones"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>@if($navUser->unreadNotifications()->exists())<span class="absolute right-1.5 top-1.5 size-2.5 rounded-full bg-brand-orange"></span>@endif</a>
+            <a class="relative grid size-11 shrink-0 place-items-center rounded-full text-brand-copy hover:bg-brand-success-soft" href="{{ route('notifications.index') }}" aria-label="Notificaciones"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="absolute right-1.5 top-1.5 size-2.5 rounded-full bg-brand-orange {{ $navUser->unreadNotifications()->exists() ? '' : 'hidden' }}" data-live-notification-dot></span></a>
         @endif
         @if($navUser?->hasAnyRole(['admin', 'superadmin']))
             <a class="hidden rounded-full bg-brand px-4 py-2.5 text-xs font-black text-white sm:inline-flex" href="{{ route('admin.index') }}">Abrir administración</a>

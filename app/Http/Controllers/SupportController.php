@@ -8,24 +8,42 @@ use App\Models\SupportMessage;
 use App\Models\SupportTicket;
 use App\Models\User;
 use App\Notifications\MarketplaceActivity;
+use App\Support\LiveUpdates;
 use App\ViewData\SupportThreadData;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class SupportController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|JsonResponse|Response
     {
-        $tickets = $request->user()->supportTickets()
-            ->with('assignedAdmin:id,name')->withCount('messages')
-            ->latest('last_message_at')->paginate(20);
+        $query = $request->user()->supportTickets();
+        $request->validate(['live_revision' => ['nullable', 'string', 'max:64']]);
 
-        return view('support.index', compact('tickets'));
+        $tickets = $query
+            ->with('assignedAdmin:id,name')->withCount('messages')
+            ->latest('last_message_at')->orderByDesc('id')->paginate(20)
+            ->appends($request->except('live_revision'));
+
+        $revision = LiveUpdates::revision($tickets);
+        if ($request->expectsJson() && hash_equals($revision, (string) $request->query('live_revision'))) {
+            return response()->noContent()->header('Cache-Control', 'no-store, private');
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'html' => view('support._index-list', compact('tickets'))->render(),
+                'revision' => $revision,
+            ])->header('Cache-Control', 'no-store, private');
+        }
+
+        return view('support.index', compact('tickets', 'revision'));
     }
 
     public function create(Request $request): View
@@ -77,7 +95,7 @@ class SupportController extends Controller
     {
         $isAdmin = $this->authorizeTicketAccess($request, $ticket);
         $ticket->load(['user:id,name,email', 'vendor', 'assignedAdmin:id,name', 'messages.sender:id,name']);
-        $ticket->messages()->where('sender_id', '!=', $request->user()->id)->whereNull('read_at')->update(['read_at' => now()]);
+        $ticket->messages()->whereIn('id', $ticket->messages->modelKeys())->where('sender_id', '!=', $request->user()->id)->whereNull('read_at')->update(['read_at' => now()]);
         $support = SupportThreadData::from($ticket, $isAdmin);
 
         return view('support.show', compact('ticket', 'support'));
@@ -154,22 +172,37 @@ class SupportController extends Controller
         return back()->with('status', 'Respuesta enviada.');
     }
 
-    public function adminIndex(Request $request): View
+    public function adminIndex(Request $request): View|JsonResponse|Response
     {
         $this->authorizeAdmin($request);
         $filters = $request->validate(['status' => ['nullable', Rule::enum(SupportTicketStatus::class)], 'q' => ['nullable', 'string', 'max:100']]);
         $term = trim($filters['q'] ?? '');
-        $tickets = SupportTicket::query()->with(['user:id,name,email', 'assignedAdmin:id,name'])->withCount('messages')
+        $query = SupportTicket::query()
             ->when($filters['status'] ?? null, fn (Builder $query, string $status) => $query->where('status', $status))
-            ->when($term !== '', fn (Builder $query) => $query->where(fn (Builder $query) => $query->where('subject', 'like', "%{$term}%")->orWhereHas('user', fn (Builder $user) => $user->where('name', 'like', "%{$term}%")->orWhere('email', 'like', "%{$term}%"))))
-            ->latest('last_message_at')->paginate(25)->withQueryString();
+            ->when($term !== '', fn (Builder $query) => $query->where(fn (Builder $query) => $query->where('subject', 'like', "%{$term}%")->orWhereHas('user', fn (Builder $user) => $user->where('name', 'like', "%{$term}%")->orWhere('email', 'like', "%{$term}%"))));
+        $request->validate(['live_revision' => ['nullable', 'string', 'max:64']]);
+
+        $tickets = $query->with(['user:id,name,email', 'assignedAdmin:id,name'])->withCount('messages')
+            ->latest('last_message_at')->orderByDesc('id')->paginate(25)->appends($request->except('live_revision'));
 
         $statuses = SupportTicketStatus::labels();
 
-        return view('admin.support.index', compact('tickets', 'filters', 'statuses'));
+        $revision = LiveUpdates::revision($tickets);
+        if ($request->expectsJson() && hash_equals($revision, (string) $request->query('live_revision'))) {
+            return response()->noContent()->header('Cache-Control', 'no-store, private');
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'html' => view('admin.support._index-list', compact('tickets'))->render(),
+                'revision' => $revision,
+            ])->header('Cache-Control', 'no-store, private');
+        }
+
+        return view('admin.support.index', compact('tickets', 'filters', 'statuses', 'revision'));
     }
 
-    public function updateStatus(Request $request, SupportTicket $ticket): RedirectResponse
+    public function updateStatus(Request $request, SupportTicket $ticket): RedirectResponse|JsonResponse
     {
         $this->authorizeAdmin($request);
         $validated = $request->validate(['status' => ['required', Rule::enum(SupportTicketStatus::class)]]);
@@ -180,6 +213,11 @@ class SupportController extends Controller
             'resolved_at' => $status === SupportTicketStatus::Resolved ? now() : null,
         ]);
         $ticket->user->notify(new MarketplaceActivity('Soporte actualizó tu solicitud', $ticket->reference.' ahora está: '.$ticket->status_label.'.', 'support.show', ['ticket' => $ticket->id], 'support_status'));
+
+        if ($request->expectsJson()) {
+            return response()->json(['ticket' => $this->ticketPayload($ticket)])
+                ->header('Cache-Control', 'no-store, private');
+        }
 
         return back()->with('status', 'Estado del caso actualizado.');
     }

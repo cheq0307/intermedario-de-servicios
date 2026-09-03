@@ -14,6 +14,7 @@ use App\Models\SupportTicket;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Notifications\MarketplaceActivity;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -28,15 +29,8 @@ class AdminController extends Controller
     public function index(Request $request): View
     {
         $this->authorizeAdmin($request);
-        $metrics = [
-            'users' => User::count(),
-            'vendors' => Vendor::count(),
+        $metrics = $this->operationMetrics($request) + [
             'postal_codes' => PostalCode::count(),
-            'open_support_tickets' => SupportTicket::whereIn('status', SupportTicketStatus::activeValues())->count(),
-            'pending_vendors' => Vendor::where('status', 'pending')->where('user_id', '!=', $request->user()->id)->count(),
-            'open_disputes' => Dispute::where('status', 'open')->count(),
-            'active_orders' => Order::whereIn('status', ['accepted', 'awaiting_payment', 'paid', 'in_progress', 'ready', 'delivered', 'disputed'])->count(),
-            'active_posts' => Post::whereNull('removed_at')->count(),
             'unread_notifications' => $request->user()->unreadNotifications()->count(),
         ];
         $pendingVendorCount = $metrics['pending_vendors'];
@@ -71,6 +65,27 @@ class AdminController extends Controller
         $isSuperadmin = $request->user()->hasRole('superadmin');
 
         return view('admin.index', compact('metrics', 'pendingVendorCount', 'administrators', 'adminCandidates', 'adminSearch', 'auditLogs', 'communities', 'categories', 'auditActions', 'auditSubjects', 'isSuperadmin'));
+    }
+
+    public function summary(Request $request): JsonResponse
+    {
+        $this->authorizeAdmin($request);
+
+        return response()->json(['metrics' => $this->operationMetrics($request)])
+            ->header('Cache-Control', 'no-store, private');
+    }
+
+    /** @return array<string, int> */
+    private function operationMetrics(Request $request): array
+    {
+        return [
+            'users' => User::count(),
+            'open_support_tickets' => SupportTicket::whereIn('status', SupportTicketStatus::activeValues())->count(),
+            'pending_vendors' => Vendor::where('status', 'pending')->whereNotNull('submitted_at')->where('user_id', '!=', $request->user()->id)->count(),
+            'open_disputes' => Dispute::where('status', 'open')->count(),
+            'active_orders' => Order::whereIn('status', ['accepted', 'awaiting_payment', 'paid', 'in_progress', 'ready', 'delivered', 'disputed'])->count(),
+            'active_posts' => Post::whereNull('removed_at')->count(),
+        ];
     }
 
     public function approveVendor(Request $request, Vendor $vendor): RedirectResponse

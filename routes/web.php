@@ -65,6 +65,7 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     Route::get('/soporte/{ticket}', [SupportController::class, 'show'])->name('support.show');
     Route::get('/soporte/{ticket}/mensajes', [SupportController::class, 'messages'])->name('support.messages.index');
     Route::post('/soporte/{ticket}/respuestas', [SupportController::class, 'reply'])->name('support.reply');
+    Route::get('/actividad/resumen', [NotificationController::class, 'summary'])->middleware('throttle:120,1')->name('activity.summary');
     Route::post('/publicaciones', [PostController::class, 'store'])->name('posts.store');
     Route::middleware('verified')->group(function () {
         Route::post('/mi-cuenta/capacidades/{capability}', [MarketplaceCapabilityController::class, 'activate'])->name('capabilities.activate');
@@ -104,6 +105,7 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::get('/mensajes', [ConversationController::class, 'index'])->name('conversations.index');
         Route::post('/mensajes/iniciar', [ConversationController::class, 'start'])->name('conversations.start');
         Route::post('/publicaciones/{post}/conversacion', [NegotiationConversationController::class, 'start'])->name('posts.conversations.start');
+        Route::get('/mensajes/{conversation}/actualizaciones', [ConversationController::class, 'messages'])->middleware('throttle:120,1')->name('conversations.messages.index');
         Route::get('/mensajes/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
         Route::post('/mensajes/{conversation}', [ConversationController::class, 'store'])->name('conversations.messages.store');
         Route::patch('/mensajes/{conversation}/extender', [NegotiationConversationController::class, 'extend'])->name('conversations.extend');
@@ -127,6 +129,7 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::get('/administracion/disputas', [DisputeController::class, 'adminIndex'])->name('disputes.admin-index');
         Route::post('/trabajos/{order}/calificaciones', [ReviewController::class, 'store'])->name('reviews.store');
         Route::patch('/calificaciones/{review}', [ReviewController::class, 'update'])->name('reviews.update');
+        Route::get('/administracion/resumen', [AdminController::class, 'summary'])->middleware('throttle:120,1')->name('admin.summary');
         Route::get('/administracion', [AdminController::class, 'index'])->name('admin.index');
         Route::get('/administracion/soporte', [SupportController::class, 'adminIndex'])->name('admin.support.index');
         Route::get('/administracion/soporte/{ticket}', [SupportController::class, 'show'])->name('admin.support.show');

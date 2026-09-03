@@ -43,7 +43,7 @@
     <title>{{ $title }} - Plaza Local</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-brand-page text-brand-ink antialiased">
+<body data-admin-summary-url="{{ route('admin.summary') }}" class="min-h-screen bg-brand-page text-brand-ink antialiased">
 @endonce
 
 <div class="min-h-screen lg:grid lg:grid-cols-[17rem_minmax(0,1fr)]">
@@ -75,7 +75,7 @@
                                 @endswitch
                             </span>
                             <span class="min-w-0 flex-1">{{ $item['label'] }}</span>
-                            @if($item['badge'] ?? null)<span class="rounded-full bg-brand-orange px-2 py-0.5 text-[.65rem] text-white">{{ min(99, $item['badge']) }}</span>@endif
+                            @if($item['key'] === 'accounts')<span data-admin-pending-badge class="rounded-full bg-brand-orange px-2 py-0.5 text-[.65rem] text-white {{ ($item['badge'] ?? 0) ? '' : 'hidden' }}">{{ min(99, $item['badge'] ?? 0) }}</span>@elseif($item['badge'] ?? null)<span class="rounded-full bg-brand-orange px-2 py-0.5 text-[.65rem] text-white">{{ min(99, $item['badge']) }}</span>@endif
                         </a>
                     @endforeach
                 </div>

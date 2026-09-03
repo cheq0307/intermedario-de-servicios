@@ -2,15 +2,37 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\LiveUpdates;
+use App\ViewData\NotificationPreviewData;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\View\View;
 
 class NotificationController extends Controller
 {
-    public function index(Request $request): View
+    public function summary(Request $request): JsonResponse
     {
+        $user = $request->user();
+        $administrativeOnly = $user->hasRole('superadmin') || ($user->hasRole('admin') && ! $user->canUseMarketplace());
+        $notificationPreview = $user->notifications()
+            ->latest()
+            ->limit(8)
+            ->get()
+            ->map(fn (DatabaseNotification $notification): NotificationPreviewData => NotificationPreviewData::from($notification));
+
+        return response()->json([
+            'unread_notifications' => $user->unreadNotifications()->count(),
+            'unread_conversations' => $administrativeOnly ? 0 : $user->unreadConversationsCount(),
+            'preview_html' => view('notifications._tray-items', compact('notificationPreview'))->render(),
+        ])->header('Cache-Control', 'no-store, private');
+    }
+
+    public function index(Request $request): View|JsonResponse|Response
+    {
+        $request->validate(['live_revision' => ['nullable', 'string', 'max:64']]);
         $filter = $request->string('filter')->toString();
         if (! in_array($filter, ['administrative', 'social'], true)) {
             $filter = 'all';
@@ -27,10 +49,22 @@ class NotificationController extends Controller
             });
         }
 
-        $notifications = $notificationsQuery->paginate(20)->withQueryString();
+        $notifications = $notificationsQuery->orderByDesc('id')->paginate(20)->appends($request->except('live_revision'));
         $unreadCount = $request->user()->unreadNotifications()->count();
 
-        return view('notifications.index', compact('notifications', 'unreadCount', 'filter'));
+        $revision = LiveUpdates::revision($notifications);
+        if ($request->expectsJson()) {
+            if (hash_equals($revision, (string) $request->query('live_revision'))) {
+                return response()->noContent()->header('Cache-Control', 'no-store, private');
+            }
+
+            return response()->json([
+                'html' => view('notifications._list', compact('notifications'))->render(),
+                'revision' => $revision,
+            ])->header('Cache-Control', 'no-store, private');
+        }
+
+        return view('notifications.index', compact('notifications', 'unreadCount', 'filter', 'revision'));
     }
 
     public function open(Request $request, string $notification): RedirectResponse
@@ -52,9 +86,13 @@ class NotificationController extends Controller
         return redirect()->route($routeName, $routeParameters);
     }
 
-    public function readAll(Request $request): RedirectResponse
+    public function readAll(Request $request): RedirectResponse|JsonResponse
     {
         $request->user()->unreadNotifications()->update(['read_at' => now()]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['unread_notifications' => 0])->header('Cache-Control', 'no-store, private');
+        }
 
         return back()->with('status', 'Todas las notificaciones quedaron marcadas como leídas.');
     }

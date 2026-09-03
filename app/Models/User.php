@@ -111,7 +111,7 @@ class User extends Authenticatable implements MustVerifyEmail
     public function conversations(): BelongsToMany
     {
         return $this->belongsToMany(Conversation::class, 'conversation_participants')
-            ->withPivot(['last_read_at', 'muted_until'])
+            ->withPivot(['last_read_at', 'last_read_message_id', 'muted_until'])
             ->withTimestamps();
     }
 
@@ -123,15 +123,18 @@ class User extends Authenticatable implements MustVerifyEmail
     public function unreadConversationsCount(): int
     {
         return DB::table('conversation_participants as participant')
-            ->join('messages', 'messages.conversation_id', '=', 'participant.conversation_id')
             ->where('participant.user_id', $this->id)
-            ->where('messages.sender_id', '!=', $this->id)
-            ->where(function ($query): void {
-                $query->whereNull('participant.last_read_at')
-                    ->orWhereColumn('messages.created_at', '>', 'participant.last_read_at');
+            ->whereExists(function ($query): void {
+                $query->selectRaw('1')->from('messages')
+                    ->whereColumn('messages.conversation_id', 'participant.conversation_id')
+                    ->where('messages.sender_id', '!=', $this->id)
+                    ->where(function ($unread): void {
+                        $unread->whereColumn('messages.id', '>', 'participant.last_read_message_id')
+                            ->orWhere(fn ($legacy) => $legacy->whereNull('participant.last_read_message_id')
+                                ->where(fn ($date) => $date->whereNull('participant.last_read_at')->orWhereColumn('messages.created_at', '>', 'participant.last_read_at')));
+                    });
             })
-            ->distinct()
-            ->count('participant.conversation_id');
+            ->count();
     }
 
     public function posts(): HasMany

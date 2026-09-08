@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdminUser;
 use App\Models\Conversation;
 use App\Models\SupportTicket;
 use App\Models\User;
@@ -9,7 +10,6 @@ use App\Models\Vendor;
 use App\Notifications\MarketplaceActivity;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class LiveUpdatesTest extends TestCase
@@ -20,7 +20,7 @@ class LiveUpdatesTest extends TestCase
     {
         $this->getJson(route('activity.summary'))->assertUnauthorized();
         $user = User::factory()->unverified()->create();
-        $this->actingAs($user)->getJson(route('activity.summary'))->assertOk()
+        $this->actingAs($user, 'web')->getJson(route('activity.summary'))->assertOk()
             ->assertHeader('Cache-Control', 'no-store, private')
             ->assertJsonPath('unread_notifications', 0);
     }
@@ -33,7 +33,7 @@ class LiveUpdatesTest extends TestCase
             $user->notify(new MarketplaceActivity('Aviso propio '.$i, '<script>alert(1)</script>', 'dashboard'));
         }
         $other->notify(new MarketplaceActivity('Aviso secreto ajeno', 'Privado', 'dashboard'));
-        $response = $this->actingAs($user)->getJson(route('activity.summary'))->assertOk()
+        $response = $this->actingAs($user, 'web')->getJson(route('activity.summary'))->assertOk()
             ->assertJsonPath('unread_notifications', 10)
             ->assertJsonPath('unread_conversations', 0);
         $html = $response->json('preview_html');
@@ -51,7 +51,7 @@ class LiveUpdatesTest extends TestCase
         $user->notify(new MarketplaceActivity('Seguidor visible', 'Social', 'dashboard', [], 'social_follow'));
         $user->notify(new MarketplaceActivity('Soporte oculto', 'Administrativo', 'dashboard', [], 'support'));
         $url = route('notifications.index', ['filter' => 'social']);
-        $response = $this->actingAs($user)->getJson($url)->assertOk();
+        $response = $this->actingAs($user, 'web')->getJson($url)->assertOk();
         $this->assertStringContainsString('Seguidor visible', $response->json('html'));
         $this->assertStringNotContainsString('Soporte oculto', $response->json('html'));
         $revision = $response->json('revision');
@@ -68,7 +68,7 @@ class LiveUpdatesTest extends TestCase
         for ($i = 0; $i < 23; $i++) {
             $user->notify(new MarketplaceActivity('Notificación social', 'Social', 'dashboard', [], 'social_follow'));
         }
-        $response = $this->actingAs($user)->getJson(route('notifications.index', ['filter' => 'social', 'page' => 2]))->assertOk();
+        $response = $this->actingAs($user, 'web')->getJson(route('notifications.index', ['filter' => 'social', 'page' => 2]))->assertOk();
         $this->assertSame(3, substr_count($response->json('html'), 'Notificación social'));
         $this->assertStringContainsString('filter=social', $response->json('html'));
     }
@@ -79,7 +79,7 @@ class LiveUpdatesTest extends TestCase
         $chat->messages()->create(['sender_id' => $sender->id, 'type' => 'text', 'body' => 'Privado']);
         $this->actingAs(User::factory()->create())->getJson(route('conversations.messages.index', $chat))->assertForbidden();
         $this->actingAs(User::factory()->unverified()->create())->getJson(route('conversations.messages.index', $chat))->assertForbidden();
-        $this->actingAs($recipient)->getJson(route('conversations.messages.index', ['conversation' => $chat, 'after_id' => -1]))->assertUnprocessable();
+        $this->actingAs($recipient, 'web')->getJson(route('conversations.messages.index', ['conversation' => $chat, 'after_id' => -1]))->assertUnprocessable();
     }
 
     public function test_conversation_batches_only_mark_returned_messages_read_even_in_same_second(): void
@@ -89,7 +89,7 @@ class LiveUpdatesTest extends TestCase
         for ($i = 0; $i < 101; $i++) {
             $chat->messages()->create(['sender_id' => $sender->id, 'type' => 'text', 'body' => 'Mensaje '.$i]);
         }
-        $response = $this->actingAs($recipient)->getJson(route('conversations.messages.index', $chat))->assertOk()
+        $response = $this->actingAs($recipient, 'web')->getJson(route('conversations.messages.index', $chat))->assertOk()
             ->assertHeader('Cache-Control', 'no-store, private')
             ->assertJsonCount(100, 'messages')->assertJsonPath('has_more', true);
         $last = $response->json('last_id');
@@ -99,10 +99,10 @@ class LiveUpdatesTest extends TestCase
             ->assertJsonCount(1, 'messages')->assertJsonPath('has_more', false);
         $this->assertSame(0, $recipient->unreadConversationsCount());
 
-        $this->actingAs($sender)->getJson(route('conversations.messages.index', ['conversation' => $chat, 'after_id' => $chat->messages()->max('id')]))
+        $this->actingAs($sender, 'web')->getJson(route('conversations.messages.index', ['conversation' => $chat, 'after_id' => $chat->messages()->max('id')]))
             ->assertJsonPath('conversation.other_last_read_message_id', $chat->messages()->max('id'));
         // A late response from an older request must never move the read cursor backwards.
-        $this->actingAs($recipient)->getJson(route('conversations.messages.index', $chat))->assertOk();
+        $this->actingAs($recipient, 'web')->getJson(route('conversations.messages.index', $chat))->assertOk();
         $this->assertSame(0, $recipient->unreadConversationsCount());
     }
 
@@ -110,7 +110,7 @@ class LiveUpdatesTest extends TestCase
     {
         [$sender, $recipient, $chat] = $this->chat();
         $incoming = $chat->messages()->create(['sender_id' => $sender->id, 'type' => 'text', 'body' => 'Llegó mientras escribía']);
-        $response = $this->actingAs($recipient)->postJson(route('conversations.messages.store', $chat), ['body' => 'Mi respuesta'])->assertCreated();
+        $response = $this->actingAs($recipient, 'web')->postJson(route('conversations.messages.store', $chat), ['body' => 'Mi respuesta'])->assertCreated();
         $this->assertSame(1, $recipient->unreadConversationsCount());
         $this->assertGreaterThan($incoming->id, $response->json('message.id'));
         $this->getJson(route('conversations.index'))->assertOk()->assertJson(fn ($json) => $json->whereType('html', 'string')->etc());
@@ -122,11 +122,11 @@ class LiveUpdatesTest extends TestCase
     {
         $this->freezeTime();
         [$sender, $recipient, $chat] = $this->chat();
-        $this->actingAs($sender)->postJson(route('conversations.messages.store', $chat), ['body' => 'Primero'])->assertCreated();
-        $first = $this->actingAs($recipient)->getJson(route('conversations.index'))->assertOk()->json('revision');
+        $this->actingAs($sender, 'web')->postJson(route('conversations.messages.store', $chat), ['body' => 'Primero'])->assertCreated();
+        $first = $this->actingAs($recipient, 'web')->getJson(route('conversations.index'))->assertOk()->json('revision');
         $this->getJson(route('conversations.index', ['live_revision' => $first]))->assertNoContent();
-        $this->actingAs($sender)->postJson(route('conversations.messages.store', $chat), ['body' => 'Segundo'])->assertCreated();
-        $second = $this->actingAs($recipient)->getJson(route('conversations.index', ['live_revision' => $first]))->assertOk()->json('revision');
+        $this->actingAs($sender, 'web')->postJson(route('conversations.messages.store', $chat), ['body' => 'Segundo'])->assertCreated();
+        $second = $this->actingAs($recipient, 'web')->getJson(route('conversations.index', ['live_revision' => $first]))->assertOk()->json('revision');
         $this->assertNotSame($first, $second);
         $chat->update(['state' => 'archived']);
         $this->getJson(route('conversations.index', ['live_revision' => $second]))->assertOk();
@@ -136,7 +136,7 @@ class LiveUpdatesTest extends TestCase
     {
         [$sender, , $chat] = $this->chat();
         $chat->update(['state' => 'archived']);
-        $this->actingAs($sender)->getJson(route('conversations.messages.index', $chat))->assertOk()
+        $this->actingAs($sender, 'web')->getJson(route('conversations.messages.index', $chat))->assertOk()
             ->assertJsonPath('conversation.accepts_messages', false)->assertJsonPath('conversation.state', 'archived');
         $this->postJson(route('conversations.messages.store', $chat), ['body' => 'No enviar'])->assertUnprocessable();
         $this->assertDatabaseCount('messages', 0);
@@ -149,18 +149,18 @@ class LiveUpdatesTest extends TestCase
         $admin = $this->admin();
         $ticket = $this->ticket($owner, 'Mi caso privado');
         $this->ticket(User::factory()->create(), 'Ajeno secreto');
-        $first = $this->actingAs($owner)->getJson(route('support.index'))->assertOk();
+        $first = $this->actingAs($owner, 'web')->getJson(route('support.index'))->assertOk();
         $this->assertStringNotContainsString('Ajeno secreto', $first->json('html'));
         $revision = $first->json('revision');
         $this->getJson(route('support.index', ['live_revision' => $revision]))->assertNoContent();
-        $this->getJson(route('admin.support.index'))->assertForbidden();
-        $this->actingAs($admin)->postJson(route('admin.support.status', $ticket), ['_method' => 'PATCH', 'status' => 'closed'])->assertOk()
+        $this->getJson(route('admin.support.index'))->assertUnauthorized();
+        $this->actingAs($admin, 'admin')->postJson(route('admin.support.status', $ticket), ['_method' => 'PATCH', 'status' => 'closed'])->assertOk()
             ->assertJsonPath('ticket.is_closed', true);
-        $this->actingAs($owner)->getJson(route('support.index', ['live_revision' => $revision]))->assertOk();
+        $this->actingAs($owner, 'web')->getJson(route('support.index', ['live_revision' => $revision]))->assertOk();
         $this->getJson(route('support.messages.index', $ticket))->assertJsonPath('ticket.is_closed', true);
         $this->postJson(route('support.reply', $ticket), ['body' => 'No enviar'])->assertUnprocessable();
-        $this->actingAs($admin)->postJson(route('admin.support.status', $ticket), ['_method' => 'PATCH', 'status' => 'open'])->assertOk();
-        $this->actingAs($owner)->getJson(route('support.messages.index', $ticket))->assertJsonPath('ticket.is_closed', false);
+        $this->actingAs($admin, 'admin')->postJson(route('admin.support.status', $ticket), ['_method' => 'PATCH', 'status' => 'open'])->assertOk();
+        $this->actingAs($owner, 'web')->getJson(route('support.messages.index', $ticket))->assertJsonPath('ticket.is_closed', false);
     }
 
     public function test_admin_support_filter_retains_pagination_and_revision(): void
@@ -172,7 +172,7 @@ class LiveUpdatesTest extends TestCase
         }
         $this->ticket($owner, 'Caso excluido')->update(['status' => 'closed']);
         $url = route('admin.support.index', ['status' => 'open', 'q' => 'prueba', 'page' => 2]);
-        $first = $this->actingAs($admin)->getJson($url)->assertOk();
+        $first = $this->actingAs($admin, 'admin')->getJson($url)->assertOk();
         $this->assertSame(2, substr_count($first->json('html'), 'Caso prueba'));
         $this->assertStringNotContainsString('Caso excluido', $first->json('html'));
         $this->assertStringContainsString('status=open', $first->json('html'));
@@ -185,9 +185,9 @@ class LiveUpdatesTest extends TestCase
         $admin = $this->admin();
         $ticket = $this->ticket($owner);
         for ($i = 0; $i < 101; $i++) {
-            $ticket->messages()->create(['sender_id' => $admin->id, 'body' => 'Respuesta '.$i, 'is_staff' => true]);
+            $ticket->messages()->create(['sender_id' => null, 'admin_user_id' => $admin->id, 'body' => 'Respuesta '.$i, 'is_staff' => true]);
         }
-        $response = $this->actingAs($owner)->getJson(route('support.messages.index', $ticket))->assertOk()
+        $response = $this->actingAs($owner, 'web')->getJson(route('support.messages.index', $ticket))->assertOk()
             ->assertJsonCount(100, 'messages')->assertJsonPath('has_more', true);
         $this->assertSame(1, $ticket->messages()->whereNull('read_at')->count());
         $this->getJson(route('support.messages.index', ['ticket' => $ticket, 'after_id' => $response->json('last_id')]))->assertJsonCount(1, 'messages');
@@ -197,9 +197,9 @@ class LiveUpdatesTest extends TestCase
     public function test_admin_metrics_are_protected_and_change_without_loading_dashboard(): void
     {
         $owner = User::factory()->create();
-        $this->actingAs($owner)->getJson(route('admin.summary'))->assertForbidden();
+        $this->actingAs($owner, 'web')->getJson(route('admin.summary'))->assertUnauthorized();
         $admin = $this->admin();
-        $this->actingAs($admin)->getJson(route('admin.summary'))->assertOk()
+        $this->actingAs($admin, 'admin')->getJson(route('admin.summary'))->assertOk()
             ->assertHeader('Cache-Control', 'no-store, private')->assertJsonPath('metrics.open_support_tickets', 0);
         $this->ticket($owner);
         Vendor::create(['user_id' => $owner->id, 'display_name' => 'Pendiente', 'slug' => 'pendiente', 'status' => 'pending', 'submitted_at' => now()]);
@@ -210,7 +210,7 @@ class LiveUpdatesTest extends TestCase
     public function test_inactive_account_cannot_continue_polling_private_data(): void
     {
         $user = User::factory()->create(['account_status' => 'suspended']);
-        $this->actingAs($user)->getJson(route('activity.summary'))->assertRedirect(route('login'));
+        $this->actingAs($user, 'web')->getJson(route('activity.summary'))->assertRedirect(route('login'));
         $this->assertGuest();
     }
 
@@ -224,10 +224,9 @@ class LiveUpdatesTest extends TestCase
         return [$sender, $recipient, $chat];
     }
 
-    private function admin(): User
+    private function admin(): AdminUser
     {
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
 
         return $admin;
     }

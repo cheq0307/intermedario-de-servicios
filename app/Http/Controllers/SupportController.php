@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Marketplace\Enums\SupportTicketStatus;
 use App\Domain\Marketplace\Enums\VendorStatus;
+use App\Models\AdminUser;
 use App\Models\SupportMessage;
 use App\Models\SupportTicket;
 use App\Models\User;
@@ -94,8 +95,8 @@ class SupportController extends Controller
     public function show(Request $request, SupportTicket $ticket): View
     {
         $isAdmin = $this->authorizeTicketAccess($request, $ticket);
-        $ticket->load(['user:id,name,email', 'vendor', 'assignedAdmin:id,name', 'messages.sender:id,name']);
-        $ticket->messages()->whereIn('id', $ticket->messages->modelKeys())->where('sender_id', '!=', $request->user()->id)->whereNull('read_at')->update(['read_at' => now()]);
+        $ticket->load(['user:id,name,email', 'vendor', 'assignedAdmin:id,name', 'messages.sender:id,name', 'messages.admin:id,name']);
+        $ticket->messages()->whereIn('id', $ticket->messages->modelKeys())->where('is_staff', ! ($request->user() instanceof AdminUser))->whereNull('read_at')->update(['read_at' => now()]);
         $support = SupportThreadData::from($ticket, $isAdmin);
 
         return view('support.show', compact('ticket', 'support'));
@@ -107,7 +108,7 @@ class SupportController extends Controller
         $validated = $request->validate(['after_id' => ['nullable', 'integer', 'min:0']]);
         $afterId = (int) ($validated['after_id'] ?? 0);
         $messages = $ticket->messages()
-            ->with('sender:id,name')
+            ->with(['sender:id,name', 'admin:id,name'])
             ->where('id', '>', $afterId)
             ->orderBy('id')
             ->limit(101)
@@ -116,7 +117,7 @@ class SupportController extends Controller
         $messages = $messages->take(100)->values();
 
         $incomingUnreadIds = $messages
-            ->where('sender_id', '!=', $request->user()->id)
+            ->where('is_staff', ! ($request->user() instanceof AdminUser))
             ->whereNull('read_at')
             ->pluck('id');
         if ($incomingUnreadIds->isNotEmpty()) {
@@ -126,7 +127,7 @@ class SupportController extends Controller
         $ticket->refresh();
 
         return response()->json([
-            'messages' => $messages->map(fn (SupportMessage $message): array => $this->messagePayload($message, $request->user()->id))->all(),
+            'messages' => $messages->map(fn (SupportMessage $message): array => $this->messagePayload($message, $request->user()))->all(),
             'last_id' => (int) ($messages->last()?->id ?? $afterId),
             'has_more' => $hasMore,
             'ticket' => $this->ticketPayload($ticket),
@@ -140,9 +141,9 @@ class SupportController extends Controller
         $validated = $request->validate(['body' => ['required', 'string', 'min:2', 'max:5000']]);
 
         $message = DB::transaction(function () use ($request, $ticket, $validated, $isAdmin): SupportMessage {
-            $message = $ticket->messages()->create(['sender_id' => $request->user()->id, 'body' => $validated['body'], 'is_staff' => $isAdmin]);
+            $message = $ticket->messages()->create(['sender_id' => $isAdmin ? null : $request->user()->id, 'admin_user_id' => $isAdmin ? $request->user()->id : null, 'body' => $validated['body'], 'is_staff' => $isAdmin]);
             $ticket->update([
-                'assigned_admin_id' => $isAdmin ? $request->user()->id : $ticket->assigned_admin_id,
+                'admin_user_id' => $isAdmin ? $request->user()->id : $ticket->admin_user_id,
                 'status' => $isAdmin
                     ? SupportTicketStatus::WaitingUser
                     : ($ticket->status === SupportTicketStatus::Resolved ? SupportTicketStatus::Open : SupportTicketStatus::InProgress),
@@ -160,11 +161,11 @@ class SupportController extends Controller
         }
 
         if ($request->expectsJson()) {
-            $message->load('sender:id,name');
+            $message->load(['sender:id,name', 'admin:id,name']);
             $ticket->refresh();
 
             return response()->json([
-                'message' => $this->messagePayload($message, $request->user()->id),
+                'message' => $this->messagePayload($message, $request->user()),
                 'ticket' => $this->ticketPayload($ticket),
             ], 201);
         }
@@ -209,7 +210,7 @@ class SupportController extends Controller
         $status = SupportTicketStatus::from($validated['status']);
         $ticket->update([
             'status' => $status,
-            'assigned_admin_id' => $request->user()->id,
+            'admin_user_id' => $request->user()->id,
             'resolved_at' => $status === SupportTicketStatus::Resolved ? now() : null,
         ]);
         $ticket->user->notify(new MarketplaceActivity('Soporte actualizó tu solicitud', $ticket->reference.' ahora está: '.$ticket->status_label.'.', 'support.show', ['ticket' => $ticket->id], 'support_status'));
@@ -224,9 +225,8 @@ class SupportController extends Controller
 
     private function notifyStaff(SupportTicket $ticket, string $title, string $body): void
     {
-        User::query()
-            ->whereHas('roles', fn (Builder $query) => $query->whereIn('name', ['admin', 'superadmin']))
-            ->whereKeyNot($ticket->user_id)->each(fn (User $admin) => $admin->notify(new MarketplaceActivity($title, $body, 'admin.support.show', ['ticket' => $ticket->id], 'support')));
+        AdminUser::query()->where('active', true)
+            ->each(fn (AdminUser $admin) => $admin->notify(new MarketplaceActivity($title, $body, 'admin.support.show', ['ticket' => $ticket->id], 'support')));
     }
 
     private function authorizeAdmin(Request $request): void
@@ -243,14 +243,14 @@ class SupportController extends Controller
     }
 
     /** @return array{id: int, sender_name: string, body: string, is_staff: bool, is_mine: bool, sent_at: string, sent_at_iso: string} */
-    private function messagePayload(SupportMessage $message, int $viewerId): array
+    private function messagePayload(SupportMessage $message, User|AdminUser $viewer): array
     {
         return [
             'id' => $message->id,
-            'sender_name' => $message->sender->name,
+            'sender_name' => $message->admin?->name ?? $message->sender?->name ?? 'Soporte',
             'body' => $message->body,
             'is_staff' => $message->is_staff,
-            'is_mine' => $message->sender_id === $viewerId,
+            'is_mine' => $viewer instanceof AdminUser ? $message->admin_user_id === $viewer->id : ($message->admin_user_id === null && $message->sender_id === $viewer->id),
             'sent_at' => $message->created_at->format('d/m/Y H:i'),
             'sent_at_iso' => $message->created_at->toIso8601String(),
         ];

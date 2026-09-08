@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdminUser;
 use App\Models\Category;
 use App\Models\Community;
 use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class AdminVendorReviewTest extends TestCase
@@ -16,8 +16,7 @@ class AdminVendorReviewTest extends TestCase
 
     public function test_admin_reviews_private_provider_dossier_before_deciding(): void
     {
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
         $community = Community::create([
             'name' => 'Centro', 'municipality' => 'Huejotzingo', 'state' => 'Puebla',
             'postal_code' => '74140', 'default_radius_km' => 8, 'is_active' => true,
@@ -35,7 +34,7 @@ class AdminVendorReviewTest extends TestCase
         $category = Category::query()->firstOrFail();
         $vendor->categories()->attach($category);
 
-        $this->actingAs($admin)
+        $this->actingAs($admin, 'admin')
             ->get(route('admin.vendors.show', $vendor))
             ->assertOk()
             ->assertSee('Expediente administrativo privado')
@@ -54,15 +53,14 @@ class AdminVendorReviewTest extends TestCase
             'user_id' => $user->id, 'display_name' => 'Privado', 'slug' => 'privado', 'status' => 'draft',
         ]);
 
-        $this->actingAs($user)->get(route('admin.vendors.show', $vendor))->assertForbidden();
+        $this->actingAs($user, 'web')->get(route('admin.vendors.show', $vendor))->assertRedirect(route('admin.login'));
     }
 
     public function test_manual_community_becomes_a_reusable_postal_reference(): void
     {
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
 
-        $this->actingAs($admin)->post(route('admin.communities.store'), [
+        $this->actingAs($admin, 'admin')->post(route('admin.communities.store'), [
             'name' => 'Santa Ana', 'municipality' => 'Municipio Local', 'state' => 'Puebla',
             'postal_code' => '74140', 'default_radius_km' => 8,
         ])->assertRedirect()->assertSessionHasNoErrors();

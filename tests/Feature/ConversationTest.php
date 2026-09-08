@@ -21,8 +21,8 @@ class ConversationTest extends TestCase
         $sender = User::factory()->create();
         $recipient = User::factory()->create();
 
-        $this->actingAs($sender)->post(route('conversations.start'), ['recipient_id' => $recipient->id])->assertRedirect();
-        $this->actingAs($sender)->post(route('conversations.start'), ['recipient_id' => $recipient->id])->assertRedirect();
+        $this->actingAs($sender, 'web')->post(route('conversations.start'), ['recipient_id' => $recipient->id])->assertRedirect();
+        $this->actingAs($sender, 'web')->post(route('conversations.start'), ['recipient_id' => $recipient->id])->assertRedirect();
 
         $this->assertDatabaseCount('conversations', 1);
         $conversation = Conversation::firstOrFail();
@@ -33,7 +33,7 @@ class ConversationTest extends TestCase
     {
         [$sender, $recipient, $conversation] = $this->directConversation();
 
-        $this->actingAs($sender)
+        $this->actingAs($sender, 'web')
             ->post(route('conversations.messages.store', $conversation), ['body' => 'Hola, ¿sigues disponible?'])
             ->assertRedirect(route('conversations.show', $conversation).'#ultimo-mensaje');
 
@@ -44,12 +44,12 @@ class ConversationTest extends TestCase
         ]);
         $this->assertSame(1, $recipient->unreadConversationsCount());
 
-        $this->actingAs($recipient)
+        $this->actingAs($recipient, 'web')
             ->get(route('conversations.show', $conversation))
             ->assertOk()
             ->assertSee('Hola, ¿sigues disponible?');
         $this->assertSame(0, $recipient->unreadConversationsCount());
-        $this->actingAs($sender)->get(route('conversations.show', $conversation))->assertOk()->assertSee('Visto');
+        $this->actingAs($sender, 'web')->get(route('conversations.show', $conversation))->assertOk()->assertSee('Visto');
 
     }
 
@@ -64,10 +64,10 @@ class ConversationTest extends TestCase
         ]);
         $operation->participants()->attach([$sender->id, $recipient->id]);
 
-        $this->actingAs($sender)
+        $this->actingAs($sender, 'web')
             ->post(route('conversations.messages.store', $operation), ['body' => 'No debe enviarse'])
             ->assertStatus(422);
-        $this->actingAs($sender)
+        $this->actingAs($sender, 'web')
             ->post(route('conversations.messages.store', $direct), ['body' => 'El chat directo sigue activo'])
             ->assertRedirect();
     }
@@ -77,8 +77,8 @@ class ConversationTest extends TestCase
         [, , $conversation] = $this->directConversation();
         $outsider = User::factory()->create();
 
-        $this->actingAs($outsider)->get(route('conversations.show', $conversation))->assertForbidden();
-        $this->actingAs($outsider)->post(route('conversations.messages.store', $conversation), ['body' => 'Intrusión'])->assertForbidden();
+        $this->actingAs($outsider, 'web')->get(route('conversations.show', $conversation))->assertForbidden();
+        $this->actingAs($outsider, 'web')->post(route('conversations.messages.store', $conversation), ['body' => 'Intrusión'])->assertForbidden();
     }
 
     public function test_unverified_user_cannot_start_conversation(): void
@@ -86,7 +86,7 @@ class ConversationTest extends TestCase
         $sender = User::factory()->unverified()->create();
         $recipient = User::factory()->create();
 
-        $this->actingAs($sender)
+        $this->actingAs($sender, 'web')
             ->post(route('conversations.start'), ['recipient_id' => $recipient->id])
             ->assertRedirect(route('verification.notice'));
     }
@@ -133,7 +133,7 @@ class ConversationTest extends TestCase
         ]);
         $conversation->participants()->attach([$owner->id, $interested->id]);
 
-        $this->actingAs($interested)
+        $this->actingAs($interested, 'web')
             ->get(route('conversations.index'))
             ->assertOk()
             ->assertSee('Carrito de tacos para fiestas');
@@ -143,7 +143,7 @@ class ConversationTest extends TestCase
     {
         $sender = User::factory()->create();
         $recipient = User::factory()->create();
-        $this->actingAs($sender)->post(route('conversations.start'), ['recipient_id' => $recipient->id]);
+        $this->actingAs($sender, 'web')->post(route('conversations.start'), ['recipient_id' => $recipient->id]);
 
         return [$sender, $recipient, Conversation::firstOrFail()];
     }

@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Marketplace\Enums\MarketplaceCapability;
+use App\Models\AdminUser;
 use App\Models\AuditLog;
-use App\Models\User;
 use App\Models\Vendor;
 use App\Notifications\MarketplaceActivity;
 use Illuminate\Http\RedirectResponse;
@@ -92,9 +92,8 @@ class MarketplaceCapabilityController extends Controller
         });
 
         $isResubmission = in_array($previousStatus, ['pending', 'rejected'], true);
-        User::query()
-            ->whereHas('roles', fn ($query) => $query->whereIn('name', ['admin', 'superadmin']))
-            ->each(function (User $administrator) use ($user, $vendor, $isResubmission): void {
+        AdminUser::query()->where('active', true)
+            ->each(function (AdminUser $administrator) use ($user, $vendor, $isResubmission): void {
                 $administrator->notify(new MarketplaceActivity(
                     $isResubmission ? 'Solicitud de proveedor actualizada' : 'Nueva solicitud de proveedor',
                     $user->vendor->display_name.' '.($isResubmission ? 'volvió a enviar' : 'envió').' su perfil para revisión.',

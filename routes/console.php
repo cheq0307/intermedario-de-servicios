@@ -1,48 +1,28 @@
 <?php
 
-use App\Models\User;
+use App\Services\Accounts\PruneUnverifiedAccounts;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schedule;
-use Spatie\Permission\Models\Role;
 use Symfony\Component\Console\Command\Command;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Artisan::command('plaza:grant-admin {email} {--superadmin}', function () {
-    $email = mb_strtolower(trim((string) $this->argument('email')));
-    $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
+Artisan::command('plaza:prune-unverified-accounts {--days=7} {--dry-run}', function (PruneUnverifiedAccounts $pruner) {
+    $days = max(1, (int) $this->option('days'));
+    $dryRun = (bool) $this->option('dry-run');
+    $affected = $pruner->prune($days, $dryRun);
 
-    if (! $user) {
-        $this->error('No existe una cuenta con ese correo.');
-
-        return Command::FAILURE;
-    }
-
-    $roleName = $this->option('superadmin') ? 'superadmin' : 'admin';
-
-    DB::transaction(function () use ($user, $roleName): void {
-        if ($roleName === 'superadmin') {
-            $user->syncRoles([Role::findOrCreate('superadmin')]);
-            $user->vendor?->update(['status' => 'suspended', 'verified_at' => null]);
-
-            return;
-        }
-
-        $user->assignRole(Role::findOrCreate('admin'));
-    });
-
-    $message = $roleName === 'superadmin'
-        ? "La cuenta {$user->email} quedó como superadministrador exclusivo, sin capacidades comerciales."
-        : "El rol admin fue asignado a {$user->email}.";
-    $this->info($message);
+    $this->info($dryRun
+        ? "{$affected} cuentas cumplen las condiciones; no se eliminó ninguna."
+        : "{$affected} cuentas sin verificar fueron eliminadas.");
 
     return Command::SUCCESS;
-})->purpose('Assign an administrative role to an existing Plaza Local user');
+})->purpose('Remove inactive, unverified accounts without marketplace or support history');
 
 Schedule::command('plaza:expire-reservations')->everyMinute()->withoutOverlapping();
 Schedule::command('plaza:maintain-conversations')->hourly()->withoutOverlapping();
 Schedule::command('plaza:health-check --notify')->everyFiveMinutes()->withoutOverlapping();
+Schedule::command('plaza:prune-unverified-accounts --days=7')->dailyAt('03:30')->withoutOverlapping();

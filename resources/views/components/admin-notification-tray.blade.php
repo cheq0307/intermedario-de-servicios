@@ -8,7 +8,7 @@
         ->map(fn ($notification) => \App\ViewData\NotificationPreviewData::from($notification)) ?? collect();
 @endphp
 
-<details class="relative" data-notification-center data-activity-summary-url="{{ route('activity.summary') }}">
+<details class="relative" data-notification-center data-activity-summary-url="{{ route(\App\Support\IdentityRoutes::name('activity.summary')) }}">
     <summary class="relative grid size-10 cursor-pointer list-none place-items-center rounded-full border border-brand/10 bg-white transition hover:bg-brand-page" aria-label="Abrir notificaciones" data-notification-trigger>
         <svg viewBox="0 0 24 24" class="size-5 fill-none stroke-current" stroke-width="1.8"><path d="M6 9a6 6 0 0 1 12 0c0 7 3 7 3 8H3c0-1 3-1 3-8M9.5 20h5"/></svg>
         <span class="absolute -right-1 -top-1 min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[.62rem] font-black text-white {{ $unreadCount ? '' : 'hidden' }}" data-live-notification-count>{{ min(99, $unreadCount) }}</span>
@@ -20,7 +20,7 @@
                 <h2 class="font-black text-brand-ink">Notificaciones</h2>
                 <p class="text-[.7rem] font-bold text-brand-muted" data-live-notification-label>{{ $unreadCount ? $unreadCount.' sin leer' : 'Todo está al día' }}</p>
             </div>
-            <form class="{{ $unreadCount ? '' : 'hidden' }}" method="POST" action="{{ route('notifications.read-all') }}" data-live-notification-read-all>
+            <form class="{{ $unreadCount ? '' : 'hidden' }}" method="POST" action="{{ route(\App\Support\IdentityRoutes::name('notifications.read-all')) }}" data-live-notification-read-all>
                 @csrf
                 @method('PATCH')
                 <button class="text-xs font-black text-brand-success hover:underline" type="submit">Marcar todas leídas</button>
@@ -37,7 +37,7 @@
             @include('notifications._tray-items', ['notificationPreview' => $notificationPreview])
         </div>
 
-        <a class="block border-t border-brand/10 px-4 py-3 text-center text-xs font-black text-brand-success hover:bg-brand-page" href="{{ route('notifications.index') }}">Ver todas las notificaciones</a>
+        <a class="block border-t border-brand/10 px-4 py-3 text-center text-xs font-black text-brand-success hover:bg-brand-page" href="{{ route(\App\Support\IdentityRoutes::name('notifications.index')) }}">Ver todas las notificaciones</a>
     </section>
 </details>
 

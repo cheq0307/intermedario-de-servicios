@@ -31,7 +31,7 @@ class PublicationDraftTest extends TestCase
             'location_label' => 'Centro',
         ];
 
-        $this->actingAs($user)
+        $this->actingAs($user, 'web')
             ->post(route('posts.store'), $payload)
             ->assertRedirect(route('verification.notice'));
 
@@ -45,7 +45,7 @@ class PublicationDraftTest extends TestCase
             ['id' => $user->id, 'hash' => sha1($user->email)],
         );
 
-        $this->actingAs($user)
+        $this->actingAs($user, 'web')
             ->followingRedirects()
             ->get($verificationUrl)
             ->assertOk()
@@ -70,7 +70,7 @@ class PublicationDraftTest extends TestCase
     {
         $user = User::factory()->create(['account_type' => 'client']);
 
-        $response = $this->actingAs($user)
+        $response = $this->actingAs($user, 'web')
             ->from(route('dashboard'))
             ->post(route('posts.store'), [
                 'submission_token' => (string) Str::uuid(),

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdminUser;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
@@ -15,7 +16,7 @@ class MarketplaceCapabilityTest extends TestCase
     {
         $client = User::factory()->create(['account_type' => 'client']);
 
-        $this->actingAs($client)
+        $this->actingAs($client, 'web')
             ->post(route('capabilities.activate', 'provider'))
             ->assertRedirect(route('profile.edit'));
 
@@ -34,7 +35,7 @@ class MarketplaceCapabilityTest extends TestCase
         $user = User::factory()->create(['account_type' => 'client']);
         $user->assignRole(Role::findOrCreate('provider'));
 
-        $this->actingAs($user)
+        $this->actingAs($user, 'web')
             ->post(route('capabilities.switch', 'provider'))
             ->assertRedirect();
 
@@ -48,7 +49,7 @@ class MarketplaceCapabilityTest extends TestCase
     {
         $client = User::factory()->create(['account_type' => 'client']);
 
-        $this->actingAs($client)
+        $this->actingAs($client, 'web')
             ->post(route('capabilities.switch', 'provider'))
             ->assertForbidden();
     }
@@ -57,7 +58,7 @@ class MarketplaceCapabilityTest extends TestCase
     {
         $client = User::factory()->unverified()->create(['account_type' => 'client']);
 
-        $this->actingAs($client)
+        $this->actingAs($client, 'web')
             ->post(route('capabilities.activate', 'provider'))
             ->assertRedirect(route('verification.notice'));
 
@@ -67,10 +68,9 @@ class MarketplaceCapabilityTest extends TestCase
 
     public function test_superadmin_cannot_activate_commercial_capabilities(): void
     {
-        $superadmin = User::factory()->create();
-        $superadmin->syncRoles([Role::findOrCreate('superadmin')]);
+        $superadmin = AdminUser::factory()->superadmin()->create();
 
-        $this->actingAs($superadmin)->post(route('capabilities.activate', 'provider'))->assertForbidden();
+        $this->actingAs($superadmin, 'admin')->post(route('capabilities.activate', 'provider'))->assertRedirect(route('login'));
 
         $this->assertFalse($superadmin->fresh()->canActAsProvider());
     }
@@ -84,9 +84,9 @@ class MarketplaceCapabilityTest extends TestCase
             Role::findOrCreate('superadmin'),
         ]);
 
-        $this->actingAs($superadmin)
+        $this->actingAs($superadmin, 'web')
             ->get(route('dashboard'))
-            ->assertRedirect(route('admin.index'));
+            ->assertForbidden();
 
         $this->post(route('capabilities.switch', 'provider'))->assertForbidden();
         $this->get(route('explore'))->assertRedirect(route('admin.index'));
@@ -97,7 +97,7 @@ class MarketplaceCapabilityTest extends TestCase
         $user = User::factory()->create(['account_type' => 'client']);
         $user->assignRole(Role::findOrCreate('provider'));
 
-        $this->actingAs($user)
+        $this->actingAs($user, 'web')
             ->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Publicar')
@@ -115,7 +115,7 @@ class MarketplaceCapabilityTest extends TestCase
     {
         $user = User::factory()->create(['account_type' => 'client']);
 
-        $this->actingAs($user)
+        $this->actingAs($user, 'web')
             ->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Pedidos')
@@ -134,9 +134,9 @@ class MarketplaceCapabilityTest extends TestCase
             Role::findOrCreate('admin'),
         ]);
 
-        $this->actingAs($staff)
+        $this->actingAs($staff, 'web')
             ->get(route('dashboard'))
-            ->assertRedirect(route('admin.index'));
+            ->assertForbidden();
 
         $this->assertFalse($staff->fresh()->canUseMarketplace());
         $this->assertFalse($staff->fresh()->canActAsClient());

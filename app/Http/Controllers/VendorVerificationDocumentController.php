@@ -54,18 +54,18 @@ class VendorVerificationDocumentController extends Controller
     public function review(Request $request, VendorVerificationDocument $document): RedirectResponse
     {
         abort_unless($request->user()->hasAnyRole(['admin', 'superadmin']), 403);
-        abort_if($document->vendor->user_id === $request->user()->id, 403);
+        abort_if($request->user()->ownsMarketplaceAccount($document->vendor->user_id), 403);
         $validated = $request->validate([
             'decision' => ['required', Rule::in(['approved', 'rejected'])],
             'review_note' => ['required', 'string', 'min:10', 'max:1000'],
         ]);
         abort_unless($document->status === 'pending', 422, 'El documento ya fue revisado.');
         $document->update([
-            'status' => $validated['decision'], 'reviewed_by_user_id' => $request->user()->id,
+            'status' => $validated['decision'], 'admin_user_id' => $request->user()->id,
             'review_note' => $validated['review_note'], 'reviewed_at' => now(),
         ]);
         AuditLog::create([
-            'user_id' => $request->user()->id, 'action' => 'vendor.document_'.$validated['decision'],
+            'admin_user_id' => $request->user()->id, 'action' => 'vendor.document_'.$validated['decision'],
             'subject_type' => VendorVerificationDocument::class, 'subject_id' => $document->id,
             'metadata' => ['vendor_id' => $document->vendor_id, 'type' => $document->type],
             'ip_address' => $request->ip(), 'user_agent' => mb_substr((string) $request->userAgent(), 0, 1000), 'created_at' => now(),

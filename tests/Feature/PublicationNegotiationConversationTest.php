@@ -19,12 +19,12 @@ class PublicationNegotiationConversationTest extends TestCase
         $firstPost = $this->postBy($owner, 'Primera publicación');
         $secondPost = $this->postBy($owner, 'Segunda publicación');
 
-        $this->actingAs($interested)->post(route('posts.conversations.start', $firstPost))->assertRedirect();
-        $this->actingAs($interested)->post(route('posts.conversations.start', $firstPost))->assertRedirect();
+        $this->actingAs($interested, 'web')->post(route('posts.conversations.start', $firstPost))->assertRedirect();
+        $this->actingAs($interested, 'web')->post(route('posts.conversations.start', $firstPost))->assertRedirect();
         $this->assertSame(1, Conversation::where('type', 'negotiation')->count());
 
-        $this->actingAs($interested)->post(route('posts.conversations.start', $secondPost))->assertRedirect();
-        $this->actingAs($interested)->post(route('conversations.start'), ['recipient_id' => $owner->id])->assertRedirect();
+        $this->actingAs($interested, 'web')->post(route('posts.conversations.start', $secondPost))->assertRedirect();
+        $this->actingAs($interested, 'web')->post(route('conversations.start'), ['recipient_id' => $owner->id])->assertRedirect();
 
         $this->assertSame(2, Conversation::where('type', 'negotiation')->count());
         $this->assertSame(1, Conversation::where('type', 'direct')->count());
@@ -37,18 +37,18 @@ class PublicationNegotiationConversationTest extends TestCase
         $owner = User::factory()->create();
         $interested = User::factory()->create();
         $post = $this->postBy($owner, 'Servicio local');
-        $this->actingAs($interested)->post(route('posts.conversations.start', $post));
+        $this->actingAs($interested, 'web')->post(route('posts.conversations.start', $post));
         $conversation = Conversation::where('type', 'negotiation')->firstOrFail();
         $originalExpiry = $conversation->expires_at;
 
-        $this->actingAs($owner)
+        $this->actingAs($owner, 'web')
             ->patch(route('conversations.extend', $conversation))
             ->assertStatus(422);
 
         $conversation->update(['expires_at' => now()->addDays(2)->subMinute()]);
         $originalExpiry = $conversation->fresh()->expires_at;
 
-        $this->actingAs($owner)
+        $this->actingAs($owner, 'web')
             ->patch(route('conversations.extend', $conversation))
             ->assertRedirect();
 
@@ -56,11 +56,11 @@ class PublicationNegotiationConversationTest extends TestCase
         $this->assertSame(1, $conversation->extension_count);
         $this->assertSame(7.0, $originalExpiry->diffInDays($conversation->expires_at));
 
-        $this->actingAs($interested)
+        $this->actingAs($interested, 'web')
             ->patch(route('conversations.extend', $conversation))
             ->assertStatus(422);
 
-        $this->actingAs($interested)
+        $this->actingAs($interested, 'web')
             ->patch(route('conversations.close', $conversation))
             ->assertRedirect();
 
@@ -69,11 +69,11 @@ class PublicationNegotiationConversationTest extends TestCase
         $this->assertSame('user_closed', $conversation->closed_reason);
         $this->assertNotNull($conversation->retention_until);
 
-        $this->actingAs($owner)
+        $this->actingAs($owner, 'web')
             ->post(route('conversations.messages.store', $conversation), ['body' => 'Ya no debe enviarse'])
             ->assertStatus(422);
 
-        $this->actingAs($interested)
+        $this->actingAs($interested, 'web')
             ->post(route('posts.conversations.start', $post))
             ->assertRedirect();
 
@@ -88,7 +88,7 @@ class PublicationNegotiationConversationTest extends TestCase
         $owner = User::factory()->create();
         $interested = User::factory()->create();
         $post = $this->postBy($owner, 'Conversación vencida');
-        $this->actingAs($interested)->post(route('posts.conversations.start', $post));
+        $this->actingAs($interested, 'web')->post(route('posts.conversations.start', $post));
         $conversation = Conversation::where('type', 'negotiation')->firstOrFail();
         $conversation->update(['expires_at' => now()->subMinute()]);
 
@@ -109,11 +109,11 @@ class PublicationNegotiationConversationTest extends TestCase
         $interested = User::factory()->create();
         $outsider = User::factory()->create();
         $post = $this->postBy($owner, 'Conversación privada');
-        $this->actingAs($interested)->post(route('posts.conversations.start', $post));
+        $this->actingAs($interested, 'web')->post(route('posts.conversations.start', $post));
         $conversation = Conversation::where('type', 'negotiation')->firstOrFail();
 
-        $this->actingAs($outsider)->patch(route('conversations.extend', $conversation))->assertForbidden();
-        $this->actingAs($outsider)->patch(route('conversations.close', $conversation))->assertForbidden();
+        $this->actingAs($outsider, 'web')->patch(route('conversations.extend', $conversation))->assertForbidden();
+        $this->actingAs($outsider, 'web')->patch(route('conversations.close', $conversation))->assertForbidden();
     }
 
     private function postBy(User $owner, string $body): Post

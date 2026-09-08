@@ -18,7 +18,7 @@ class PostPublishingTest extends TestCase
     {
         $provider = $this->approvedProvider();
 
-        $response = $this->actingAs($provider)->post(route('posts.store'), [
+        $response = $this->actingAs($provider, 'web')->post(route('posts.store'), [
             'submission_token' => (string) Str::uuid(),
             'type' => 'service',
             'category_id' => $this->categoryId(),
@@ -48,7 +48,7 @@ class PostPublishingTest extends TestCase
     {
         $provider = $this->approvedProvider();
 
-        $this->actingAs($provider)->post(route('posts.store'), [
+        $this->actingAs($provider, 'web')->post(route('posts.store'), [
             'submission_token' => (string) Str::uuid(),
             'type' => 'product',
             'category_id' => $this->categoryId(),
@@ -71,7 +71,7 @@ class PostPublishingTest extends TestCase
         $provider = $this->approvedProvider();
 
         foreach (['Primera reparación', 'Segunda reparación'] as $title) {
-            $this->actingAs($provider)->post(route('posts.store'), [
+            $this->actingAs($provider, 'web')->post(route('posts.store'), [
                 'submission_token' => (string) Str::uuid(),
                 'type' => 'service',
                 'category_id' => $this->categoryId(),
@@ -90,7 +90,7 @@ class PostPublishingTest extends TestCase
         $provider = $this->approvedProvider();
 
         foreach (['Necesito apoyo para una entrega', 'Necesito apoyo para una instalación'] as $title) {
-            $this->actingAs($provider)->post(route('posts.store'), [
+            $this->actingAs($provider, 'web')->post(route('posts.store'), [
                 'submission_token' => (string) Str::uuid(),
                 'type' => 'job_request',
                 'category_id' => $this->categoryId(),
@@ -108,7 +108,7 @@ class PostPublishingTest extends TestCase
     {
         $client = User::factory()->create(['account_type' => 'client']);
 
-        $this->actingAs($client)->post(route('posts.store'), [
+        $this->actingAs($client, 'web')->post(route('posts.store'), [
             'submission_token' => (string) Str::uuid(),
             'type' => 'job_request',
             'category_id' => $this->categoryId(),
@@ -138,7 +138,7 @@ class PostPublishingTest extends TestCase
     {
         $client = User::factory()->create(['account_type' => 'client']);
 
-        $this->actingAs($client)
+        $this->actingAs($client, 'web')
             ->from(route('dashboard'))
             ->post(route('posts.store'), [
                 'submission_token' => (string) Str::uuid(),
@@ -166,11 +166,11 @@ class PostPublishingTest extends TestCase
             'body' => 'La tubería debajo del fregadero tiene una fuga constante.',
         ];
 
-        $this->actingAs($client)
+        $this->actingAs($client, 'web')
             ->post(route('posts.store'), $payload)
             ->assertRedirect(route('dashboard'));
 
-        $this->actingAs($client)
+        $this->actingAs($client, 'web')
             ->post(route('posts.store'), $payload)
             ->assertRedirect(route('dashboard'))
             ->assertSessionHas('status', 'La publicación ya había sido procesada; no se creó un duplicado.');
@@ -184,7 +184,7 @@ class PostPublishingTest extends TestCase
     {
         $client = User::factory()->create(['account_type' => 'client']);
 
-        $this->actingAs($client)
+        $this->actingAs($client, 'web')
             ->from(route('dashboard'))
             ->post(route('posts.store'), [
                 'submission_token' => (string) Str::uuid(),
@@ -209,7 +209,7 @@ class PostPublishingTest extends TestCase
             'published_at' => now(),
         ]);
 
-        $this->actingAs($provider)
+        $this->actingAs($provider, 'web')
             ->get(route('dashboard', ['module' => 'products']))
             ->assertOk()
             ->assertSee('Promoción especial disponible');
@@ -219,7 +219,7 @@ class PostPublishingTest extends TestCase
     {
         $provider = User::factory()->create(['account_type' => 'provider']);
         Vendor::create(['user_id' => $provider->id, 'display_name' => $provider->name, 'slug' => 'pendiente-'.$provider->id, 'status' => 'pending']);
-        $response = $this->actingAs($provider)->post(route('posts.store'), [
+        $response = $this->actingAs($provider, 'web')->post(route('posts.store'), [
             'submission_token' => (string) Str::uuid(),
             'type' => 'service',
             'category_id' => $this->categoryId(),

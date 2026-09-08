@@ -12,7 +12,7 @@ class Dispute extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
+    protected $fillable = ['admin_user_id',
         'public_id', 'order_id', 'opened_by', 'reason', 'status', 'description',
         'order_status_before', 'resolution_outcome', 'resolution', 'resolved_by', 'resolved_at',
     ];
@@ -39,11 +39,16 @@ class Dispute extends Model
 
     public function resolver(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'resolved_by');
+        return $this->belongsTo(AdminUser::class, 'admin_user_id');
     }
 
     public function messages(): HasMany
     {
         return $this->hasMany(DisputeMessage::class);
+    }
+
+    public function admin(): BelongsTo
+    {
+        return $this->belongsTo(AdminUser::class, 'admin_user_id');
     }
 }

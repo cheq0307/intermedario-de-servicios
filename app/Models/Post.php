@@ -12,7 +12,7 @@ class Post extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
+    protected $fillable = ['admin_user_id',
         'user_id',
         'vendor_id',
         'listing_id',
@@ -44,7 +44,7 @@ class Post extends Model
 
     public function removedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'removed_by_user_id');
+        return $this->belongsTo(AdminUser::class, 'admin_user_id');
     }
 
     public function vendor(): BelongsTo
@@ -104,5 +104,10 @@ class Post extends Model
             ->where('starts_at', '<=', now())
             ->where('ends_at', '>', now())
             ->latestOfMany();
+    }
+
+    public function admin(): BelongsTo
+    {
+        return $this->belongsTo(AdminUser::class, 'admin_user_id');
     }
 }

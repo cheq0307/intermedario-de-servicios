@@ -15,7 +15,7 @@ class Vendor extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
+    protected $fillable = ['admin_user_id',
         'user_id',
         'display_name',
         'slug',
@@ -146,7 +146,7 @@ class Vendor extends Model
 
     public function verifiedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'verified_by_user_id');
+        return $this->belongsTo(AdminUser::class, 'admin_user_id');
     }
 
     public function listings(): HasMany
@@ -182,5 +182,10 @@ class Vendor extends Model
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(Category::class)->withTimestamps();
+    }
+
+    public function admin(): BelongsTo
+    {
+        return $this->belongsTo(AdminUser::class, 'admin_user_id');
     }
 }

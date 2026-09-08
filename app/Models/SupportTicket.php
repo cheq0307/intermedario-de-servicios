@@ -21,7 +21,7 @@ class SupportTicket extends Model
         'general' => 'Ayuda general',
     ];
 
-    protected $fillable = [
+    protected $fillable = ['admin_user_id',
         'user_id', 'vendor_id', 'assigned_admin_id', 'category', 'subject', 'status',
         'last_message_at', 'resolved_at',
     ];
@@ -47,7 +47,7 @@ class SupportTicket extends Model
 
     public function assignedAdmin(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'assigned_admin_id');
+        return $this->belongsTo(AdminUser::class, 'admin_user_id');
     }
 
     public function messages(): HasMany
@@ -68,5 +68,10 @@ class SupportTicket extends Model
     public function getStatusLabelAttribute(): string
     {
         return $this->status->label();
+    }
+
+    public function admin(): BelongsTo
+    {
+        return $this->belongsTo(AdminUser::class, 'admin_user_id');
     }
 }

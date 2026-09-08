@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\IdentityRoutes;
 use App\Support\LiveUpdates;
 use App\ViewData\NotificationPreviewData;
 use Illuminate\Http\JsonResponse;
@@ -83,7 +84,7 @@ class NotificationController extends Controller
 
         abort_unless(is_string($routeName) && app('router')->has($routeName), 422, 'La notificación no tiene un destino válido.');
 
-        return redirect()->route($routeName, $routeParameters);
+        return redirect()->route(IdentityRoutes::name($routeName), $routeParameters);
     }
 
     public function readAll(Request $request): RedirectResponse|JsonResponse

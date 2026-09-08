@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdminUser;
 use App\Models\Post;
 use App\Models\PostComment;
 use App\Models\PostReaction;
 use App\Models\PostShare;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ProfileFollowingTest extends TestCase
@@ -20,11 +20,11 @@ class ProfileFollowingTest extends TestCase
         $follower = User::factory()->create();
         $profile = User::factory()->create();
 
-        $this->actingAs($follower)->post(route('profiles.follow.toggle', $profile))->assertRedirect();
+        $this->actingAs($follower, 'web')->post(route('profiles.follow.toggle', $profile))->assertRedirect();
         $this->assertDatabaseHas('user_follows', ['follower_id' => $follower->id, 'followed_id' => $profile->id]);
         $this->assertSame('Nuevo seguidor', $profile->notifications()->firstOrFail()->data['title']);
 
-        $this->actingAs($follower)->post(route('profiles.follow.toggle', $profile))->assertRedirect();
+        $this->actingAs($follower, 'web')->post(route('profiles.follow.toggle', $profile))->assertRedirect();
         $this->assertDatabaseMissing('user_follows', ['follower_id' => $follower->id, 'followed_id' => $profile->id]);
     }
 
@@ -32,7 +32,7 @@ class ProfileFollowingTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->actingAs($user)->post(route('profiles.follow.toggle', $user))->assertStatus(422);
+        $this->actingAs($user, 'web')->post(route('profiles.follow.toggle', $user))->assertStatus(422);
     }
 
     public function test_public_profile_displays_real_social_totals(): void
@@ -55,31 +55,30 @@ class ProfileFollowingTest extends TestCase
 
     public function test_administrative_view_of_a_public_profile_is_read_only(): void
     {
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
         $profile = User::factory()->create();
 
-        $this->actingAs($admin)->get(route('profile.show', $profile))
+        $this->actingAs($admin, 'admin')->get(route('admin.users.preview', $profile))
             ->assertOk()
             ->assertSee('Vista administrativa de solo lectura')
             ->assertSee(route('admin.users.show', $profile), false)
             ->assertDontSee('>Seguir</button>', false)
             ->assertDontSee('Contactar dentro de Plaza Local');
 
-        $this->actingAs($admin)
+        $this->actingAs($admin, 'admin')
             ->post(route('profiles.follow.toggle', $profile))
-            ->assertStatus(422);
+            ->assertRedirect(route('login'));
 
-        $this->actingAs($admin)
+        $this->actingAs($admin, 'admin')
             ->post(route('conversations.start'), ['recipient_id' => $profile->id])
-            ->assertStatus(422);
+            ->assertRedirect(route('login'));
     }
 
     public function test_more_screen_groups_account_tools_without_repeating_profile_in_bottom_navigation(): void
     {
         $user = User::factory()->create();
 
-        $this->actingAs($user)->get(route('more.index'))
+        $this->actingAs($user, 'web')->get(route('more.index'))
             ->assertOk()
             ->assertSee('Mis publicaciones')
             ->assertSee('Mis pedidos y trabajos')

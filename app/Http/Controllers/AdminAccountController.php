@@ -55,11 +55,11 @@ class AdminAccountController extends Controller
                 'account_status' => $status,
                 'account_status_reason' => $reason,
                 'account_status_changed_at' => now(),
-                'account_status_changed_by_user_id' => $request->user()->id,
+                'admin_user_id' => $request->user()->id,
             ]);
 
             AuditLog::create([
-                'user_id' => $request->user()->id,
+                'admin_user_id' => $request->user()->id,
                 'action' => 'account.'.$status,
                 'subject_type' => User::class,
                 'subject_id' => $user->id,
@@ -74,7 +74,7 @@ class AdminAccountController extends Controller
     private function authorizeCommercialTarget(Request $request, User $user): void
     {
         abort_unless($request->user()->hasAnyRole(['admin', 'superadmin']), 403);
-        abort_if($user->id === $request->user()->id, 422, 'No puedes cambiar el estado de tu propia cuenta.');
+        abort_if($request->user()->ownsMarketplaceAccount($user->id), 422, 'No puedes cambiar el estado de tu propia cuenta.');
         abort_if($user->hasAnyRole(['admin', 'superadmin']), 422, 'Las cuentas administrativas se gestionan mediante delegación de autoridad.');
     }
 

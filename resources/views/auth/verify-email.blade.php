@@ -3,6 +3,7 @@
         <p class="text-xs font-black uppercase tracking-[.2em] text-brand-coral-strong">Confirma que eres tú</p>
         <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Revisa tu correo</h1>
         <p class="mt-3 leading-7 text-brand-sage-muted">Enviamos un enlace de verificación a <strong>{{ auth()->user()->email }}</strong>. Ábrelo para confirmar que el correo te pertenece.</p>
+        <p class="mt-3 text-sm font-bold leading-6 text-brand-warning-copy">Verifícalo dentro de 7 días. Después de ese plazo, una cuenta sin verificar y sin actividad se elimina automáticamente.</p>
     </div>
 
     @if(config('mail.default') === 'log')
@@ -13,7 +14,7 @@
         <div class="mt-6 rounded-2xl border border-brand-success-bright/20 bg-brand-success-soft px-4 py-3 text-sm font-bold text-brand-success">{{ config('mail.default') === 'log' ? 'Generamos un enlace nuevo en el registro local.' : 'Enviamos un enlace nuevo. Revisa también la carpeta de spam.' }}</div>
     @endif
     @if (session('verification_delivery_failed'))
-        <div class="mt-6 rounded-2xl border border-brand-coral/20 bg-brand-coral-soft px-4 py-3 text-sm font-bold text-brand-coral-strong" role="alert">No pudimos conectarnos al servicio de correo. Tu cuenta sigue activa; inténtalo nuevamente más tarde.</div>
+        <div class="mt-6 rounded-2xl border border-brand-coral/20 bg-brand-coral-soft px-4 py-3 text-sm font-bold text-brand-coral-strong" role="alert">No pudimos conectarnos al servicio de correo. Conservaremos tu registro durante 7 días; inténtalo nuevamente más tarde.</div>
     @endif
 
     <form class="mt-8" method="POST" action="{{ route('verification.send') }}">

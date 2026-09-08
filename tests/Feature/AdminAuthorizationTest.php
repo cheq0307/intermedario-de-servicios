@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\AccountIdentityLink;
+use App\Models\AdminUser;
 use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Community;
@@ -18,28 +20,22 @@ class AdminAuthorizationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_superadmin_can_delegate_and_revoke_admin_without_granting_superadmin(): void
+    public function test_superadmin_can_suspend_and_reactivate_team_access_without_promoting_clients(): void
     {
-        $superadmin = User::factory()->create();
-        $superadmin->assignRole(Role::findOrCreate('superadmin'));
-        $target = User::factory()->create();
-
-        $this->actingAs($superadmin)->post(route('admin.users.grant', $target))->assertRedirect();
-        $target->refresh();
-        $this->assertTrue($target->hasRole('admin'));
-        $this->assertFalse($target->canUseMarketplace());
-        $this->assertDatabaseHas('audit_logs', ['action' => 'admin.granted', 'subject_id' => $target->id]);
-
-        $this->actingAs($superadmin)->delete(route('admin.users.revoke', $target))->assertRedirect();
-        $target->refresh();
-        $this->assertFalse($target->hasRole('admin'));
-        $this->assertTrue($target->canUseMarketplace());
+        $superadmin = AdminUser::factory()->superadmin()->create();
+        $target = AdminUser::factory()->create();
+        $this->actingAs($superadmin, 'admin')->patch(route('admin.team.toggle', $target))->assertRedirect();
+        $this->assertFalse($target->fresh()->active);
+        $this->patch(route('admin.team.toggle', $target))->assertRedirect();
+        $this->assertTrue($target->fresh()->active);
+        $this->assertFalse($target->fresh()->hasRole('superadmin'));
+        $this->patch(route('admin.team.toggle', $superadmin))->assertForbidden();
+        $this->assertDatabaseCount('users', 0);
     }
 
     public function test_delegated_admin_can_approve_and_suspend_vendor_but_cannot_delegate_admins(): void
     {
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
         $provider = User::factory()->create(['account_type' => 'provider']);
         $vendor = Vendor::create([
             'user_id' => $provider->id,
@@ -55,18 +51,18 @@ class AdminAuthorizationTest extends TestCase
         $vendor->categories()->attach(Category::query()->value('id'));
         $target = User::factory()->create();
 
-        $this->actingAs($admin)->get(route('admin.index'))->assertOk()->assertSee('1 cuentas por verificar')->assertDontSee('Negocio pendiente');
-        $this->actingAs($admin)->patch(route('admin.vendors.approve', $vendor))->assertRedirect();
+        $this->actingAs($admin, 'admin')->get(route('admin.index'))->assertOk()->assertSee('1 cuentas por verificar')->assertDontSee('Negocio pendiente');
+        $this->actingAs($admin, 'admin')->patch(route('admin.vendors.approve', $vendor))->assertRedirect();
         $this->assertSame('active', $vendor->fresh()->status);
         $this->assertNull($vendor->fresh()->verified_at);
-        $this->actingAs($admin)->get(route('admin.vendors.show', $vendor))->assertOk()->assertSee('Suspender actividad comercial')->assertSee('Moderación');
-        $this->actingAs($admin)->post(route('admin.users.grant', $target))->assertForbidden();
+        $this->actingAs($admin, 'admin')->get(route('admin.vendors.show', $vendor))->assertOk()->assertSee('Suspender actividad comercial')->assertSee('Moderación');
+        $this->actingAs($admin, 'admin')->post(route('admin.team.invite'), ['name' => $target->name, 'email' => $target->email, 'phone' => $target->phone])->assertForbidden();
 
-        $this->actingAs($admin)->patch(route('admin.vendors.suspend', $vendor), ['reason' => 'Documentación comercial inconsistente.'])->assertRedirect();
+        $this->actingAs($admin, 'admin')->patch(route('admin.vendors.suspend', $vendor), ['reason' => 'Documentación comercial inconsistente.'])->assertRedirect();
         $this->assertSame('suspended', $vendor->fresh()->status);
         $this->assertSame('Documentación comercial inconsistente.', $vendor->fresh()->suspension_reason);
         $this->assertNotNull($vendor->fresh()->suspended_at);
-        $this->assertSame(2, AuditLog::where('user_id', $admin->id)->count());
+        $this->assertSame(2, AuditLog::where('admin_user_id', $admin->id)->count());
 
         $suspensionNotification = $provider->notifications()->get()
             ->first(fn ($notification) => ($notification->data['kind'] ?? null) === 'vendor_suspended');
@@ -74,16 +70,16 @@ class AdminAuthorizationTest extends TestCase
         $this->assertSame('support.create', $suspensionNotification->data['route_name']);
         $this->assertSame(['category' => 'provider_suspension'], $suspensionNotification->data['route_parameters']);
 
-        $this->actingAs($provider)
+        $this->actingAs($provider, 'web')
             ->patch(route('notifications.open', $suspensionNotification))
             ->assertRedirect(route('support.create', ['category' => 'provider_suspension']));
 
-        $this->actingAs($admin)->get(route('admin.users.show', $provider))
+        $this->actingAs($admin, 'admin')->get(route('admin.users.show', $provider))
             ->assertOk()
             ->assertSee('Reactivar actividad comercial')
             ->assertSee(route('admin.vendors.approve', $vendor), false);
 
-        $this->actingAs($admin)->patch(route('admin.vendors.approve', $vendor))->assertRedirect();
+        $this->actingAs($admin, 'admin')->patch(route('admin.vendors.approve', $vendor))->assertRedirect();
         $this->assertSame('active', $vendor->fresh()->status);
         $this->assertNotNull($provider->notifications()->get()->first(
             fn ($notification) => ($notification->data['kind'] ?? null) === 'vendor_reactivated'
@@ -92,8 +88,7 @@ class AdminAuthorizationTest extends TestCase
 
     public function test_provider_can_be_approved_without_fiscal_or_verification_documents(): void
     {
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
         $provider = User::factory()->create(['account_type' => 'provider']);
         $vendor = Vendor::create([
             'user_id' => $provider->id,
@@ -108,7 +103,7 @@ class AdminAuthorizationTest extends TestCase
         ]);
         $vendor->categories()->attach(Category::query()->value('id'));
 
-        $this->actingAs($admin)->patch(route('admin.vendors.approve', $vendor))->assertRedirect();
+        $this->actingAs($admin, 'admin')->patch(route('admin.vendors.approve', $vendor))->assertRedirect();
 
         $this->assertSame('active', $vendor->fresh()->status);
         $this->assertDatabaseCount('vendor_verification_documents', 0);
@@ -116,8 +111,7 @@ class AdminAuthorizationTest extends TestCase
 
     public function test_incomplete_or_unverified_provider_cannot_be_approved(): void
     {
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
         $provider = User::factory()->unverified()->create(['account_type' => 'provider']);
         $vendor = Vendor::create([
             'user_id' => $provider->id,
@@ -127,7 +121,7 @@ class AdminAuthorizationTest extends TestCase
             'submitted_at' => now(),
         ]);
 
-        $this->actingAs($admin)
+        $this->actingAs($admin, 'admin')
             ->patch(route('admin.vendors.approve', $vendor))
             ->assertStatus(422);
 
@@ -137,8 +131,7 @@ class AdminAuthorizationTest extends TestCase
     public function test_approval_notifies_provider_and_admin_dashboard_shows_pending_queue(): void
     {
         Notification::fake();
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
         $provider = User::factory()->create(['account_type' => 'provider']);
         $vendor = Vendor::create([
             'user_id' => $provider->id,
@@ -153,7 +146,7 @@ class AdminAuthorizationTest extends TestCase
         ]);
         $vendor->categories()->attach(Category::query()->value('id'));
 
-        $this->actingAs($admin)
+        $this->actingAs($admin, 'admin')
             ->get(route('admin.index'))
             ->assertOk()
             ->assertSee('1 cuentas por verificar')
@@ -164,51 +157,34 @@ class AdminAuthorizationTest extends TestCase
         Notification::assertSentTo($provider, MarketplaceActivity::class);
     }
 
-    public function test_administrator_is_redirected_to_its_exclusive_workspace(): void
+    public function test_administrative_session_does_not_authenticate_in_marketplace(): void
     {
-        $admin = User::factory()->create(['account_type' => 'client']);
-        $admin->assignRole([Role::findOrCreate('client'), Role::findOrCreate('admin')]);
-
-        $this->actingAs($admin)
-            ->get(route('dashboard'))
-            ->assertRedirect(route('admin.index'));
-
-        $this->assertFalse($admin->fresh()->canUseMarketplace());
+        $admin = AdminUser::factory()->create();
+        $this->actingAs($admin, 'admin')->get(route('dashboard'))->assertRedirect(route('login'));
+        $this->get(route('admin.index'))->assertOk();
+        $this->assertFalse($admin->canUseMarketplace());
     }
 
-    public function test_administrator_cannot_approve_own_vendor_profile(): void
+    public function test_administrator_cannot_approve_own_linked_vendor_profile(): void
     {
-        $admin = User::factory()->create(['account_type' => 'provider']);
-        $admin->assignRole(Role::findOrCreate('admin'));
-        $vendor = Vendor::create([
-            'user_id' => $admin->id,
-            'display_name' => 'Negocio del admin',
-            'slug' => 'negocio-admin',
-            'description' => 'Perfil completo.',
-            'specialty' => 'Oficio',
-            'service_area' => 'Centro',
-            'business_hours' => ['days' => ['monday'], 'opens_at' => '09:00', 'closes_at' => '18:00'],
-            'status' => 'pending',
-            'submitted_at' => now(),
-        ]);
-
-        $this->actingAs($admin)
-            ->patch(route('admin.vendors.approve', $vendor))
-            ->assertForbidden();
-
+        $admin = AdminUser::factory()->create();
+        $user = User::factory()->create(['email' => $admin->email, 'phone' => $admin->phone]);
+        AccountIdentityLink::create(['admin_user_id' => $admin->id, 'user_id' => $user->id,
+            'email' => $user->email, 'phone' => $user->phone, 'approved_at' => now()]);
+        $vendor = Vendor::create(['user_id' => $user->id, 'display_name' => 'Propio', 'slug' => 'propio', 'status' => 'pending', 'submitted_at' => now()]);
+        $this->actingAs($admin, 'admin')->patch(route('admin.vendors.approve', $vendor))->assertForbidden();
         $this->assertSame('pending', $vendor->fresh()->status);
     }
 
     public function test_admin_workspace_excludes_current_operator_from_third_person_management(): void
     {
-        $superadmin = User::factory()->create(['name' => 'Cuenta propietaria']);
-        $superadmin->syncRoles([Role::findOrCreate('superadmin')]);
+        $superadmin = AdminUser::factory()->superadmin()->create(['name' => 'Cuenta propietaria']);
         User::factory()->create(['name' => 'Otra persona', 'email' => 'otra@example.test']);
 
-        $this->actingAs($superadmin)
+        $this->actingAs($superadmin, 'admin')
             ->get(route('admin.index', ['admin_q' => 'Otra']))
             ->assertOk()
-            ->assertSee('Otra persona')
+            ->assertDontSee('Otra persona')
             ->assertSee('Cuenta propietaria')
             ->assertSee('Cerrar sesi')
             ->assertSee('Cuenta exclusivamente administrativa')
@@ -220,8 +196,7 @@ class AdminAuthorizationTest extends TestCase
     public function test_administrator_can_reject_a_submitted_provider_application_with_a_reason(): void
     {
         Notification::fake();
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
         $provider = User::factory()->create(['account_type' => 'provider']);
         $vendor = Vendor::create([
             'user_id' => $provider->id,
@@ -235,7 +210,7 @@ class AdminAuthorizationTest extends TestCase
             'submitted_at' => now(),
         ]);
 
-        $this->actingAs($admin)->patch(route('admin.vendors.reject', $vendor), ['reason' => 'Necesitamos una descripción más precisa.'])->assertRedirect();
+        $this->actingAs($admin, 'admin')->patch(route('admin.vendors.reject', $vendor), ['reason' => 'Necesitamos una descripción más precisa.'])->assertRedirect();
 
         $this->assertDatabaseHas('vendors', ['id' => $vendor->id, 'status' => 'rejected', 'rejection_reason' => 'Necesitamos una descripción más precisa.']);
         Notification::assertSentTo($provider, MarketplaceActivity::class);
@@ -243,10 +218,9 @@ class AdminAuthorizationTest extends TestCase
 
     public function test_admin_can_create_a_community_and_audit_is_human_readable(): void
     {
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
 
-        $this->actingAs($admin)
+        $this->actingAs($admin, 'admin')
             ->post(route('admin.communities.store'), [
                 'name' => 'San Miguel',
                 'municipality' => 'Municipio Ejemplo',
@@ -280,8 +254,7 @@ class AdminAuthorizationTest extends TestCase
 
     public function test_admin_dashboard_uses_independent_paginators_for_growing_catalogs(): void
     {
-        $superadmin = User::factory()->create();
-        $superadmin->syncRoles([Role::findOrCreate('superadmin')]);
+        $superadmin = AdminUser::factory()->superadmin()->create();
 
         foreach (range(1, 10) as $index) {
             Community::create([
@@ -299,8 +272,7 @@ class AdminAuthorizationTest extends TestCase
         }
 
         foreach (range(1, 9) as $index) {
-            $administrator = User::factory()->create(['email' => "admin-paginado-{$index}@example.test"]);
-            $administrator->assignRole(Role::findOrCreate('admin'));
+            $administrator = AdminUser::factory()->create(['email' => "admin-paginado-{$index}@example.test"]);
             $provider = User::factory()->create(['account_type' => 'provider']);
             Vendor::create([
                 'user_id' => $provider->id,
@@ -311,7 +283,7 @@ class AdminAuthorizationTest extends TestCase
         }
         foreach (range(1, 16) as $index) {
             AuditLog::create([
-                'user_id' => $superadmin->id,
+                'admin_user_id' => $superadmin->id,
                 'action' => 'community.updated',
                 'subject_type' => Community::class,
                 'subject_id' => $index,
@@ -319,36 +291,26 @@ class AdminAuthorizationTest extends TestCase
             ]);
         }
 
-        $response = $this->actingAs($superadmin)->get(route('admin.index'));
+        $response = $this->actingAs($superadmin, 'admin')->get(route('admin.index'));
         $response->assertOk();
-        foreach (['communities_page=2', 'categories_page=2', 'administrators_page=2', 'audit_page=2'] as $pageParameter) {
+        foreach (['communities_page=2', 'categories_page=2', 'audit_page=2'] as $pageParameter) {
             $response->assertSee($pageParameter, false);
         }
     }
 
-    public function test_admin_candidates_only_appear_after_a_search(): void
+    public function test_team_directory_is_separate_from_marketplace_accounts(): void
     {
-        $superadmin = User::factory()->create();
-        $superadmin->syncRoles([Role::findOrCreate('superadmin')]);
-        $candidate = User::factory()->create(['name' => 'Candidata Delegada', 'email' => 'delegada@example.test']);
-
-        $this->actingAs($superadmin)
-            ->get(route('admin.index'))
-            ->assertOk()
-            ->assertDontSee($candidate->email)
-            ->assertSee('Buscar usuario');
-
-        $this->get(route('admin.index', ['admin_q' => 'delegada@example.test']))
-            ->assertOk()
-            ->assertSee($candidate->email)
-            ->assertSee('Hacer administrador')
-            ->assertSee('#administradores', false);
+        $superadmin = AdminUser::factory()->superadmin()->create();
+        $candidate = User::factory()->create(['email' => 'cliente@example.test']);
+        $staff = AdminUser::factory()->create(['email' => 'equipo@example.test']);
+        $this->actingAs($superadmin, 'admin')->get(route('admin.team.index'))
+            ->assertOk()->assertSee($staff->email)->assertDontSee($candidate->email)->assertSee('Invitar administrador');
+        $this->get(route('admin.users.index'))->assertOk()->assertSee($candidate->email)->assertDontSee($staff->email);
     }
 
     public function test_admin_can_edit_suspend_and_reactivate_a_community_but_cannot_delete_it(): void
     {
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
         $community = Community::create([
             'name' => 'Pueblo operativo',
             'municipality' => 'Municipio original',
@@ -357,7 +319,7 @@ class AdminAuthorizationTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->actingAs($admin)->patch(route('admin.communities.update', $community), [
+        $this->actingAs($admin, 'admin')->patch(route('admin.communities.update', $community), [
             'name' => 'Pueblo actualizado',
             'municipality' => 'Municipio actualizado',
             'state' => 'Puebla',
@@ -379,8 +341,7 @@ class AdminAuthorizationTest extends TestCase
 
     public function test_superadmin_can_delete_only_an_empty_suspended_community(): void
     {
-        $superadmin = User::factory()->create();
-        $superadmin->assignRole(Role::findOrCreate('superadmin'));
+        $superadmin = AdminUser::factory()->superadmin()->create();
         $community = Community::create([
             'name' => 'Comunidad temporal',
             'municipality' => 'Municipio temporal',
@@ -388,7 +349,7 @@ class AdminAuthorizationTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->actingAs($superadmin)
+        $this->actingAs($superadmin, 'admin')
             ->delete(route('admin.communities.destroy', $community))
             ->assertRedirect()
             ->assertSessionHasErrors('community');
@@ -402,8 +363,7 @@ class AdminAuthorizationTest extends TestCase
 
     public function test_used_community_is_preserved_as_suspended_history(): void
     {
-        $superadmin = User::factory()->create();
-        $superadmin->assignRole(Role::findOrCreate('superadmin'));
+        $superadmin = AdminUser::factory()->superadmin()->create();
         $community = Community::create([
             'name' => 'Comunidad con historial',
             'municipality' => 'Municipio histórico',
@@ -412,7 +372,7 @@ class AdminAuthorizationTest extends TestCase
         ]);
         User::factory()->create(['community_id' => $community->id]);
 
-        $this->actingAs($superadmin)
+        $this->actingAs($superadmin, 'admin')
             ->delete(route('admin.communities.destroy', $community))
             ->assertRedirect()
             ->assertSessionHasErrors('community');
@@ -421,11 +381,10 @@ class AdminAuthorizationTest extends TestCase
 
     public function test_last_active_community_cannot_be_suspended(): void
     {
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
         $community = Community::query()->where('is_active', true)->firstOrFail();
 
-        $this->actingAs($admin)
+        $this->actingAs($admin, 'admin')
             ->patch(route('admin.communities.toggle', $community))
             ->assertRedirect()
             ->assertSessionHasErrors('community');
@@ -435,14 +394,13 @@ class AdminAuthorizationTest extends TestCase
     public function test_regular_user_cannot_access_administration(): void
     {
         $client = User::factory()->create();
-        $this->actingAs($client)->get(route('admin.index'))->assertForbidden();
+        $this->actingAs($client, 'web')->get(route('admin.index'))->assertRedirect(route('admin.login'));
     }
 
     public function test_admin_can_remove_a_post_with_reason_audit_and_author_notification(): void
     {
         Notification::fake();
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
         $author = User::factory()->create();
         $author->assignRole(Role::findOrCreate('client'));
         $post = Post::create([
@@ -452,19 +410,19 @@ class AdminAuthorizationTest extends TestCase
             'published_at' => now(),
         ]);
 
-        $this->actingAs($admin)
+        $this->actingAs($admin, 'admin')
             ->patch(route('admin.posts.remove', $post), ['reason' => 'Incumple las reglas de publicación de la comunidad.'])
             ->assertRedirect();
 
         $post->refresh();
         $this->assertNotNull($post->removed_at);
-        $this->assertSame($admin->id, $post->removed_by_user_id);
+        $this->assertSame($admin->id, $post->admin_user_id);
         $this->assertDatabaseHas('audit_logs', ['action' => 'post.removed', 'subject_id' => $post->id]);
         Notification::assertSentTo($author, MarketplaceActivity::class);
 
-        $this->actingAs($author)->get(route('dashboard'))->assertDontSee($post->body);
+        $this->actingAs($author, 'web')->get(route('dashboard'))->assertDontSee($post->body);
         $this->get(route('profile.show', $author))->assertDontSee($post->body);
-        $this->actingAs($admin)->get(route('admin.posts.index', ['status' => 'removed']))
+        $this->actingAs($admin, 'admin')->get(route('admin.posts.index', ['status' => 'removed']))
             ->assertOk()
             ->assertSee('Incumple las reglas de publicación de la comunidad.');
     }
@@ -480,9 +438,9 @@ class AdminAuthorizationTest extends TestCase
             'published_at' => now(),
         ]);
 
-        $this->actingAs($author)
+        $this->actingAs($author, 'web')
             ->patch(route('admin.posts.remove', $post), ['reason' => 'Intento no autorizado de retirar contenido.'])
-            ->assertForbidden();
+            ->assertRedirect(route('admin.login'));
 
         $this->assertNull($post->fresh()->removed_at);
     }

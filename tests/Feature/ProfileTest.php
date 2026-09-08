@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdminUser;
 use App\Models\Category;
 use App\Models\Community;
 use App\Models\Post;
@@ -48,7 +49,7 @@ class ProfileTest extends TestCase
             'availability_status' => 'available',
         ]);
 
-        $this->actingAs($viewer)
+        $this->actingAs($viewer, 'web')
             ->get(route('profile.show', $provider))
             ->assertOk()
             ->assertSee('Reparaciones Luna')
@@ -61,7 +62,7 @@ class ProfileTest extends TestCase
     {
         $user = User::factory()->create(['account_type' => 'client']);
 
-        $this->actingAs($user)
+        $this->actingAs($user, 'web')
             ->get(route('profile.show', $user))
             ->assertOk()
             ->assertSee('Correo:')
@@ -90,12 +91,11 @@ class ProfileTest extends TestCase
 
     public function test_administrator_can_see_email_for_account_support(): void
     {
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
         $user = User::factory()->create(['account_type' => 'client']);
 
-        $this->actingAs($admin)
-            ->get(route('profile.show', $user))
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.users.preview', $user))
             ->assertOk()
             ->assertSee($user->email);
     }
@@ -111,7 +111,7 @@ class ProfileTest extends TestCase
 
         $community = Community::create(['name' => 'Centro', 'municipality' => 'Mi comunidad', 'default_radius_km' => 8, 'is_active' => true]);
 
-        $this->actingAs($provider)->put(route('profile.update'), [
+        $this->actingAs($provider, 'web')->put(route('profile.update'), [
             'offered_categories' => [Category::query()->value('id')],
             'name' => 'Mario Hernández',
             'phone' => '5551234567',
@@ -150,7 +150,7 @@ class ProfileTest extends TestCase
     {
         $user = User::factory()->create(['account_type' => 'client']);
 
-        $this->actingAs($user)
+        $this->actingAs($user, 'web')
             ->get(route('profile.edit', ['ofrecer' => 1]))
             ->assertOk()
             ->assertSee('Agregar mis servicios')
@@ -165,8 +165,9 @@ class ProfileTest extends TestCase
         $user = User::factory()->create(['account_type' => 'client']);
         $community = Community::query()->firstOrFail();
 
-        $this->actingAs($user)->put(route('profile.update'), [
+        $this->actingAs($user, 'web')->put(route('profile.update'), [
             'name' => 'Cuenta actualizada',
+            'phone' => $user->phone,
             'community_id' => $community->id,
             'offers_services' => 1,
             'display_name' => 'Proveedor inyectado',
@@ -199,7 +200,7 @@ class ProfileTest extends TestCase
             $behaviorOnly->id => ['interest_score' => 100, 'behavior_score' => 35],
         ]);
 
-        $this->actingAs($user)
+        $this->actingAs($user, 'web')
             ->put(route('profile.interests.update'), ['interests' => [$selected->id]])
             ->assertRedirect(route('profile.edit'))
             ->assertSessionHas('status');
@@ -218,7 +219,7 @@ class ProfileTest extends TestCase
             'behavior_score' => 35,
         ]);
 
-        $this->actingAs($user)
+        $this->actingAs($user, 'web')
             ->get(route('profile.edit'))
             ->assertOk()
             ->assertSee(route('profile.interests.update'), false)
@@ -248,7 +249,7 @@ class ProfileTest extends TestCase
         $this->assertTrue($vendor->isWithinBusinessHours($moment));
         $this->assertFalse($vendor->isWithinBusinessHours($moment->setTime(20, 0)));
 
-        $this->actingAs($provider)
+        $this->actingAs($provider, 'web')
             ->get(route('profile.show', $provider))
             ->assertOk()
             ->assertSee('Cuenta institucional de Plaza Local')
@@ -267,9 +268,30 @@ class ProfileTest extends TestCase
             'published_at' => now(),
         ]);
 
-        $this->actingAs($user)
+        $this->actingAs($user, 'web')
             ->get(route('profile.show', $user))
             ->assertOk()
             ->assertSee('Necesito ayuda para reparar una puerta.');
+    }
+
+    public function test_profile_cannot_adopt_another_accounts_phone(): void
+    {
+        $owner = User::factory()->create(['phone' => '5554000001']);
+        $other = User::factory()->create(['phone' => '5554000002']);
+
+        $this->actingAs($owner, 'web')
+            ->from(route('profile.edit'))
+            ->put(route('profile.update'), [
+                'name' => $owner->name,
+                'phone' => '555-400-0002',
+                'community_id' => Community::query()->value('id'),
+            ])
+            ->assertRedirect(route('profile.edit'))
+            ->assertSessionHasErrors([
+                'phone' => 'Este teléfono ya está registrado en otra cuenta.',
+            ]);
+
+        $this->assertSame('5554000001', $owner->fresh()->phone);
+        $this->assertSame('5554000002', $other->fresh()->phone);
     }
 }

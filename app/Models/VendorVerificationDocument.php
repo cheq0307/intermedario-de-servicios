@@ -29,7 +29,7 @@ class VendorVerificationDocument extends Model
 
     public const STATUSES = ['pending' => 'Pendiente', 'approved' => 'Aprobado', 'rejected' => 'Rechazado', 'superseded' => 'Reemplazado'];
 
-    protected $fillable = [
+    protected $fillable = ['admin_user_id',
         'vendor_id', 'uploaded_by_user_id', 'reviewed_by_user_id', 'type', 'status',
         'disk', 'path', 'original_name', 'mime_type', 'size', 'sha256',
         'review_note', 'reviewed_at', 'expires_at',
@@ -52,11 +52,16 @@ class VendorVerificationDocument extends Model
 
     public function reviewedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'reviewed_by_user_id');
+        return $this->belongsTo(AdminUser::class, 'admin_user_id');
     }
 
     public function label(): string
     {
         return self::TYPES[$this->type] ?? $this->type;
+    }
+
+    public function admin(): BelongsTo
+    {
+        return $this->belongsTo(AdminUser::class, 'admin_user_id');
     }
 }

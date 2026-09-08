@@ -23,7 +23,7 @@ class MercadoPagoPromotionTest extends TestCase
             'checkout_url' => 'https://www.mercadopago.com.mx/checkout/v1/redirect?pref_id=pref_test_1',
         ]);
 
-        $this->actingAs($user)
+        $this->actingAs($user, 'web')
             ->post(route('promotions.checkout', $promotion))
             ->assertRedirect($promotion->checkout_url);
     }

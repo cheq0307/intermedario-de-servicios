@@ -50,7 +50,7 @@ class AuthenticationTest extends TestCase
             ->assertSee('data-password-toggle="reset-password-confirmation"', false);
 
         $user = User::factory()->create();
-        $this->actingAs($user)
+        $this->actingAs($user, 'web')
             ->get(route('password.confirm'))
             ->assertOk()
             ->assertSee('data-password-toggle="confirm-current-password"', false);
@@ -62,6 +62,7 @@ class AuthenticationTest extends TestCase
             'account_type' => 'client',
             'community_id' => Community::query()->value('id'),
             'name' => 'Cliente Ejemplo',
+            'phone' => '5551000001',
             'email' => 'cliente@example.test',
             'password' => 'Seguro123',
             'password_confirmation' => 'Seguro123',
@@ -101,6 +102,7 @@ class AuthenticationTest extends TestCase
             'account_type' => 'client',
             'community_id' => Community::query()->value('id'),
             'name' => 'Cuenta duplicada',
+            'phone' => '5551000002',
             'email' => 'registrado@example.test',
             'password' => 'Seguro123',
             'password_confirmation' => 'Seguro123',
@@ -114,6 +116,25 @@ class AuthenticationTest extends TestCase
 
         $this->assertGuest();
         $this->assertDatabaseCount('users', 1);
+    }
+
+    public function test_registration_requires_a_unique_ten_digit_phone(): void
+    {
+        User::factory()->create(['phone' => '5551234567']);
+
+        $this->from('/register')->post('/register', [
+            'community_id' => Community::query()->value('id'),
+            'name' => 'Teléfono repetido',
+            'phone' => '555-123-4567',
+            'email' => 'telefono@example.test',
+            'password' => 'Seguro123',
+            'password_confirmation' => 'Seguro123',
+        ])->assertRedirect('/register')
+            ->assertSessionHasErrors([
+                'phone' => 'Este teléfono ya está registrado en una cuenta.',
+            ]);
+
+        $this->assertDatabaseMissing('users', ['email' => 'telefono@example.test']);
     }
 
     public function test_user_can_login_and_logout(): void

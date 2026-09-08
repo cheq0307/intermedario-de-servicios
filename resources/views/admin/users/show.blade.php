@@ -23,7 +23,7 @@
                     <p class="mt-1 text-sm font-semibold text-brand-copy">{{ $user->community?->name ?? 'Sin comunidad' }}{{ $user->community?->municipality ? ' · '.$user->community->municipality.', '.$user->community->state : '' }}</p>
                 </div>
             </div>
-            <a class="inline-flex justify-center rounded-full border border-brand px-5 py-2.5 text-sm font-black text-brand" href="{{ route('profile.show', $user) }}">Ver perfil público</a>
+            <a class="inline-flex justify-center rounded-full border border-brand px-5 py-2.5 text-sm font-black text-brand" href="{{ route('admin.users.preview', $user) }}">Ver perfil público</a>
         </div>
     </section>
 
@@ -78,7 +78,7 @@
         <div class="flex flex-wrap items-center justify-between gap-3"><div><p class="text-xs font-black uppercase tracking-[.14em] text-brand-muted">Trazabilidad</p><h2 class="mt-2 text-xl font-black">Actividad administrativa reciente</h2></div><span class="text-sm font-bold text-brand-muted">{{ $user->support_tickets_count }} casos de soporte · {{ $user->followers_count }} seguidores</span></div>
         <div class="mt-4 divide-y divide-brand/10">
             @forelse($auditLogs as $log)
-                <article class="grid gap-1 py-3 text-sm sm:grid-cols-[10rem_1fr_12rem]"><span class="text-brand-muted">{{ $log->created_at?->format('d/m/Y H:i') }}</span><strong>{{ $log->action }}</strong><span class="text-brand-muted">{{ $log->user?->name ?? 'Sistema' }}</span></article>
+                <article class="grid gap-1 py-3 text-sm sm:grid-cols-[10rem_1fr_12rem]"><span class="text-brand-muted">{{ $log->created_at?->format('d/m/Y H:i') }}</span><strong>{{ $log->action }}</strong><span class="text-brand-muted">{{ $log->admin?->name ?? $log->user?->name ?? 'Sistema' }}</span></article>
             @empty
                 <p class="py-6 text-center font-semibold text-brand-muted">No hay cambios administrativos registrados para esta cuenta.</p>
             @endforelse

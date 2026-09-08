@@ -27,7 +27,7 @@ class FeedPersonalizationTest extends TestCase
         $this->createPost($otherClient, 'job_request', 'Solicitud de otro cliente oculta por defecto.');
         $this->createPost($client, 'job_request', 'Mi propia solicitud permanece visible.');
 
-        $this->actingAs($client)
+        $this->actingAs($client, 'web')
             ->get(route('dashboard', ['feed' => 'for_you']))
             ->assertOk()
             ->assertSee('Servicio profesional visible para clientes.')
@@ -47,7 +47,7 @@ class FeedPersonalizationTest extends TestCase
         $this->createPost($otherProvider, 'service', 'Oferta de otro proveedor oculta por defecto.');
         $this->createPost($provider, 'service', 'Mi servicio permanece visible para administrarlo.');
 
-        $this->actingAs($provider)
+        $this->actingAs($provider, 'web')
             ->get(route('dashboard', ['feed' => 'for_you']))
             ->assertOk()
             ->assertSee('Cliente busca una reparación de plomería.')
@@ -85,12 +85,12 @@ class FeedPersonalizationTest extends TestCase
             'published_at' => now(),
         ]);
 
-        $this->actingAs($viewer)->get(route('dashboard'))
+        $this->actingAs($viewer, 'web')->get(route('dashboard'))
             ->assertOk()
             ->assertDontSee('Disponible para personas que ofrecen este servicio')
             ->assertDontSee('Enviar propuesta');
 
-        $this->actingAs($provider)->get(route('dashboard'))
+        $this->actingAs($provider, 'web')->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Enviar propuesta')
             ->assertSee('href="'.route('job-proposals.index', $request).'"', false);
@@ -105,7 +105,7 @@ class FeedPersonalizationTest extends TestCase
         $this->createPost($provider, 'service', 'Oferta visible en el feed general.');
         $this->createPost($client, 'job_request', 'Solicitud visible en el feed general.');
 
-        $this->actingAs($viewer)
+        $this->actingAs($viewer, 'web')
             ->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Para ti')
@@ -123,7 +123,7 @@ class FeedPersonalizationTest extends TestCase
         $this->createPost($provider, 'portfolio', 'Trabajo terminado dentro de comunidad.');
         $this->createPost($client, 'job_request', 'Solicitud dentro de su pestaña especializada.');
 
-        $this->actingAs($viewer)->get(route('dashboard', ['feed' => 'requests']))
+        $this->actingAs($viewer, 'web')->get(route('dashboard', ['feed' => 'requests']))
             ->assertOk()
             ->assertSee('Solicitud dentro de su pestaña especializada.')
             ->assertDontSee('Producto dentro de la pestaña de ofertas.');
@@ -156,7 +156,7 @@ class FeedPersonalizationTest extends TestCase
         $this->createPost($dualUser, 'service', 'Oferta comercial que debe ocultarse por suspensión.');
         $this->createPost($dualUser, 'job_request', 'Solicitud como cliente que debe permanecer visible.');
 
-        $this->actingAs($viewer)
+        $this->actingAs($viewer, 'web')
             ->get(route('dashboard', ['feed' => 'all']))
             ->assertOk()
             ->assertDontSee('Oferta comercial que debe ocultarse por suspensión.')
@@ -202,7 +202,7 @@ class FeedPersonalizationTest extends TestCase
             'alt_text' => 'Orden de tacos dorados',
         ]);
 
-        $this->actingAs($viewer)
+        $this->actingAs($viewer, 'web')
             ->get(route('dashboard', ['module' => 'food']))
             ->assertOk()
             ->assertSee('Escaparate local')

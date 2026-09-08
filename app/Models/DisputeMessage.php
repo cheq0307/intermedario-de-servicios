@@ -10,7 +10,7 @@ class DisputeMessage extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['dispute_id', 'user_id', 'body'];
+    protected $fillable = ['admin_user_id', 'dispute_id', 'user_id', 'body'];
 
     public function dispute(): BelongsTo
     {
@@ -20,5 +20,10 @@ class DisputeMessage extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function admin(): BelongsTo
+    {
+        return $this->belongsTo(AdminUser::class, 'admin_user_id');
     }
 }

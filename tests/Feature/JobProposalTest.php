@@ -18,8 +18,8 @@ class JobProposalTest extends TestCase
     {
         [$client, $provider, $jobRequest] = $this->scenario();
 
-        $this->actingAs($provider)->post(route('job-proposals.store', $jobRequest), $this->payload('850'))->assertRedirect();
-        $this->actingAs($provider)->post(route('job-proposals.store', $jobRequest), $this->payload('950'))->assertRedirect();
+        $this->actingAs($provider, 'web')->post(route('job-proposals.store', $jobRequest), $this->payload('850'))->assertRedirect();
+        $this->actingAs($provider, 'web')->post(route('job-proposals.store', $jobRequest), $this->payload('950'))->assertRedirect();
 
         $this->assertDatabaseCount('job_proposals', 1);
         $this->assertDatabaseHas('job_proposals', ['job_request_id' => $jobRequest->id, 'provider_id' => $provider->id, 'amount' => 95000]);
@@ -30,11 +30,11 @@ class JobProposalTest extends TestCase
     {
         [$client, $provider, $jobRequest] = $this->scenario();
         $otherProvider = $this->provider();
-        $this->actingAs($provider)->post(route('job-proposals.store', $jobRequest), $this->payload('850'));
-        $this->actingAs($otherProvider)->post(route('job-proposals.store', $jobRequest), $this->payload('900'));
+        $this->actingAs($provider, 'web')->post(route('job-proposals.store', $jobRequest), $this->payload('850'));
+        $this->actingAs($otherProvider, 'web')->post(route('job-proposals.store', $jobRequest), $this->payload('900'));
         $accepted = JobProposal::where('provider_id', $provider->id)->firstOrFail();
 
-        $this->actingAs($client)->patch(route('job-proposals.accept', [$jobRequest, $accepted]))->assertRedirect();
+        $this->actingAs($client, 'web')->patch(route('job-proposals.accept', [$jobRequest, $accepted]))->assertRedirect();
 
         $this->assertSame('accepted', $accepted->fresh()->status->value);
         $this->assertSame('rejected', JobProposal::where('provider_id', $otherProvider->id)->firstOrFail()->status->value);
@@ -44,7 +44,7 @@ class JobProposalTest extends TestCase
         $this->assertDatabaseHas('orders', ['job_proposal_id' => $accepted->id, 'status' => 'awaiting_payment', 'total_amount' => 85000, 'commission_amount' => 6800]);
         $this->assertDatabaseHas('payments', ['provider' => 'fake', 'status' => 'pending', 'gross_amount' => 85000, 'commission_amount' => 6800, 'vendor_net_amount' => 78200]);
         $this->assertDatabaseHas('order_items', ['name_snapshot' => $jobRequest->title, 'line_total_amount' => 85000]);
-        $this->actingAs($provider)
+        $this->actingAs($provider, 'web')
             ->get(route('job-proposals.index', $jobRequest))
             ->assertOk()
             ->assertSee('Ver contratación');
@@ -54,9 +54,9 @@ class JobProposalTest extends TestCase
     {
         [, $provider, $jobRequest] = $this->scenario();
         $otherProvider = $this->provider();
-        $this->actingAs($otherProvider)->post(route('job-proposals.store', $jobRequest), $this->payload('1234'));
+        $this->actingAs($otherProvider, 'web')->post(route('job-proposals.store', $jobRequest), $this->payload('1234'));
 
-        $this->actingAs($provider)
+        $this->actingAs($provider, 'web')
             ->get(route('job-proposals.index', $jobRequest))
             ->assertOk()
             ->assertDontSee('1,234.00');
@@ -67,10 +67,10 @@ class JobProposalTest extends TestCase
         [$client, $provider, $jobRequest] = $this->scenario();
         $outsider = User::factory()->create(['account_type' => 'client']);
 
-        $this->actingAs($client)->post(route('job-proposals.store', $jobRequest), $this->payload('850'))->assertForbidden();
-        $this->actingAs($provider)->post(route('job-proposals.store', $jobRequest), $this->payload('850'));
+        $this->actingAs($client, 'web')->post(route('job-proposals.store', $jobRequest), $this->payload('850'))->assertForbidden();
+        $this->actingAs($provider, 'web')->post(route('job-proposals.store', $jobRequest), $this->payload('850'));
         $proposal = JobProposal::firstOrFail();
-        $this->actingAs($outsider)->patch(route('job-proposals.accept', [$jobRequest, $proposal]))->assertForbidden();
+        $this->actingAs($outsider, 'web')->patch(route('job-proposals.accept', [$jobRequest, $proposal]))->assertForbidden();
     }
 
     public function test_provider_without_commercial_profile_cannot_submit_proposal(): void
@@ -78,11 +78,11 @@ class JobProposalTest extends TestCase
         [, , $jobRequest] = $this->scenario();
         $incompleteProvider = User::factory()->create(['account_type' => 'provider']);
 
-        $this->actingAs($incompleteProvider)
+        $this->actingAs($incompleteProvider, 'web')
             ->post(route('job-proposals.store', $jobRequest), $this->payload('850'))
             ->assertRedirect()
             ->assertSessionHasErrors(['proposal' => 'Tu perfil comercial debe estar aprobado antes de enviar propuestas.']);
-        $this->actingAs($incompleteProvider)->get(route('job-proposals.index', $jobRequest))->assertOk()->assertSee('pendiente de aprobación');
+        $this->actingAs($incompleteProvider, 'web')->get(route('job-proposals.index', $jobRequest))->assertOk()->assertSee('pendiente de aprobación');
     }
 
     private function scenario(): array

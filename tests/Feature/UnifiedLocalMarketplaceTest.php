@@ -28,7 +28,7 @@ class UnifiedLocalMarketplaceTest extends TestCase
         $insideUser = $this->commercialUser($local, $category, 'Taxi local');
         $outsideUser = $this->commercialUser($outside, $category, 'Taxi vecino');
 
-        $this->actingAs($client)->post(route('posts.store'), [
+        $this->actingAs($client, 'web')->post(route('posts.store'), [
             'submission_token' => (string) Str::uuid(),
             'type' => 'job_request',
             'category_id' => $category->id,

@@ -22,8 +22,8 @@ class ExploreTest extends TestCase
         $client = User::factory()->create(['account_type' => 'client', 'city' => 'Mi Pueblo']);
         JobRequest::create(['public_id' => (string) Str::uuid(), 'client_id' => $client->id, 'title' => 'Necesito plomero', 'description' => 'Hay una fuga importante en casa.', 'status' => 'published', 'urgency' => 'urgent', 'published_at' => now()]);
 
-        $this->actingAs($client)->get(route('explore', ['q' => 'Plomería']))->assertOk()->assertSee('Plomería Central')->assertSee('Reparación de tuberías');
-        $this->actingAs($provider)->get(route('explore', ['q' => 'plomero', 'type' => 'job_request']))->assertOk()->assertSee('Necesito plomero');
+        $this->actingAs($client, 'web')->get(route('explore', ['q' => 'Plomería']))->assertOk()->assertSee('Plomería Central')->assertSee('Reparación de tuberías');
+        $this->actingAs($provider, 'web')->get(route('explore', ['q' => 'plomero', 'type' => 'job_request']))->assertOk()->assertSee('Necesito plomero');
     }
 
     public function test_suspended_vendor_and_inactive_listing_are_hidden(): void
@@ -32,7 +32,7 @@ class ExploreTest extends TestCase
         Listing::create(['vendor_id' => $vendor->id, 'type' => 'product', 'name' => 'Producto oculto', 'slug' => 'oculto', 'price_type' => 'fixed', 'price_amount' => 10000, 'stock' => 2, 'is_active' => true]);
         $viewer = User::factory()->create();
 
-        $this->actingAs($viewer)->get(route('explore'))->assertOk()->assertDontSee('Comercio suspendido')->assertDontSee('Producto oculto');
+        $this->actingAs($viewer, 'web')->get(route('explore'))->assertOk()->assertDontSee('Comercio suspendido')->assertDontSee('Producto oculto');
     }
 
     public function test_user_can_limit_commercial_search_to_an_administered_community(): void
@@ -47,7 +47,7 @@ class ExploreTest extends TestCase
         Listing::create(['vendor_id' => $otherVendor->id, 'type' => 'service', 'name' => 'Servicio del pueblo vecino', 'slug' => 'servicio-vecino', 'price_type' => 'quote', 'is_active' => true]);
         $viewer = User::factory()->create();
 
-        $this->actingAs($viewer)
+        $this->actingAs($viewer, 'web')
             ->get(route('explore', ['community_id' => $otherCommunity->id]))
             ->assertOk()
             ->assertSee('Servicio del pueblo vecino')
@@ -83,7 +83,7 @@ class ExploreTest extends TestCase
         Listing::create(['vendor_id' => $farVendor->id, 'type' => 'service', 'name' => 'Servicio distante', 'slug' => 'servicio-distante', 'price_type' => 'quote', 'is_active' => true]);
         $viewer = User::factory()->create(['community_id' => $origin->id]);
 
-        $this->actingAs($viewer)
+        $this->actingAs($viewer, 'web')
             ->get(route('explore', ['community_id' => $origin->id, 'scope' => 'nearby', 'radius_km' => 5]))
             ->assertOk()
             ->assertSee('Servicio cercano')
@@ -102,7 +102,7 @@ class ExploreTest extends TestCase
         Listing::create(['vendor_id' => $otherVendor->id, 'type' => 'service', 'name' => 'Servicio externo oculto', 'slug' => 'servicio-externo-oculto', 'price_type' => 'quote', 'is_active' => true]);
         $viewer = User::factory()->create(['community_id' => $origin->id]);
 
-        $this->actingAs($viewer)
+        $this->actingAs($viewer, 'web')
             ->get(route('explore', ['community_id' => $origin->id, 'scope' => 'nearby', 'radius_km' => 10]))
             ->assertOk()
             ->assertSee('Servicio local seguro')
@@ -117,7 +117,7 @@ class ExploreTest extends TestCase
         Listing::create(['vendor_id' => $vendor->id, 'type' => 'product', 'name' => 'Producto premium', 'slug' => 'premium', 'price_type' => 'fixed', 'price_amount' => 90000, 'stock' => 2, 'is_active' => true]);
         $viewer = User::factory()->create();
 
-        $this->actingAs($viewer)->get(route('explore', ['type' => 'product', 'max_price' => 200]))->assertOk()->assertSee('Producto económico')->assertDontSee('Producto premium');
+        $this->actingAs($viewer, 'web')->get(route('explore', ['type' => 'product', 'max_price' => 200]))->assertOk()->assertSee('Producto económico')->assertDontSee('Producto premium');
     }
 
     private function provider(string $name, string $specialty, string $status = 'active'): array

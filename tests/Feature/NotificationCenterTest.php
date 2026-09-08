@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdminUser;
 use App\Models\JobRequest;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Notifications\MarketplaceActivity;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class NotificationCenterTest extends TestCase
@@ -27,7 +27,7 @@ class NotificationCenterTest extends TestCase
         ));
         $notification = $user->notifications()->firstOrFail();
 
-        $this->actingAs($user)
+        $this->actingAs($user, 'web')
             ->patch(route('notifications.open', $notification))
             ->assertRedirect(route('support.create', ['category' => 'provider_suspension']));
         $this->assertNotNull($notification->fresh()->read_at);
@@ -39,15 +39,15 @@ class NotificationCenterTest extends TestCase
         $user->notify(new MarketplaceActivity('Pedido listo', 'Ya puedes recogerlo.', 'dashboard'));
         $notification = $user->notifications()->firstOrFail();
 
-        $this->actingAs($user)->get(route('notifications.index'))
+        $this->actingAs($user, 'web')->get(route('notifications.index'))
             ->assertOk()
             ->assertSee('Pedido listo')
             ->assertSee('1 sin leer')
             ->assertSee('Nueva');
-        $this->actingAs($user)->patch(route('notifications.open', $notification->id))->assertRedirect(route('dashboard'));
+        $this->actingAs($user, 'web')->patch(route('notifications.open', $notification->id))->assertRedirect(route('dashboard'));
         $this->assertNotNull($notification->fresh()->read_at);
 
-        $this->actingAs($user)->get(route('notifications.index'))
+        $this->actingAs($user, 'web')->get(route('notifications.index'))
             ->assertOk()
             ->assertSee('No tienes avisos pendientes')
             ->assertSee('Leída');
@@ -59,7 +59,7 @@ class NotificationCenterTest extends TestCase
         $user->notify(new MarketplaceActivity('Cuenta por verificar', 'Revisión administrativa pendiente.', 'dashboard', [], 'vendor_application'));
         $user->notify(new MarketplaceActivity('Nuevo seguidor', 'Una persona comenzó a seguirte.', 'profile.show', ['user' => $user->id], 'social_follow'));
 
-        $this->actingAs($user)->get(route('notifications.index'))
+        $this->actingAs($user, 'web')->get(route('notifications.index'))
             ->assertOk()
             ->assertSee('Todas')
             ->assertSee('Administrativas')
@@ -68,17 +68,17 @@ class NotificationCenterTest extends TestCase
             ->assertSee('Cuenta por verificar')
             ->assertSee('Nuevo seguidor');
 
-        $this->actingAs($user)->get(route('notifications.index', ['filter' => 'social']))
+        $this->actingAs($user, 'web')->get(route('notifications.index', ['filter' => 'social']))
             ->assertOk()
             ->assertSee('Nuevo seguidor')
             ->assertDontSee('Cuenta por verificar');
 
-        $this->actingAs($user)->get(route('notifications.index', ['filter' => 'administrative']))
+        $this->actingAs($user, 'web')->get(route('notifications.index', ['filter' => 'administrative']))
             ->assertOk()
             ->assertSee('Cuenta por verificar')
             ->assertDontSee('Nuevo seguidor');
 
-        $this->actingAs($user)->get(route('conversations.index'))
+        $this->actingAs($user, 'web')->get(route('conversations.index'))
             ->assertOk()
             ->assertSee('Conversaciones')
             ->assertDontSee('Notificaciones');
@@ -90,17 +90,16 @@ class NotificationCenterTest extends TestCase
         $outsider = User::factory()->create();
         $owner->notify(new MarketplaceActivity('Privada', 'Solo para el dueño.', 'dashboard'));
 
-        $this->actingAs($outsider)->patch(route('notifications.open', $owner->notifications()->firstOrFail()->id))->assertNotFound();
+        $this->actingAs($outsider, 'web')->patch(route('notifications.open', $owner->notifications()->firstOrFail()->id))->assertNotFound();
     }
 
     public function test_admin_dashboard_has_unified_filterable_notification_tray(): void
     {
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
         $admin->notify(new MarketplaceActivity('Nuevo caso de soporte', 'Un usuario necesita ayuda.', 'admin.support.index', [], 'support'));
         $admin->notify(new MarketplaceActivity('Nuevo seguidor', 'Una cuenta comenzó a seguirte.', 'profile.show', ['user' => $admin->id], 'social_follow'));
 
-        $this->actingAs($admin)->get(route('admin.index'))
+        $this->actingAs($admin, 'admin')->get(route('admin.index'))
             ->assertOk()
             ->assertSee('data-notification-center', false)
             ->assertSee('data-notification-panel', false)
@@ -121,7 +120,7 @@ class NotificationCenterTest extends TestCase
         Vendor::create(['user_id' => $provider->id, 'display_name' => 'Proveedor', 'slug' => 'proveedor', 'status' => 'active']);
         $job = JobRequest::create(['public_id' => (string) Str::uuid(), 'client_id' => $client->id, 'title' => 'Reparar una fuga', 'description' => 'Necesito reparar una fuga de agua.', 'status' => 'published', 'urgency' => 'soon', 'published_at' => now()]);
 
-        $this->actingAs($provider)->post(route('job-proposals.store', $job), ['amount' => 500, 'estimated_days' => 1, 'message' => 'Incluye revisión, reparación y prueba final completa.'])->assertRedirect();
+        $this->actingAs($provider, 'web')->post(route('job-proposals.store', $job), ['amount' => 500, 'estimated_days' => 1, 'message' => 'Incluye revisión, reparación y prueba final completa.'])->assertRedirect();
 
         $this->assertSame(1, $client->notifications()->count());
         $this->assertSame('Nueva propuesta recibida', $client->notifications()->firstOrFail()->data['title']);

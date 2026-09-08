@@ -49,39 +49,39 @@ class AdminDirectoryController extends Controller
         $this->authorizeAdmin($request);
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
-            'authority' => ['nullable', Rule::in(['commercial', 'admin', 'superadmin'])],
-            'commercial_status' => ['nullable', Rule::in(['none', 'draft', 'pending', 'active', 'rejected', 'suspended', 'verified'])],
             'account_status' => ['nullable', Rule::in(['active', 'suspended', 'deactivated'])],
             'community_id' => ['nullable', 'integer', Rule::exists('communities', 'id')],
             'verification' => ['nullable', Rule::in(['verified', 'pending'])],
+            'phone_status' => ['nullable', Rule::in(['present', 'missing', 'verified', 'pending'])],
         ]);
         $term = trim($filters['q'] ?? '');
-        $users = User::query()
-            ->with(['roles:id,name', 'community:id,name,municipality', 'vendor:id,user_id,status,display_name,verified_at,submitted_at'])
+        $users = User::query()->whereNull('migrated_to_admin_at')->whereDoesntHave('roles', fn (Builder $roles) => $roles->whereIn('name', ['admin', 'superadmin']))
+            ->with(['roles:id,name', 'community:id,name,municipality'])
             ->when($term !== '', fn (Builder $query) => $query->where(fn (Builder $query) => $query
                 ->where('name', 'like', "%{$term}%")
                 ->orWhere('email', 'like', "%{$term}%")
                 ->orWhere('phone', 'like', "%{$term}%")))
-            ->when(($filters['authority'] ?? null) === 'commercial', fn (Builder $query) => $query->whereDoesntHave('roles', fn (Builder $roles) => $roles->whereIn('name', ['admin', 'superadmin'])))
-            ->when(in_array($filters['authority'] ?? null, ['admin', 'superadmin'], true), fn (Builder $query) => $query->whereHas('roles', fn (Builder $roles) => $roles->where('name', $filters['authority'])))
             ->when($filters['account_status'] ?? null, fn (Builder $query, string $status) => $query->where('account_status', $status))
-            ->when(($filters['commercial_status'] ?? null) === 'none', fn (Builder $query) => $query->doesntHave('vendor'))
-            ->when(($filters['commercial_status'] ?? null) === 'verified', fn (Builder $query) => $query->whereHas('vendor', fn (Builder $vendor) => $vendor->whereNotNull('verified_at')))
-            ->when(in_array($filters['commercial_status'] ?? null, ['draft', 'pending', 'active', 'rejected', 'suspended'], true), fn (Builder $query) => $query->whereHas('vendor', fn (Builder $vendor) => $vendor->where('status', $filters['commercial_status'])))
             ->when($filters['community_id'] ?? null, fn (Builder $query, int|string $community) => $query->where('community_id', $community))
             ->when(($filters['verification'] ?? null) === 'verified', fn (Builder $query) => $query->whereNotNull('email_verified_at'))
             ->when(($filters['verification'] ?? null) === 'pending', fn (Builder $query) => $query->whereNull('email_verified_at'))
+            ->when(($filters['phone_status'] ?? null) === 'present', fn (Builder $query) => $query->whereNotNull('phone')->where('phone', '!=', ''))
+            ->when(($filters['phone_status'] ?? null) === 'verified', fn (Builder $query) => $query->whereNotNull('phone_verified_at'))
+            ->when(($filters['phone_status'] ?? null) === 'pending', fn (Builder $query) => $query->whereNull('phone_verified_at'))
+            ->when(($filters['phone_status'] ?? null) === 'missing', fn (Builder $query) => $query->where(fn (Builder $query) => $query->whereNull('phone')->orWhere('phone', '')))
             ->latest()
-            ->paginate(25)
+            ->paginate(10)
             ->withQueryString();
         $communities = Community::query()->orderBy('name')->get(['id', 'name', 'municipality']);
+        $accountLabels = ['active' => 'Activa', 'suspended' => 'Suspendida', 'deactivated' => 'Dada de baja'];
 
-        return view('admin.users', compact('users', 'communities', 'filters'));
+        return view('admin.users', compact('users', 'communities', 'filters', 'accountLabels'));
     }
 
     public function showUser(Request $request, User $user): View
     {
         $this->authorizeAdmin($request);
+        abort_if($user->migrated_to_admin_at || $user->hasAnyRole(['admin', 'superadmin']), 404);
 
         $user->load([
             'roles:id,name',
@@ -104,7 +104,7 @@ class AdminDirectoryController extends Controller
         }
 
         $auditLogs = AuditLog::query()
-            ->with('user:id,name')
+            ->with(['user:id,name', 'admin:id,name'])
             ->where('subject_type', User::class)
             ->where('subject_id', $user->id)
             ->latest('created_at')
@@ -142,7 +142,7 @@ class AdminDirectoryController extends Controller
     public function showVendor(Request $request, Vendor $vendor): View
     {
         $this->authorizeAdmin($request);
-        abort_if($vendor->user_id === $request->user()->id, 403, 'No puedes revisar tu propio perfil comercial.');
+        abort_if($request->user()->ownsMarketplaceAccount($vendor->user_id), 403, 'No puedes revisar tu propio perfil comercial.');
 
         $vendor->load([
             'categories:id,name,slug',

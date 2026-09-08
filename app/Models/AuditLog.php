@@ -9,7 +9,7 @@ class AuditLog extends Model
 {
     public $timestamps = false;
 
-    protected $fillable = ['user_id', 'action', 'subject_type', 'subject_id', 'metadata', 'ip_address', 'user_agent', 'created_at'];
+    protected $fillable = ['admin_user_id', 'user_id', 'action', 'subject_type', 'subject_id', 'metadata', 'ip_address', 'user_agent', 'created_at'];
 
     protected function casts(): array
     {
@@ -19,5 +19,10 @@ class AuditLog extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function admin(): BelongsTo
+    {
+        return $this->belongsTo(AdminUser::class, 'admin_user_id');
     }
 }

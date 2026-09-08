@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdminUser;
 use App\Models\Community;
 use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class AdminDirectoryTest extends TestCase
@@ -17,8 +17,7 @@ class AdminDirectoryTest extends TestCase
 
     public function test_admin_can_search_and_filter_the_user_directory(): void
     {
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
         $community = Community::create([
             'name' => 'San Miguel',
             'municipality' => 'Puebla',
@@ -33,24 +32,52 @@ class AdminDirectoryTest extends TestCase
         ]);
         User::factory()->create(['name' => 'Persona Distinta']);
 
-        $this->actingAs($admin)
+        $this->actingAs($admin, 'admin')
             ->get(route('admin.users.index', ['q' => 'encontrable', 'community_id' => $community->id]))
             ->assertOk()
             ->assertSee('Persona Encontrable')
             ->assertDontSee('Persona Distinta')
-            ->assertSee('Gestión unificada');
+            ->assertSee('Todas las comunidades')
+            ->assertSee('Todos los correos')
+            ->assertSee('Todos los teléfonos')
+            ->assertSee('Mostrando 1–1 de 1 cuentas')
+            ->assertDontSee('Expediente comercial');
+    }
+
+    public function test_admin_can_filter_accounts_by_email_and_phone_state(): void
+    {
+        $admin = AdminUser::factory()->create();
+        User::factory()->create(['name' => 'Cuenta Completa', 'phone' => '5553000001', 'email_verified_at' => now()]);
+        User::factory()->create(['name' => 'Cuenta Pendiente', 'phone' => null, 'email_verified_at' => null]);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.users.index', ['verification' => 'pending', 'phone_status' => 'missing']))
+            ->assertOk()
+            ->assertSee('Cuenta Pendiente')
+            ->assertDontSee('Cuenta Completa')
+            ->assertSee('Teléfono pendiente');
+    }
+
+    public function test_account_directory_uses_ten_items_per_page(): void
+    {
+        $admin = AdminUser::factory()->create();
+        User::factory()->count(11)->create();
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.users.index'))
+            ->assertOk()
+            ->assertSee('Mostrando 1–10 de 11 cuentas');
     }
 
     public function test_admin_can_filter_the_provider_directory_by_status(): void
     {
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
         $pendingUser = User::factory()->create(['account_type' => 'provider']);
         $activeUser = User::factory()->create(['account_type' => 'provider']);
         Vendor::create(['user_id' => $pendingUser->id, 'display_name' => 'Proveedor Pendiente', 'slug' => 'proveedor-pendiente', 'status' => 'pending']);
         Vendor::create(['user_id' => $activeUser->id, 'display_name' => 'Proveedor Activo', 'slug' => 'proveedor-activo', 'status' => 'active']);
 
-        $this->actingAs($admin)
+        $this->actingAs($admin, 'admin')
             ->get(route('admin.vendors.index', ['status' => 'pending']))
             ->assertOk()
             ->assertSee('Proveedor Pendiente')
@@ -60,10 +87,9 @@ class AdminDirectoryTest extends TestCase
 
     public function test_dashboard_metrics_link_to_management_directories(): void
     {
-        $superadmin = User::factory()->create();
-        $superadmin->syncRoles([Role::findOrCreate('superadmin')]);
+        $superadmin = AdminUser::factory()->superadmin()->create();
 
-        $this->actingAs($superadmin)
+        $this->actingAs($superadmin, 'admin')
             ->get(route('admin.index'))
             ->assertOk()
             ->assertSee(route('admin.users.index'), false)
@@ -77,17 +103,16 @@ class AdminDirectoryTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->actingAs($user)->get(route('admin.users.index'))->assertForbidden();
-        $this->actingAs($user)->get(route('admin.vendors.index'))->assertForbidden();
+        $this->actingAs($user, 'web')->get(route('admin.users.index'))->assertRedirect(route('admin.login'));
+        $this->actingAs($user, 'web')->get(route('admin.vendors.index'))->assertRedirect(route('admin.login'));
     }
 
     public function test_admin_can_open_a_visual_account_dashboard_with_operational_totals(): void
     {
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
         $account = User::factory()->create(['name' => 'Cuenta con expediente']);
 
-        $this->actingAs($admin)
+        $this->actingAs($admin, 'admin')
             ->get(route('admin.users.show', $account))
             ->assertOk()
             ->assertSee('Expediente de cuenta')
@@ -99,8 +124,7 @@ class AdminDirectoryTest extends TestCase
 
     public function test_communities_may_share_a_name_when_their_municipalities_differ(): void
     {
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
         Community::create([
             'name' => 'Centro',
             'municipality' => 'Municipio Uno',
@@ -110,7 +134,7 @@ class AdminDirectoryTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->actingAs($admin)
+        $this->actingAs($admin, 'admin')
             ->post(route('admin.communities.store'), [
                 'name' => 'Centro',
                 'municipality' => 'Municipio Dos',
@@ -130,8 +154,7 @@ class AdminDirectoryTest extends TestCase
 
     public function test_superadmin_can_import_the_official_postal_catalog_from_the_dashboard(): void
     {
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('superadmin'));
+        $admin = AdminUser::factory()->superadmin()->create();
         $contents = implode("\n", [
             'd_codigo|d_asenta|d_tipo_asenta|D_mnpio|d_estado|d_ciudad|d_CP|c_estado|c_oficina|c_CP|c_tipo_asenta|c_mnpio|id_asenta_cpcons|d_zona|c_cve_ciudad',
             '74140|San Matías Tlalancaleca|Pueblo|San Matías Tlalancaleca|Puebla||74141|21|74141||28|134|0001|Rural|',
@@ -139,7 +162,7 @@ class AdminDirectoryTest extends TestCase
         $upload = UploadedFile::fake()->createWithContent('CPdescarga.txt', $contents);
 
         try {
-            $this->actingAs($admin)
+            $this->actingAs($admin, 'admin')
                 ->post(route('admin.postal-codes.import'), ['catalog' => $upload])
                 ->assertRedirect()
                 ->assertSessionHasNoErrors();
@@ -157,12 +180,11 @@ class AdminDirectoryTest extends TestCase
 
     public function test_delegated_admin_cannot_import_the_global_postal_catalog(): void
     {
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
         $upload = UploadedFile::fake()->createWithContent('CPdescarga.txt', "d_codigo|d_asenta|d_tipo_asenta|D_mnpio|d_estado\n74140|Centro|Pueblo|Municipio|Puebla");
 
         try {
-            $this->actingAs($admin)
+            $this->actingAs($admin, 'admin')
                 ->post(route('admin.postal-codes.import'), ['catalog' => $upload])
                 ->assertForbidden();
         } finally {

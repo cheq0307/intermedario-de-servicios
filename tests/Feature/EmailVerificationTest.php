@@ -25,6 +25,7 @@ class EmailVerificationTest extends TestCase
             'account_type' => 'client',
             'community_id' => Community::query()->value('id'),
             'name' => 'Persona Nueva',
+            'phone' => '5552000001',
             'email' => 'persona@example.test',
             'password' => 'Seguro123',
             'password_confirmation' => 'Seguro123',
@@ -46,7 +47,7 @@ class EmailVerificationTest extends TestCase
     {
         $user = User::factory()->unverified()->create();
 
-        $this->actingAs($user)
+        $this->actingAs($user, 'web')
             ->get(route('verification.notice'))
             ->assertOk()
             ->assertSee('Volver a enviar el correo')
@@ -62,7 +63,7 @@ class EmailVerificationTest extends TestCase
             ['id' => $user->id, 'hash' => sha1($user->email)],
         );
 
-        $this->actingAs($user)
+        $this->actingAs($user, 'web')
             ->get($verificationUrl)
             ->assertRedirect('/dashboard?verified=1');
 
@@ -73,7 +74,7 @@ class EmailVerificationTest extends TestCase
     {
         $user = User::factory()->unverified()->create(['account_type' => 'client']);
 
-        $this->actingAs($user)
+        $this->actingAs($user, 'web')
             ->post(route('posts.store'), [])
             ->assertRedirect(route('verification.notice'));
     }
@@ -83,7 +84,7 @@ class EmailVerificationTest extends TestCase
         Notification::fake();
         $user = User::factory()->unverified()->create();
 
-        $this->actingAs($user)
+        $this->actingAs($user, 'web')
             ->post(route('verification.send'))
             ->assertRedirect();
 
@@ -99,6 +100,7 @@ class EmailVerificationTest extends TestCase
         $response = $this->post('/register', [
             'community_id' => Community::query()->value('id'),
             'name' => 'Cuenta sin correo disponible',
+            'phone' => '5552000002',
             'email' => 'smtp-failure@example.test',
             'password' => 'Seguro123',
             'password_confirmation' => 'Seguro123',
@@ -118,7 +120,7 @@ class EmailVerificationTest extends TestCase
         });
         $user = User::factory()->unverified()->create();
 
-        $this->actingAs($user)
+        $this->actingAs($user, 'web')
             ->from(route('verification.notice'))
             ->post(route('verification.send'))
             ->assertRedirect(route('verification.notice'))

@@ -34,37 +34,14 @@ class AdminController extends Controller
             'unread_notifications' => $request->user()->unreadNotifications()->count(),
         ];
         $pendingVendorCount = $metrics['pending_vendors'];
-        $adminSearch = trim((string) $request->query('admin_q', ''));
-        abort_if(mb_strlen($adminSearch) > 100, 422, 'La búsqueda es demasiado larga.');
-        $administrators = User::query()
-            ->with(['roles:id,name', 'community:id,name'])
-            ->whereHas('roles', fn ($query) => $query->where('name', 'admin'))
-            ->whereKeyNot($request->user()->id)
-            ->orderBy('name')
-            ->paginate(8, ['*'], 'administrators_page')
-            ->withQueryString();
-        $adminCandidates = collect();
-        if ($request->user()->hasRole('superadmin') && mb_strlen($adminSearch) >= 2) {
-            $adminCandidates = User::query()
-                ->with(['roles:id,name', 'community:id,name'])
-                ->whereKeyNot($request->user()->id)
-                ->whereDoesntHave('roles', fn ($query) => $query->whereIn('name', ['admin', 'superadmin']))
-                ->where(function ($query) use ($adminSearch): void {
-                    $query->where('name', 'like', "%{$adminSearch}%")
-                        ->orWhere('email', 'like', "%{$adminSearch}%");
-                })
-                ->orderBy('name')
-                ->limit(10)
-                ->get();
-        }
-        $auditLogs = AuditLog::with('user:id,name')->latest('created_at')->paginate(15, ['*'], 'audit_page')->withQueryString();
+        $auditLogs = AuditLog::with(['user:id,name', 'admin:id,name'])->latest('created_at')->paginate(15, ['*'], 'audit_page')->withQueryString();
         $communities = Community::query()->withCount(['users', 'jobRequests'])->orderBy('name')->paginate(9, ['*'], 'communities_page')->withQueryString();
         $auditActions = ['account.active' => 'Cuenta reactivada', 'account.suspended' => 'Cuenta suspendida', 'account.deactivated' => 'Cuenta dada de baja', 'vendor.submitted' => 'Solicitud de proveedor enviada', 'admin.granted' => 'Administrador asignado', 'admin.revoked' => 'Permiso de administrador retirado', 'vendor.active' => 'Proveedor aprobado o reactivado', 'vendor.rejected' => 'Cambios solicitados al proveedor', 'vendor.suspended' => 'Proveedor suspendido', 'vendor.verified' => 'Proveedor verificado', 'vendor.verification_revoked' => 'Verificación retirada', 'post.removed' => 'Publicación retirada', 'community.created' => 'Comunidad agregada', 'community.updated' => 'Comunidad actualizada', 'community.suspended' => 'Comunidad suspendida', 'community.reactivated' => 'Comunidad reactivada', 'community.deleted' => 'Comunidad eliminada'];
         $categories = Category::query()->withCount(['users', 'vendors', 'listings', 'jobRequests'])->orderBy('name')->paginate(9, ['*'], 'categories_page')->withQueryString();
         $auditSubjects = ['User' => 'Usuario', 'Vendor' => 'Proveedor', 'Post' => 'Publicación', 'Community' => 'Comunidad'];
         $isSuperadmin = $request->user()->hasRole('superadmin');
 
-        return view('admin.index', compact('metrics', 'pendingVendorCount', 'administrators', 'adminCandidates', 'adminSearch', 'auditLogs', 'communities', 'categories', 'auditActions', 'auditSubjects', 'isSuperadmin'));
+        return view('admin.index', compact('metrics', 'pendingVendorCount', 'auditLogs', 'communities', 'categories', 'auditActions', 'auditSubjects', 'isSuperadmin'));
     }
 
     public function summary(Request $request): JsonResponse
@@ -79,9 +56,9 @@ class AdminController extends Controller
     private function operationMetrics(Request $request): array
     {
         return [
-            'users' => User::count(),
+            'users' => User::whereNull('migrated_to_admin_at')->whereDoesntHave('roles', fn ($query) => $query->whereIn('name', ['admin', 'superadmin']))->count(),
             'open_support_tickets' => SupportTicket::whereIn('status', SupportTicketStatus::activeValues())->count(),
-            'pending_vendors' => Vendor::where('status', 'pending')->whereNotNull('submitted_at')->where('user_id', '!=', $request->user()->id)->count(),
+            'pending_vendors' => Vendor::where('status', 'pending')->whereNotNull('submitted_at')->count(),
             'open_disputes' => Dispute::where('status', 'open')->count(),
             'active_orders' => Order::whereIn('status', ['accepted', 'awaiting_payment', 'paid', 'in_progress', 'ready', 'delivered', 'disputed'])->count(),
             'active_posts' => Post::whereNull('removed_at')->count(),
@@ -91,7 +68,7 @@ class AdminController extends Controller
     public function approveVendor(Request $request, Vendor $vendor): RedirectResponse
     {
         $this->authorizeAdmin($request);
-        abort_if($vendor->user_id === $request->user()->id, 403, 'Un administrador no puede aprobar su propio perfil comercial.');
+        abort_if($request->user()->ownsMarketplaceAccount($vendor->user_id), 403, 'Un administrador no puede aprobar su propio perfil comercial.');
         abort_unless(
             ($vendor->status === 'pending' && $vendor->submitted_at) || $vendor->status === 'suspended',
             422,
@@ -101,7 +78,7 @@ class AdminController extends Controller
         abort_unless($vendor->user?->hasVerifiedEmail(), 422, 'El proveedor debe verificar su correo antes de ser aprobado.');
         abort_if($vendor->missingReviewRequirements() !== [], 422, 'El proveedor todavía debe completar: '.implode(', ', $vendor->missingReviewRequirements()).'.');
         $wasSuspended = $vendor->status === 'suspended';
-        $vendor->user->assignRole(Role::findOrCreate('provider'));
+        $vendor->user->assignRole(Role::findOrCreate('provider', 'web'));
         $this->changeVendorStatus($request, $vendor, 'active');
         $vendor->user->notify(new MarketplaceActivity(
             $wasSuspended ? 'Tu actividad comercial fue reactivada' : 'Tu perfil de proveedor fue aprobado',
@@ -117,7 +94,7 @@ class AdminController extends Controller
     public function rejectVendor(Request $request, Vendor $vendor): RedirectResponse
     {
         $this->authorizeAdmin($request);
-        abort_if($vendor->user_id === $request->user()->id, 403);
+        abort_if($request->user()->ownsMarketplaceAccount($vendor->user_id), 403);
         abort_unless($vendor->status === 'pending' && $vendor->submitted_at, 422, 'Este perfil no fue enviado a revisión.');
         $validated = $request->validate(['reason' => ['required', 'string', 'min:10', 'max:1000']]);
         $this->changeVendorStatus($request, $vendor, 'rejected', ['reason' => $validated['reason']]);
@@ -130,7 +107,7 @@ class AdminController extends Controller
     public function suspendVendor(Request $request, Vendor $vendor): RedirectResponse
     {
         $this->authorizeAdmin($request);
-        abort_if($vendor->user_id === $request->user()->id, 403, 'Un administrador no puede suspender su propio perfil comercial.');
+        abort_if($request->user()->ownsMarketplaceAccount($vendor->user_id), 403, 'Un administrador no puede suspender su propio perfil comercial.');
         abort_unless($vendor->status === 'active', 422, 'Solo un proveedor activo puede ser suspendido.');
         $validated = $request->validate(['reason' => ['required', 'string', 'min:10', 'max:1000']]);
         $this->changeVendorStatus($request, $vendor, 'suspended', ['reason' => $validated['reason']]);
@@ -163,7 +140,7 @@ class AdminController extends Controller
 
         $vendor->update([
             'verified_at' => now(),
-            'verified_by_user_id' => $request->user()->id,
+            'admin_user_id' => $request->user()->id,
             'verification_level' => $validated['verification_level'],
             'verification_note' => $validated['verification_note'],
         ]);
@@ -181,7 +158,7 @@ class AdminController extends Controller
         $validated = $request->validate(['reason' => ['required', 'string', 'min:10', 'max:1000']]);
         $vendor->update([
             'verified_at' => null,
-            'verified_by_user_id' => null,
+            'admin_user_id' => null,
             'verification_level' => null,
             'verification_note' => null,
         ]);
@@ -201,7 +178,7 @@ class AdminController extends Controller
         DB::transaction(function () use ($request, $post, $validated): void {
             $post->update([
                 'removed_at' => now(),
-                'removed_by_user_id' => $request->user()->id,
+                'admin_user_id' => $request->user()->id,
                 'removal_reason' => $validated['reason'],
             ]);
             $this->audit($request, 'post.removed', $post, [
@@ -369,34 +346,13 @@ class AdminController extends Controller
         return back()->with('status', $category->is_active ? 'Rubro reactivado.' : 'Rubro desactivado.');
     }
 
-    public function grantAdmin(Request $request, User $user): RedirectResponse
-    {
-        $this->authorizeSuperadmin($request);
-        abort_if($user->hasRole('superadmin'), 422);
-        $user->assignRole(Role::findOrCreate('admin'));
-        $this->audit($request, 'admin.granted', $user, ['commercial_access_paused' => true]);
-        $request->session()->forget('marketplace_mode');
-
-        return redirect(route('admin.index').'#administradores')->with('status', 'Administrador delegado. Su actividad comercial quedó pausada mientras conserve el cargo.');
-    }
-
-    public function revokeAdmin(Request $request, User $user): RedirectResponse
-    {
-        $this->authorizeSuperadmin($request);
-        abort_if($user->id === $request->user()->id || $user->hasRole('superadmin'), 422);
-        $user->removeRole('admin');
-        $this->audit($request, 'admin.revoked', $user, ['commercial_access_restored' => true]);
-
-        return redirect(route('admin.index').'#administradores')->with('status', 'Permiso retirado. La cuenta recuperó automáticamente sus capacidades comerciales previas.');
-    }
-
     private function changeVendorStatus(Request $request, Vendor $vendor, string $status, array $metadata = []): void
     {
         DB::transaction(function () use ($request, $vendor, $status, $metadata): void {
             $vendor->update([
                 'status' => $status,
                 'verified_at' => in_array($status, ['rejected', 'suspended'], true) ? null : $vendor->verified_at,
-                'verified_by_user_id' => in_array($status, ['rejected', 'suspended'], true) ? null : $vendor->verified_by_user_id,
+                'admin_user_id' => in_array($status, ['rejected', 'suspended'], true) ? null : $vendor->admin_user_id,
                 'verification_level' => in_array($status, ['rejected', 'suspended'], true) ? null : $vendor->verification_level,
                 'verification_note' => in_array($status, ['rejected', 'suspended'], true) ? null : $vendor->verification_note,
                 'reviewed_at' => now(),
@@ -411,7 +367,7 @@ class AdminController extends Controller
     private function audit(Request $request, string $action, object $subject, array $metadata = []): void
     {
         AuditLog::create([
-            'user_id' => $request->user()->id,
+            'admin_user_id' => $request->user()->id,
             'action' => $action,
             'subject_type' => $subject::class,
             'subject_id' => $subject->getKey(),

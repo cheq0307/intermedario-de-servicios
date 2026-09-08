@@ -3,7 +3,7 @@
 @php
     $actor = auth()->user();
     $isAuthority = $user->hasAnyRole(['admin', 'superadmin']);
-    $canManage = $actor && $actor->id !== $user->id && ! $isAuthority;
+    $canManage = $actor instanceof \App\Models\AdminUser && ! $actor->ownsMarketplaceAccount($user->id) && ! $isAuthority;
     $isSuperadmin = $actor?->hasRole('superadmin') ?? false;
     $accountLabels = ['active' => 'Activa', 'suspended' => 'Suspendida', 'deactivated' => 'Dada de baja'];
 @endphp

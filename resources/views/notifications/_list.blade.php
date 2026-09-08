@@ -8,7 +8,7 @@
                         default => 'Actividad',
                     };
                 @endphp
-                <form method="POST" action="{{ route('notifications.open', $notification->id) }}">@csrf @method('PATCH')
+                <form method="POST" action="{{ route(\App\Support\IdentityRoutes::name('notifications.open'), $notification->id) }}">@csrf @method('PATCH')
                     <button class="relative flex w-full items-start gap-4 overflow-hidden rounded-[1.5rem] border p-5 text-left shadow-sm transition hover:-translate-y-0.5 {{ $notification->read_at ? 'border-brand/10 bg-brand-neutral-page text-brand-copy' : 'border-brand-success-bright/30 bg-brand-success-soft text-brand-ink' }}" type="submit">
                         <span class="absolute inset-y-0 left-0 w-1.5 {{ $notification->read_at ? 'bg-brand-line-strong' : 'bg-brand-success-bright' }}"></span>
                         <span class="mt-1 grid size-10 shrink-0 place-items-center rounded-full {{ $notification->read_at ? 'bg-white text-brand-muted' : 'bg-brand-success text-white' }}">{{ $notification->read_at ? '✓' : '•' }}</span>

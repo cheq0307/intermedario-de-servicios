@@ -33,7 +33,7 @@ class ConversationController extends Controller
                 'messages' => fn ($query) => $query->with('sender:id,name')->latest('id')->limit(1),
             ])
             ->withExists(['messages as has_unread_messages' => fn ($query) => $query
-                ->where('sender_id', '!=', $request->user()->id)
+                ->where(fn ($sender) => $sender->where('sender_id', '!=', $request->user()->id)->orWhereNotNull('admin_user_id'))
                 ->where(fn ($unread) => $unread
                     ->whereColumn('messages.id', '>', 'conversation_participants.last_read_message_id')
                     ->orWhere(fn ($legacy) => $legacy->whereNull('conversation_participants.last_read_message_id')
@@ -189,7 +189,7 @@ class ConversationController extends Controller
             'id' => $message->id,
             'body' => (string) $message->body,
             'type' => $message->type->value,
-            'is_mine' => $message->sender_id === $viewerId,
+            'is_mine' => $message->admin_user_id === null && $message->sender_id === $viewerId,
             'sent_at' => $message->created_at->format('H:i'),
             'sent_at_iso' => $message->created_at->toIso8601String(),
         ];

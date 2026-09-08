@@ -1,5 +1,5 @@
 @forelse($notificationPreview as $item)
-    <form class="border-b border-brand/8 last:border-b-0" method="POST" action="{{ route('notifications.open', $item->id) }}" data-notification-item data-notification-category="{{ $item->category }}">
+    <form class="border-b border-brand/8 last:border-b-0" method="POST" action="{{ route(\App\Support\IdentityRoutes::name('notifications.open'), $item->id) }}" data-notification-item data-notification-category="{{ $item->category }}">
         @csrf
         @method('PATCH')
         <button class="relative flex w-full items-start gap-3 px-4 py-3.5 text-left transition hover:bg-brand-page {{ $item->isRead ? 'bg-white' : 'bg-brand-success-faint' }}" type="submit">

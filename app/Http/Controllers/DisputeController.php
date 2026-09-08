@@ -7,7 +7,6 @@ use App\Domain\Marketplace\Enums\JobRequestStatus;
 use App\Domain\Marketplace\Enums\OrderStatus;
 use App\Domain\Marketplace\Enums\PaymentStatus;
 use App\Jobs\FinalizeMarketplacePayment;
-use App\Models\Conversation;
 use App\Models\Dispute;
 use App\Models\Order;
 use App\Notifications\MarketplaceActivity;
@@ -34,7 +33,7 @@ class DisputeController extends Controller
     {
         $dispute->load([
             'order.buyer:id,name', 'order.vendor.user:id,name', 'order.jobRequest',
-            'opener:id,name', 'resolver:id,name', 'messages.user:id,name',
+            'opener:id,name', 'resolver:id,name', 'messages.user:id,name', 'messages.admin:id,name',
         ]);
         $this->authorizeViewer($request, $dispute);
         $isAdmin = $this->isAdmin($request);
@@ -82,7 +81,7 @@ class DisputeController extends Controller
         $this->authorizeViewer($request, $dispute);
         abort_unless($dispute->status === DisputeStatus::Open, 422);
         $validated = $request->validate(['body' => ['required', 'string', 'min:2', 'max:2000']]);
-        $dispute->messages()->create(['user_id' => $request->user()->id, 'body' => $validated['body']]);
+        $dispute->messages()->create(['user_id' => $this->isAdmin($request) ? null : $request->user()->id, 'admin_user_id' => $this->isAdmin($request) ? $request->user()->id : null, 'body' => $validated['body']]);
 
         return back()->with('status', 'Tu respuesta quedó agregada al expediente.');
     }
@@ -138,10 +137,10 @@ class DisputeController extends Controller
                 'status' => DisputeStatus::Resolved,
                 'resolution_outcome' => $validated['outcome'],
                 'resolution' => $validated['resolution'],
-                'resolved_by' => $request->user()->id,
+                'admin_user_id' => $request->user()->id,
                 'resolved_at' => now(),
             ]);
-            $this->recordSystemMessage($order, 'La disputa fue resuelta: '.$validated['resolution'], $request->user()->id);
+            $this->recordSystemMessage($order, 'La disputa fue resuelta: '.$validated['resolution'], $request->user()->id, true);
             if (in_array($nextStatus, [OrderStatus::Completed, OrderStatus::Cancelled], true)) {
                 $order->conversation?->archive();
             } else {
@@ -186,14 +185,15 @@ class DisputeController extends Controller
         return $request->user()->hasAnyRole(['admin', 'superadmin']);
     }
 
-    private function recordSystemMessage(Order $order, string $body, int $actorId): void
+    private function recordSystemMessage(Order $order, string $body, int $actorId, bool $isAdmin = false): void
     {
         $conversation = $order->conversation;
         if (! $conversation) {
             return;
         }
         $conversation->messages()->create([
-            'sender_id' => $actorId,
+            'sender_id' => $isAdmin ? null : $actorId,
+            'admin_user_id' => $isAdmin ? $actorId : null,
             'type' => 'system',
             'body' => $body,
             'metadata' => ['order_public_id' => $order->public_id],

@@ -13,13 +13,14 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
     use HasFactory, HasRoles, Notifiable;
 
-    protected $fillable = [
+    protected $fillable = ['admin_user_id',
         'name',
         'email',
         'account_type',
@@ -47,6 +48,8 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return [
             'email_verified_at' => 'datetime',
+            'phone_verified_at' => 'datetime',
+            'migrated_to_admin_at' => 'datetime',
             'last_seen_at' => 'datetime',
             'two_factor_confirmed_at' => 'datetime',
             'account_type' => AccountType::class,
@@ -108,6 +111,11 @@ class User extends Authenticatable implements MustVerifyEmail
         };
     }
 
+    public function normalizedDisplayName(): string
+    {
+        return Str::title(Str::lower(trim($this->name)));
+    }
+
     public function conversations(): BelongsToMany
     {
         return $this->belongsToMany(Conversation::class, 'conversation_participants')
@@ -127,7 +135,7 @@ class User extends Authenticatable implements MustVerifyEmail
             ->whereExists(function ($query): void {
                 $query->selectRaw('1')->from('messages')
                     ->whereColumn('messages.conversation_id', 'participant.conversation_id')
-                    ->where('messages.sender_id', '!=', $this->id)
+                    ->where(fn ($sender) => $sender->where('messages.sender_id', '!=', $this->id)->orWhereNotNull('messages.admin_user_id'))
                     ->where(function ($unread): void {
                         $unread->whereColumn('messages.id', '>', 'participant.last_read_message_id')
                             ->orWhere(fn ($legacy) => $legacy->whereNull('participant.last_read_message_id')
@@ -207,5 +215,10 @@ class User extends Authenticatable implements MustVerifyEmail
     public function supportTickets(): HasMany
     {
         return $this->hasMany(SupportTicket::class);
+    }
+
+    public function admin(): BelongsTo
+    {
+        return $this->belongsTo(AdminUser::class, 'admin_user_id');
     }
 }

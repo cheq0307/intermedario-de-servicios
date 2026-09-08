@@ -13,13 +13,20 @@ class UpdateProfileRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'phone' => is_string($this->input('phone')) ? preg_replace('/[\s().-]+/', '', $this->input('phone')) : $this->input('phone'),
+        ]);
+    }
+
     public function rules(): array
     {
         $rules = [
             'name' => ['required', 'string', 'max:120'],
             'offered_categories' => ['nullable', 'array', 'max:10'],
             'offered_categories.*' => ['integer', 'distinct', Rule::exists('categories', 'id')->where('is_active', true)],
-            'phone' => ['nullable', 'regex:/^\d{10}$/'],
+            'phone' => ['required', 'string', 'regex:/^\d{10}$/', Rule::unique('users', 'phone')->ignore($this->user()->id)],
             'bio' => ['nullable', 'string', 'max:800'],
             'community_id' => ['required', 'integer', Rule::exists('communities', 'id')->where('is_active', true)],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
@@ -50,6 +57,8 @@ class UpdateProfileRequest extends FormRequest
     {
         return [
             'phone.regex' => 'El teléfono debe contener exactamente 10 dígitos.',
+            'phone.required' => 'Escribe tu número de teléfono.',
+            'phone.unique' => 'Este teléfono ya está registrado en otra cuenta.',
             'community_id.required' => 'Selecciona tu ciudad y comunidad.',
             'community_id.exists' => 'La comunidad seleccionada no está disponible.',
         ];

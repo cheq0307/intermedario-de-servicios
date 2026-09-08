@@ -3,6 +3,7 @@
 namespace App\ViewData;
 
 use App\Domain\Marketplace\Enums\VendorStatus;
+use App\Models\AdminUser;
 use App\Models\User;
 use App\Models\Vendor;
 
@@ -21,7 +22,7 @@ final readonly class ProfileShowData
         public ?string $businessHoursLabel,
     ) {}
 
-    public static function from(User $user, ?User $viewer, bool $isStaff): self
+    public static function from(User $user, User|AdminUser|null $viewer, bool $isStaff): self
     {
         $vendor = $user->vendor;
         $isProvider = $vendor?->status === VendorStatus::Active->value;

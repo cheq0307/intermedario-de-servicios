@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdminUser;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class AdminInsightsTest extends TestCase
@@ -13,8 +13,7 @@ class AdminInsightsTest extends TestCase
 
     public function test_administrator_can_open_every_operational_module(): void
     {
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
 
         foreach ([
             'admin.jobs.index' => 'Empleo y postulaciones',
@@ -22,7 +21,7 @@ class AdminInsightsTest extends TestCase
             'admin.promotions.index' => 'Publicidad',
             'admin.payments.index' => 'Pagos y conciliación',
         ] as $route => $heading) {
-            $this->actingAs($admin)
+            $this->actingAs($admin, 'admin')
                 ->get(route($route))
                 ->assertOk()
                 ->assertSee($heading)
@@ -41,7 +40,7 @@ class AdminInsightsTest extends TestCase
             'admin.promotions.index',
             'admin.payments.index',
         ] as $route) {
-            $this->actingAs($account)->get(route($route))->assertForbidden();
+            $this->actingAs($account, 'web')->get(route($route))->assertRedirect(route('admin.login'));
         }
     }
 }

@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdminUser;
 use App\Models\Listing;
 use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class HomeRealDataTest extends TestCase
@@ -27,23 +27,16 @@ class HomeRealDataTest extends TestCase
     {
         $client = User::factory()->create(['account_type' => 'client']);
 
-        $this->actingAs($client)
+        $this->actingAs($client, 'web')
             ->get(route('home'))
             ->assertRedirect(route('dashboard'));
     }
 
-    public function test_superadmin_cannot_return_to_public_home_and_reaches_administration(): void
+    public function test_admin_session_does_not_turn_public_home_into_an_admin_surface(): void
     {
-        $superadmin = User::factory()->create();
-        $superadmin->syncRoles([Role::findOrCreate('superadmin')]);
-
-        $this->actingAs($superadmin)
-            ->get(route('home'))
-            ->assertRedirect(route('dashboard'));
-
-        $this->actingAs($superadmin)
-            ->get(route('dashboard'))
-            ->assertRedirect(route('admin.index'));
+        $admin = AdminUser::factory()->superadmin()->create();
+        $this->actingAs($admin, 'admin')->get(route('home'))->assertOk();
+        $this->get(route('admin.index'))->assertOk();
     }
 
     public function test_home_uses_approved_real_listings_and_search_is_public(): void

@@ -29,6 +29,8 @@
             ['key' => 'payments', 'label' => 'Pagos y conciliación', 'href' => route('admin.payments.index'), 'icon' => 'payment'],
         ],
         'Sistema' => [
+            ...($isSuperadmin ? [['key'=>'team','label'=>'Administradores','href'=>route('admin.team.index'),'icon'=>'users']] : []),
+            ['key'=>'identity','label'=>'Mi cuenta de Plaza Local','href'=>route('admin.identity.show'),'icon'=>'users'],
             ['key' => 'settings', 'label' => 'Configuración', 'href' => route('admin.index').'#configuracion', 'icon' => 'settings'],
         ],
     ];
@@ -82,7 +84,7 @@
             @endforeach
         </nav>
 
-        <form class="border-t border-white/10 p-4" method="POST" action="{{ route('logout') }}">
+        <form class="border-t border-white/10 p-4" method="POST" action="{{ route('admin.logout') }}">
             @csrf
             <button class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-black text-brand-danger-pale hover:bg-red-500/10" type="submit"><span aria-hidden="true">↪</span>Cerrar sesión</button>
         </form>
@@ -98,7 +100,7 @@
                             <p class="mb-2 mt-4 px-2 text-[.65rem] font-black uppercase tracking-[.16em] text-white/45 first:mt-0">{{ $group }}</p>
                             @foreach($items as $item)<a class="mb-1 flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-bold {{ $section === $item['key'] ? 'bg-white text-brand-navy-deep' : 'text-white/80' }}" href="{{ $item['href'] }}"><span>{{ $item['label'] }}</span>@if($item['badge'] ?? null)<span class="rounded-full bg-brand-orange px-2 py-0.5 text-[.65rem] text-white">{{ min(99, $item['badge']) }}</span>@endif</a>@endforeach
                         @endforeach
-                        <form class="mt-4 border-t border-white/10 pt-3" method="POST" action="{{ route('logout') }}">@csrf<button class="w-full rounded-xl px-3 py-2.5 text-left text-sm font-black text-brand-danger-pale" type="submit">Cerrar sesión</button></form>
+                        <form class="mt-4 border-t border-white/10 pt-3" method="POST" action="{{ route('admin.logout') }}">@csrf<button class="w-full rounded-xl px-3 py-2.5 text-left text-sm font-black text-brand-danger-pale" type="submit">Cerrar sesión</button></form>
                     </div>
                 </details>
 

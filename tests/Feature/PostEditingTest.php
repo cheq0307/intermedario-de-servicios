@@ -21,8 +21,8 @@ class PostEditingTest extends TestCase
     {
         [$provider, $post, $listing] = $this->productPost();
 
-        $this->actingAs($provider)->get(route('posts.edit', $post))->assertOk()->assertSee('Producto original');
-        $this->actingAs($provider)->put(route('posts.update', $post), ['category_id' => $post->category_id, 'title' => 'Producto actualizado', 'price_type' => 'fixed', 'price' => '125.50', 'stock' => 8, 'body' => 'Descripción actualizada del producto local.'])->assertRedirect();
+        $this->actingAs($provider, 'web')->get(route('posts.edit', $post))->assertOk()->assertSee('Producto original');
+        $this->actingAs($provider, 'web')->put(route('posts.update', $post), ['category_id' => $post->category_id, 'title' => 'Producto actualizado', 'price_type' => 'fixed', 'price' => '125.50', 'stock' => 8, 'body' => 'Descripción actualizada del producto local.'])->assertRedirect();
 
         $this->assertDatabaseHas('listings', ['id' => $listing->id, 'name' => 'Producto actualizado', 'price_amount' => 12550, 'stock' => 8]);
         $this->assertDatabaseHas('posts', ['id' => $post->id, 'body' => 'Descripción actualizada del producto local.']);
@@ -35,12 +35,12 @@ class PostEditingTest extends TestCase
         $job = JobRequest::create(['public_id' => (string) Str::uuid(), 'client_id' => $client->id, 'category_id' => $category->id, 'title' => 'Solicitud original', 'description' => 'Descripción original de la solicitud.', 'status' => 'published', 'urgency' => 'normal', 'published_at' => now()]);
         $post = Post::create(['user_id' => $client->id, 'job_request_id' => $job->id, 'category_id' => $category->id, 'type' => 'job_request', 'body' => $job->description, 'published_at' => now()]);
 
-        $this->actingAs($client)->put(route('posts.update', $post), ['category_id' => $category->id, 'title' => 'Solicitud actualizada', 'budget_min' => 200, 'budget_max' => 500, 'urgency' => 'soon', 'location_label' => 'Centro', 'body' => 'Descripción actualizada antes de recibir propuestas.'])->assertRedirect();
+        $this->actingAs($client, 'web')->put(route('posts.update', $post), ['category_id' => $category->id, 'title' => 'Solicitud actualizada', 'budget_min' => 200, 'budget_max' => 500, 'urgency' => 'soon', 'location_label' => 'Centro', 'body' => 'Descripción actualizada antes de recibir propuestas.'])->assertRedirect();
         $this->assertSame('Solicitud actualizada', $job->fresh()->title);
 
         $provider = User::factory()->create(['account_type' => 'provider']);
         JobProposal::create(['public_id' => (string) Str::uuid(), 'job_request_id' => $job->id, 'provider_id' => $provider->id, 'amount' => 30000, 'message' => 'Propuesta completa para realizar este trabajo.', 'estimated_days' => 1, 'status' => 'pending']);
-        $this->actingAs($client)->get(route('posts.edit', $post))->assertStatus(422);
+        $this->actingAs($client, 'web')->get(route('posts.edit', $post))->assertStatus(422);
     }
 
     public function test_user_cannot_edit_another_users_post(): void
@@ -48,8 +48,8 @@ class PostEditingTest extends TestCase
         [, $post] = $this->productPost();
         $outsider = User::factory()->create();
 
-        $this->actingAs($outsider)->get(route('posts.edit', $post))->assertForbidden();
-        $this->actingAs($outsider)->put(route('posts.update', $post), ['body' => 'Intento de modificación no autorizado.'])->assertForbidden();
+        $this->actingAs($outsider, 'web')->get(route('posts.edit', $post))->assertForbidden();
+        $this->actingAs($outsider, 'web')->put(route('posts.update', $post), ['body' => 'Intento de modificación no autorizado.'])->assertForbidden();
     }
 
     private function productPost(): array

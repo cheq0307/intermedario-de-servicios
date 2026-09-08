@@ -8,7 +8,7 @@
         </div>
 
         <section class="mt-7 grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
-            <a class="rounded-3xl border border-brand-orange/20 bg-white p-5 shadow-sm transition hover:-translate-y-0.5" href="{{ route('admin.users.index', ['commercial_status' => 'pending']) }}"><strong class="text-3xl"><span data-admin-metric="pending_vendors">{{ $metrics['pending_vendors'] }}</span></strong><p class="mt-2 text-sm font-bold text-brand-muted">Cuentas por verificar</p><span class="mt-3 block text-xs font-black text-brand-danger-warm">Revisar →</span></a>
+            <a class="rounded-3xl border border-brand-orange/20 bg-white p-5 shadow-sm transition hover:-translate-y-0.5" href="{{ route('admin.vendors.index', ['status' => 'pending']) }}"><strong class="text-3xl"><span data-admin-metric="pending_vendors">{{ $metrics['pending_vendors'] }}</span></strong><p class="mt-2 text-sm font-bold text-brand-muted">Cuentas por verificar</p><span class="mt-3 block text-xs font-black text-brand-danger-warm">Revisar →</span></a>
             <a class="rounded-3xl border border-brand/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5" href="{{ route('disputes.admin-index') }}"><strong class="text-3xl"><span data-admin-metric="open_disputes">{{ $metrics['open_disputes'] }}</span></strong><p class="mt-2 text-sm font-bold text-brand-muted">Disputas abiertas</p><span class="mt-3 block text-xs font-black text-brand-success">Atender →</span></a>
             <a class="rounded-3xl border border-brand/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5" href="{{ route('admin.support.index') }}"><strong class="text-3xl"><span data-admin-metric="open_support_tickets">{{ $metrics['open_support_tickets'] }}</span></strong><p class="mt-2 text-sm font-bold text-brand-muted">Casos de soporte</p><span class="mt-3 block text-xs font-black text-brand-success">Responder →</span></a>
             <a class="rounded-3xl border border-brand/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5" href="{{ route('admin.operations.index') }}"><strong class="text-3xl"><span data-admin-metric="active_orders">{{ $metrics['active_orders'] }}</span></strong><p class="mt-2 text-sm font-bold text-brand-muted">Operaciones activas</p><span class="mt-3 block text-xs font-black text-brand-success">Supervisar →</span></a>
@@ -105,44 +105,13 @@
         <section class="mt-8 rounded-[1.75rem] border border-brand-orange/20 bg-white p-5 shadow-sm sm:p-6" id="bandeja-operativa">
             <div><p class="text-xs font-black uppercase tracking-[.16em] text-brand-orange">Bandeja operativa</p><h2 class="mt-1 text-xl font-black">Asuntos que requieren atención</h2></div>
             <div class="mt-5 grid gap-3 md:grid-cols-3">
-                <a class="rounded-2xl bg-brand-orange-faint p-4" href="{{ route('admin.users.index', ['commercial_status' => 'pending']) }}"><strong>{{ $pendingVendorCount }} cuentas por verificar</strong><span class="mt-2 block text-xs font-black text-brand-danger-warm">Abrir expedientes →</span></a>
+                <a class="rounded-2xl bg-brand-orange-faint p-4" href="{{ route('admin.vendors.index', ['status' => 'pending']) }}"><strong>{{ $pendingVendorCount }} cuentas por verificar</strong><span class="mt-2 block text-xs font-black text-brand-danger-warm">Abrir expedientes →</span></a>
                 <a class="rounded-2xl bg-brand-surface p-4" href="{{ route('disputes.admin-index') }}"><strong><span data-admin-metric="open_disputes">{{ $metrics['open_disputes'] }}</span> disputas abiertas</strong><span class="mt-2 block text-xs font-black text-brand-success">Atender casos →</span></a>
                 <a class="rounded-2xl bg-brand-surface p-4" href="{{ route('admin.support.index') }}"><strong><span data-admin-metric="open_support_tickets">{{ $metrics['open_support_tickets'] }}</span> casos de soporte</strong><span class="mt-2 block text-xs font-black text-brand-success">Responder →</span></a>
             </div>
         </section>
 
-        @if($isSuperadmin)
-            <section class="mt-8 rounded-[1.75rem] border border-brand/10 bg-white p-6" id="administradores">
-                <h2 class="text-xl font-black">Administradores y delegación</h2>
-                <p class="mt-2 text-sm font-semibold text-brand-muted">Busca una cuenta existente para delegar autoridad. Sus roles y datos comerciales se conservan, pero quedan pausados mientras sea administradora.</p>
-                <form class="mt-5 flex flex-col gap-2 sm:flex-row" method="GET" action="{{ route('admin.index').'#administradores' }}">
-                        <label class="min-w-0 flex-1"><span class="sr-only">Buscar usuario</span><input class="w-full rounded-2xl border border-brand/10 bg-brand-surface px-4 py-3" type="search" name="admin_q" value="{{ $adminSearch }}" minlength="2" maxlength="100" placeholder="Nombre o correo del usuario" required></label>
-                        <button class="rounded-full bg-brand px-5 py-3 text-sm font-black text-white" type="submit">Buscar usuario</button>
-                        @if($adminSearch !== '')<a class="self-center px-3 text-sm font-black text-brand-danger-warm" href="{{ route('admin.index').'#administradores' }}">Limpiar</a>@endif
-                </form>
-                @if($adminSearch !== '')
-                        <div class="mt-4 space-y-2">
-                            <p class="text-xs font-black uppercase tracking-[.12em] text-brand-orange">Resultados para “{{ $adminSearch }}”</p>
-                            @forelse($adminCandidates as $candidate)
-                                <article class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand/10 bg-white p-4"><div><strong>{{ $candidate->name }}</strong><p class="mt-1 text-xs font-bold text-brand-muted">{{ $candidate->email }} · {{ $candidate->commercialRoleLabel() }}{{ $candidate->community ? ' · '.$candidate->community->name : '' }}</p><p class="mt-2 text-xs font-semibold text-brand-danger-warm">Al delegar, su actividad comercial quedará pausada hasta retirar el cargo.</p></div><form method="POST" action="{{ route('admin.users.grant', $candidate) }}">@csrf<button class="rounded-full bg-brand px-4 py-2 text-xs font-black text-white" type="submit">Hacer administrador</button></form></article>
-                            @empty
-                                <p class="rounded-2xl border border-dashed border-brand/20 p-5 text-sm font-bold text-brand-muted">No encontramos usuarios disponibles con ese nombre o correo.</p>
-                            @endforelse
-                        </div>
-                @endif
-                <div class="mt-6 space-y-3">
-                    <p class="text-xs font-black uppercase tracking-[.12em] text-brand-success">Administradores actuales</p>
-                    @forelse($administrators as $administrator)
-                        <article class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-brand-surface p-4"><div><strong>{{ $administrator->name }}</strong><p class="mt-1 text-xs font-bold text-brand-muted">{{ $administrator->email }}{{ $administrator->community ? ' · '.$administrator->community->name : '' }}</p></div>@if($isSuperadmin)<form method="POST" action="{{ route('admin.users.revoke', $administrator) }}">@csrf @method('DELETE')<button class="rounded-full border border-red-200 px-4 py-2 text-xs font-black text-red-700" type="submit">Retirar administrador</button></form>@endif</article>
-                    @empty
-                        <p class="rounded-2xl border border-dashed border-brand/20 p-5 text-sm font-bold text-brand-muted">Todavía no hay administradores delegados.</p>
-                    @endforelse
-                </div>
-                @if($administrators->hasPages())<div class="mt-5">{{ $administrators->links() }}</div>@endif
-            </section>
-        @endif
-
-        <details id="auditoria" class="mt-6 scroll-mt-24 rounded-[1.75rem] border border-brand/10 bg-white p-6"><summary class="cursor-pointer text-xl font-black">Auditoría reciente</summary><p class="mt-2 text-sm font-semibold text-brand-muted">Registro de quién realizó cada cambio administrativo y sobre qué elemento.</p><div class="mt-4 overflow-x-auto"><table class="w-full min-w-[650px] text-left text-sm"><thead><tr class="text-brand-muted"><th class="p-3">Fecha</th><th class="p-3">Responsable</th><th class="p-3">Qué ocurrió</th><th class="p-3">Elemento afectado</th></tr></thead><tbody>@forelse($auditLogs as $log)<tr class="border-t border-brand/10"><td class="p-3">{{ $log->created_at->format('d/m/Y H:i') }}</td><td class="p-3">{{ $log->user?->name ?? 'Sistema' }}</td><td class="p-3 font-black">{{ $auditActions[$log->action] ?? str_replace(['.', '_'], ' ', ucfirst($log->action)) }}</td><td class="p-3">{{ $auditSubjects[class_basename($log->subject_type)] ?? class_basename($log->subject_type) }} #{{ $log->subject_id }}</td></tr>@empty<tr><td class="p-6 text-center font-bold text-brand-muted" colspan="4">Todavía no hay acciones administrativas registradas.</td></tr>@endforelse</tbody></table></div>@if($auditLogs->hasPages())<div class="mt-5">{{ $auditLogs->links() }}</div>@endif</details>
+        <details id="auditoria" class="mt-6 scroll-mt-24 rounded-[1.75rem] border border-brand/10 bg-white p-6"><summary class="cursor-pointer text-xl font-black">Auditoría reciente</summary><p class="mt-2 text-sm font-semibold text-brand-muted">Registro de quién realizó cada cambio administrativo y sobre qué elemento.</p><div class="mt-4 overflow-x-auto"><table class="w-full min-w-[650px] text-left text-sm"><thead><tr class="text-brand-muted"><th class="p-3">Fecha</th><th class="p-3">Responsable</th><th class="p-3">Qué ocurrió</th><th class="p-3">Elemento afectado</th></tr></thead><tbody>@forelse($auditLogs as $log)<tr class="border-t border-brand/10"><td class="p-3">{{ $log->created_at->format('d/m/Y H:i') }}</td><td class="p-3">{{ $log->admin?->name ?? $log->user?->name ?? 'Sistema' }}</td><td class="p-3 font-black">{{ $auditActions[$log->action] ?? str_replace(['.', '_'], ' ', ucfirst($log->action)) }}</td><td class="p-3">{{ $auditSubjects[class_basename($log->subject_type)] ?? class_basename($log->subject_type) }} #{{ $log->subject_id }}</td></tr>@empty<tr><td class="p-6 text-center font-bold text-brand-muted" colspan="4">Todavía no hay acciones administrativas registradas.</td></tr>@endforelse</tbody></table></div>@if($auditLogs->hasPages())<div class="mt-5">{{ $auditLogs->links() }}</div>@endif</details>
     <script>
         const postalInput = document.getElementById('community-postal-code');
         const postalStatus = document.getElementById('postal-code-status');

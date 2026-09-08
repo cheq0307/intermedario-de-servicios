@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdminUser;
 use App\Models\Category;
 use App\Models\Listing;
 use App\Models\Post;
@@ -10,7 +11,6 @@ use App\Models\User;
 use App\Models\Vendor;
 use App\Models\VendorVerificationDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class TrustAndPromotionTest extends TestCase
@@ -19,10 +19,8 @@ class TrustAndPromotionTest extends TestCase
 
     public function test_approval_and_trust_verification_are_separate_decisions(): void
     {
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
-        $superadmin = User::factory()->create();
-        $superadmin->syncRoles([Role::findOrCreate('superadmin')]);
+        $admin = AdminUser::factory()->create();
+        $superadmin = AdminUser::factory()->superadmin()->create();
         $provider = User::factory()->create();
         $vendor = Vendor::create([
             'user_id' => $provider->id,
@@ -31,12 +29,12 @@ class TrustAndPromotionTest extends TestCase
             'status' => 'active',
         ]);
 
-        $this->actingAs($admin)->patch(route('admin.vendors.verify', $vendor), [
+        $this->actingAs($admin, 'admin')->patch(route('admin.vendors.verify', $vendor), [
             'verification_level' => 'identity',
             'verification_note' => 'Identificación oficial contrastada.',
         ])->assertForbidden();
 
-        $this->actingAs($superadmin)->patch(route('admin.vendors.verify', $vendor), [
+        $this->actingAs($superadmin, 'admin')->patch(route('admin.vendors.verify', $vendor), [
             'verification_level' => 'identity',
             'verification_note' => 'Identificación oficial contrastada.',
         ])->assertStatus(422);
@@ -48,7 +46,7 @@ class TrustAndPromotionTest extends TestCase
             VendorVerificationDocument::create([
                 'vendor_id' => $vendor->id,
                 'uploaded_by_user_id' => $provider->id,
-                'reviewed_by_user_id' => $superadmin->id,
+                'admin_user_id' => $superadmin->id,
                 'type' => $type,
                 'status' => VendorVerificationDocument::STATUS_APPROVED,
                 'disk' => 'local',
@@ -61,14 +59,14 @@ class TrustAndPromotionTest extends TestCase
             ]);
         }
 
-        $this->actingAs($superadmin)->patch(route('admin.vendors.verify', $vendor), [
+        $this->actingAs($superadmin, 'admin')->patch(route('admin.vendors.verify', $vendor), [
             'verification_level' => 'identity',
             'verification_note' => 'Identificación oficial contrastada.',
         ])->assertRedirect();
 
         $vendor->refresh();
         $this->assertNotNull($vendor->verified_at);
-        $this->assertSame($superadmin->id, $vendor->verified_by_user_id);
+        $this->assertSame($superadmin->id, $vendor->admin_user_id);
         $this->assertDatabaseHas('audit_logs', ['action' => 'vendor.verified', 'subject_id' => $vendor->id]);
     }
 
@@ -84,7 +82,7 @@ class TrustAndPromotionTest extends TestCase
         $post = Post::create(['user_id' => $user->id, 'vendor_id' => $vendor->id, 'listing_id' => $listing->id, 'type' => 'service', 'body' => 'Servicio local', 'published_at' => now()]);
         $otherPost = Post::create(['user_id' => $other->id, 'vendor_id' => $otherVendor->id, 'listing_id' => $otherListing->id, 'type' => 'service', 'body' => 'Servicio ajeno', 'published_at' => now()]);
 
-        $this->actingAs($user)->post(route('promotions.store'), ['post_id' => $post->id, 'duration_days' => 7])->assertRedirect();
+        $this->actingAs($user, 'web')->post(route('promotions.store'), ['post_id' => $post->id, 'duration_days' => 7])->assertRedirect();
         $this->assertDatabaseHas('post_promotions', ['post_id' => $post->id, 'status' => 'pending_payment', 'amount' => 4900]);
 
         $this->post(route('promotions.store'), ['post_id' => $otherPost->id, 'duration_days' => 7])->assertSessionHasErrors('post_id');

@@ -3,11 +3,11 @@
 namespace Tests\Feature;
 
 use App\Domain\Marketplace\Enums\SupportTicketStatus;
+use App\Models\AdminUser;
 use App\Models\SupportTicket;
 use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class SupportTicketTest extends TestCase
@@ -17,10 +17,9 @@ class SupportTicketTest extends TestCase
     public function test_user_opens_ticket_and_administrator_is_notified(): void
     {
         $user = User::factory()->create();
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
 
-        $this->actingAs($user)->post(route('support.store'), [
+        $this->actingAs($user, 'web')->post(route('support.store'), [
             'category' => 'account',
             'subject' => 'No puedo actualizar mis datos',
             'body' => 'El formulario no conserva el número de teléfono que escribí.',
@@ -38,8 +37,7 @@ class SupportTicketTest extends TestCase
     {
         $owner = User::factory()->create();
         $outsider = User::factory()->create();
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
         $ticket = SupportTicket::create([
             'user_id' => $owner->id,
             'category' => 'general',
@@ -49,17 +47,16 @@ class SupportTicketTest extends TestCase
         ]);
         $ticket->messages()->create(['sender_id' => $owner->id, 'body' => 'Información privada del caso.', 'is_staff' => false]);
 
-        $this->actingAs($outsider)->get(route('support.show', $ticket))->assertForbidden();
-        $this->actingAs($outsider)->post(route('support.reply', $ticket), ['body' => 'No debo entrar'])->assertForbidden();
-        $this->actingAs($owner)->get(route('support.show', $ticket))->assertOk()->assertSee('Información privada del caso.');
-        $this->actingAs($admin)->get(route('admin.support.show', $ticket))->assertOk()->assertSee($owner->email);
+        $this->actingAs($outsider, 'web')->get(route('support.show', $ticket))->assertForbidden();
+        $this->actingAs($outsider, 'web')->post(route('support.reply', $ticket), ['body' => 'No debo entrar'])->assertForbidden();
+        $this->actingAs($owner, 'web')->get(route('support.show', $ticket))->assertOk()->assertSee('Información privada del caso.');
+        $this->actingAs($admin, 'admin')->get(route('admin.support.show', $ticket))->assertOk()->assertSee($owner->email);
     }
 
     public function test_staff_reply_notifies_user_and_status_can_be_resolved(): void
     {
         $user = User::factory()->create();
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
         $ticket = SupportTicket::create([
             'user_id' => $user->id,
             'category' => 'payment',
@@ -68,14 +65,14 @@ class SupportTicketTest extends TestCase
             'last_message_at' => now(),
         ]);
 
-        $this->actingAs($admin)->post(route('support.reply', $ticket), [
+        $this->actingAs($admin, 'admin')->post(route('admin.support.reply', $ticket), [
             'body' => 'Estamos revisando el movimiento y te avisaremos aquí.',
         ])->assertRedirect();
         $this->assertSame(SupportTicketStatus::WaitingUser, $ticket->fresh()->status);
-        $this->assertSame($admin->id, $ticket->fresh()->assigned_admin_id);
+        $this->assertSame($admin->id, $ticket->fresh()->admin_user_id);
         $this->assertSame('support_reply', $user->notifications()->firstOrFail()->data['kind']);
 
-        $this->actingAs($admin)->patch(route('admin.support.status', $ticket), ['status' => 'resolved'])->assertRedirect();
+        $this->actingAs($admin, 'admin')->patch(route('admin.support.status', $ticket), ['status' => 'resolved'])->assertRedirect();
         $this->assertSame(SupportTicketStatus::Resolved, $ticket->fresh()->status);
         $this->assertNotNull($ticket->fresh()->resolved_at);
     }
@@ -83,8 +80,7 @@ class SupportTicketTest extends TestCase
     public function test_owner_receives_only_new_support_messages_without_reloading(): void
     {
         $owner = User::factory()->create();
-        $admin = User::factory()->create();
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create();
         $ticket = SupportTicket::create([
             'user_id' => $owner->id,
             'category' => 'general',
@@ -93,9 +89,9 @@ class SupportTicketTest extends TestCase
             'last_message_at' => now(),
         ]);
         $first = $ticket->messages()->create(['sender_id' => $owner->id, 'body' => 'Mensaje ya visible.', 'is_staff' => false]);
-        $new = $ticket->messages()->create(['sender_id' => $admin->id, 'body' => 'Respuesta nueva de soporte.', 'is_staff' => true]);
+        $new = $ticket->messages()->create(['sender_id' => null, 'admin_user_id' => $admin->id, 'body' => 'Respuesta nueva de soporte.', 'is_staff' => true]);
 
-        $this->actingAs($owner)
+        $this->actingAs($owner, 'web')
             ->getJson(route('support.messages.index', ['ticket' => $ticket, 'after_id' => $first->id]))
             ->assertOk()
             ->assertHeader('Cache-Control', 'no-store, private')
@@ -122,7 +118,7 @@ class SupportTicketTest extends TestCase
             'last_message_at' => now(),
         ]);
 
-        $this->actingAs($outsider)
+        $this->actingAs($outsider, 'web')
             ->getJson(route('support.messages.index', $ticket))
             ->assertForbidden();
     }
@@ -139,7 +135,7 @@ class SupportTicketTest extends TestCase
             'resolved_at' => now(),
         ]);
 
-        $this->actingAs($owner)
+        $this->actingAs($owner, 'web')
             ->postJson(route('support.reply', $ticket), ['body' => 'Necesito agregar otra información.'])
             ->assertCreated()
             ->assertJsonPath('message.body', 'Necesito agregar otra información.')
@@ -171,9 +167,9 @@ class SupportTicketTest extends TestCase
             'body' => 'Deseo aportar información y solicitar una nueva revisión administrativa.',
         ];
 
-        $this->actingAs($user)->post(route('support.store'), $payload)->assertRedirect();
+        $this->actingAs($user, 'web')->post(route('support.store'), $payload)->assertRedirect();
         $ticket = SupportTicket::firstOrFail();
-        $this->actingAs($user)->post(route('support.store'), $payload)
+        $this->actingAs($user, 'web')->post(route('support.store'), $payload)
             ->assertRedirect(route('support.show', $ticket));
         $this->assertDatabaseCount('support_tickets', 1);
     }

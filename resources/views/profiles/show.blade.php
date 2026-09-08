@@ -61,7 +61,7 @@
 
 @if(!$isStaff)
 <nav class="mt-4 flex overflow-x-auto border-b border-brand-line px-3 sm:mt-6 sm:px-0" aria-label="Secciones del perfil">
-@foreach(['offers'=>'Lo que ofrece','needs'=>'Lo que necesita','work'=>'Trabajos realizados','reviews'=>'Reseñas'] as $key=>$label)<a class="shrink-0 border-b-[3px] px-4 py-3 text-center text-xs font-black sm:text-sm {{ $tab===$key?'border-brand-coral text-brand-deep':'border-transparent text-brand-muted-warm' }}" href="{{ route('profile.show',[$user,'tab'=>$key]) }}" @if($tab===$key) aria-current="page" @endif>{{ $label }}</a>@endforeach
+@foreach(['offers'=>'Lo que ofrece','needs'=>'Lo que necesita','work'=>'Trabajos realizados','reviews'=>'Reseñas'] as $key=>$label)<a class="shrink-0 border-b-[3px] px-4 py-3 text-center text-xs font-black sm:text-sm {{ $tab===$key?'border-brand-coral text-brand-deep':'border-transparent text-brand-muted-warm' }}" href="{{ route($administrativePreview ? 'admin.users.preview' : 'profile.show',[$user,'tab'=>$key]) }}" @if($tab===$key) aria-current="page" @endif>{{ $label }}</a>@endforeach
 </nav>
 <section class="px-4 pt-4 sm:px-0">
 @if(in_array($tab,['offers','needs']))

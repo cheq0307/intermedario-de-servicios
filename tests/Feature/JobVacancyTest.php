@@ -2,12 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdminUser;
 use App\Models\Community;
 use App\Models\JobApplication;
 use App\Models\JobVacancy;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Auth;
 use Tests\TestCase;
 
 class JobVacancyTest extends TestCase
@@ -32,7 +33,7 @@ class JobVacancyTest extends TestCase
         $employer = User::factory()->create(['community_id' => $community->id]);
         $applicant = User::factory()->create(['community_id' => $community->id]);
 
-        $response = $this->actingAs($employer)->post(route('vacancies.store'), [
+        $response = $this->actingAs($employer, 'web')->post(route('vacancies.store'), [
             'title' => 'Ayudante para taquería',
             'description' => 'Buscamos una persona responsable para apoyar en atención y preparación de alimentos.',
             'requirements' => 'Disponibilidad por las tardes y trato amable con clientes.',
@@ -51,15 +52,15 @@ class JobVacancyTest extends TestCase
         $this->assertSame('pending_payment', $vacancy->status);
         $this->get(route('vacancies.index'))->assertDontSee('Ayudante para taquería');
 
-        $this->actingAs($employer)->post(route('vacancies.pay', $vacancy))->assertRedirect();
+        $this->actingAs($employer, 'web')->post(route('vacancies.pay', $vacancy))->assertRedirect();
         $vacancy->refresh();
         $this->assertSame('published', $vacancy->status);
         $this->assertNotNull($vacancy->paid_at);
         $this->get(route('vacancies.index'))->assertSee('Ayudante para taquería');
 
         $application = ['cover_letter' => 'Tengo experiencia atendiendo clientes y disponibilidad en el horario indicado.'];
-        $this->actingAs($applicant)->post(route('vacancies.apply', $vacancy), $application)->assertRedirect();
-        $this->actingAs($applicant)->post(route('vacancies.apply', $vacancy), $application)->assertRedirect();
+        $this->actingAs($applicant, 'web')->post(route('vacancies.apply', $vacancy), $application)->assertRedirect();
+        $this->actingAs($applicant, 'web')->post(route('vacancies.apply', $vacancy), $application)->assertRedirect();
         $this->assertSame(1, JobApplication::where('job_vacancy_id', $vacancy->id)->count());
     }
 
@@ -83,13 +84,12 @@ class JobVacancyTest extends TestCase
             'expires_at' => now()->addDays(30),
         ]);
 
-        $this->actingAs($employer)->post(route('vacancies.apply', $vacancy), [
+        $this->actingAs($employer, 'web')->post(route('vacancies.apply', $vacancy), [
             'cover_letter' => 'Esta postulación no debería quedar registrada en el sistema.',
         ])->assertStatus(422);
 
-        $staff = User::factory()->create();
-        $staff->assignRole(Role::findOrCreate('admin'));
-        $staff->removeRole('client');
-        $this->actingAs($staff)->get(route('vacancies.create'))->assertForbidden();
+        Auth::guard('web')->logout();
+        $staff = AdminUser::factory()->create();
+        $this->actingAs($staff, 'admin')->get(route('vacancies.create'))->assertRedirect(route('login'));
     }
 }

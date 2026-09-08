@@ -30,6 +30,7 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'account_type' => 'client',
+            'phone' => fake()->unique()->numerify('##########'),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
@@ -43,7 +44,7 @@ class UserFactory extends Factory
                 : (string) $user->account_type;
 
             if (in_array($accountType, ['client', 'provider'], true)) {
-                $user->assignRole(Role::findOrCreate($accountType));
+                $user->assignRole(Role::findOrCreate($accountType, 'web'));
             }
         });
     }

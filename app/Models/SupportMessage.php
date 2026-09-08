@@ -10,7 +10,7 @@ class SupportMessage extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['support_ticket_id', 'sender_id', 'body', 'is_staff', 'read_at'];
+    protected $fillable = ['admin_user_id', 'support_ticket_id', 'sender_id', 'body', 'is_staff', 'read_at'];
 
     protected function casts(): array
     {
@@ -25,5 +25,10 @@ class SupportMessage extends Model
     public function sender(): BelongsTo
     {
         return $this->belongsTo(User::class, 'sender_id');
+    }
+
+    public function admin(): BelongsTo
+    {
+        return $this->belongsTo(AdminUser::class, 'admin_user_id');
     }
 }

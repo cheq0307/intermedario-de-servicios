@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\AdminUser;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Models\VendorVerificationDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class VendorVerificationDocumentTest extends TestCase
@@ -26,10 +26,9 @@ class VendorVerificationDocumentTest extends TestCase
             'slug' => 'proveedor-documental',
             'status' => 'active',
         ]);
-        $admin = User::factory()->create(['email_verified_at' => now()]);
-        $admin->assignRole(Role::findOrCreate('admin'));
+        $admin = AdminUser::factory()->create(['email_verified_at' => now()]);
 
-        $this->actingAs($provider)->post(route('verification-documents.store'), [
+        $this->actingAs($provider, 'web')->post(route('verification-documents.store'), [
             'type' => VendorVerificationDocument::TYPE_GOVERNMENT_ID,
             'document' => UploadedFile::fake()->create('identificacion.pdf', 200, 'application/pdf'),
         ])->assertRedirect();
@@ -39,7 +38,7 @@ class VendorVerificationDocumentTest extends TestCase
         $this->assertSame(VendorVerificationDocument::STATUS_PENDING, $document->status);
         $this->assertNotEmpty($document->sha256);
 
-        $this->actingAs($admin)->patch(route('admin.verification-documents.review', $document), [
+        $this->actingAs($admin, 'admin')->patch(route('admin.verification-documents.review', $document), [
             'decision' => VendorVerificationDocument::STATUS_APPROVED,
             'review_note' => 'Documento legible y datos contrastados.',
         ])->assertRedirect();

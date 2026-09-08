@@ -12,7 +12,7 @@ class PostPromotion extends Model
         'amount', 'currency', 'paid_at', 'starts_at', 'ends_at',
         'payment_provider', 'provider_preference_id', 'provider_payment_id',
         'checkout_url', 'payment_payload',
-        'reviewed_by_user_id', 'reviewed_at', 'impressions', 'clicks',
+        'reviewed_by_user_id', 'admin_user_id', 'reviewed_at', 'impressions', 'clicks',
     ];
 
     protected function casts(): array
@@ -42,6 +42,6 @@ class PostPromotion extends Model
 
     public function reviewedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'reviewed_by_user_id');
+        return $this->belongsTo(AdminUser::class, 'admin_user_id');
     }
 }

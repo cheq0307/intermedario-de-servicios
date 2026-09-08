@@ -6,8 +6,8 @@ use App\Actions\Fortify\ResetUserPassword;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -30,7 +30,7 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::verifyEmailView(fn () => view('auth.verify-email'));
 
         Fortify::authenticateUsing(function (Request $request): ?User {
-            $user = User::query()->where('email', Str::lower((string) $request->input(Fortify::username())))->first();
+            $user = User::query()->whereNull('migrated_to_admin_at')->whereDoesntHave('roles', fn ($q) => $q->whereIn('name', ['admin', 'superadmin']))->where('email', Str::lower((string) $request->input(Fortify::username())))->first();
 
             if (! $user || ! Hash::check((string) $request->input('password'), $user->password)) {
                 return null;

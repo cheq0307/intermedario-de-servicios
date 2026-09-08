@@ -19,41 +19,41 @@ class ServiceOrderTest extends TestCase
     public function test_provider_and_client_follow_the_service_order_lifecycle(): void
     {
         [$client, $provider, $order, $jobRequest] = $this->scenario();
-        $this->actingAs($provider)->get(route('orders.show', $order))->assertOk();
+        $this->actingAs($provider, 'web')->get(route('orders.show', $order))->assertOk();
 
-        $this->actingAs($provider)->patch(route('orders.start', $order))->assertStatus(422);
-        $this->actingAs($client)->post(route('orders.simulate-payment', $order))->assertRedirect();
+        $this->actingAs($provider, 'web')->patch(route('orders.start', $order))->assertStatus(422);
+        $this->actingAs($client, 'web')->post(route('orders.simulate-payment', $order))->assertRedirect();
         $this->assertSame('paid', $order->fresh()->status->value);
         $this->assertDatabaseHas('payments', [
             'order_id' => $order->id,
             'status' => 'paid',
         ]);
 
-        $this->actingAs($provider)->patch(route('orders.start', $order))->assertRedirect();
+        $this->actingAs($provider, 'web')->patch(route('orders.start', $order))->assertRedirect();
         $this->assertSame('in_progress', $order->fresh()->status->value);
         $this->assertNotNull($order->fresh()->started_at);
         $this->assertDatabaseHas('messages', ['sender_id' => $provider->id, 'type' => 'system']);
 
-        $this->actingAs($client)->patch(route('orders.deliver', $order))->assertForbidden();
-        $this->actingAs($provider)->patch(route('orders.deliver', $order))->assertRedirect();
+        $this->actingAs($client, 'web')->patch(route('orders.deliver', $order))->assertForbidden();
+        $this->actingAs($provider, 'web')->patch(route('orders.deliver', $order))->assertRedirect();
         $this->assertSame('delivered', $order->fresh()->status->value);
 
-        $this->actingAs($provider)->patch(route('orders.complete', $order))->assertForbidden();
-        $this->actingAs($client)->patch(route('orders.complete', $order))->assertRedirect();
+        $this->actingAs($provider, 'web')->patch(route('orders.complete', $order))->assertForbidden();
+        $this->actingAs($client, 'web')->patch(route('orders.complete', $order))->assertRedirect();
         $this->assertSame('completed', $order->fresh()->status->value);
         $this->assertSame('completed', $jobRequest->fresh()->status->value);
         $this->assertDatabaseHas('payments', [
             'order_id' => $order->id,
             'status' => 'released',
         ]);
-        $this->actingAs($client)->get(route('orders.show', $order))->assertOk()->assertSee('Califica esta experiencia');
+        $this->actingAs($client, 'web')->get(route('orders.show', $order))->assertOk()->assertSee('Califica esta experiencia');
     }
 
     public function test_participant_can_cancel_only_before_work_starts_and_reason_is_recorded(): void
     {
         [$client, $provider, $order, $jobRequest] = $this->scenario();
 
-        $this->actingAs($client)->patch(route('orders.cancel', $order), [
+        $this->actingAs($client, 'web')->patch(route('orders.cancel', $order), [
             'reason' => 'El trabajo ya no será necesario por un cambio de planes.',
         ])->assertRedirect();
 
@@ -67,9 +67,9 @@ class ServiceOrderTest extends TestCase
         ]);
 
         [$secondClient, $secondProvider, $secondOrder] = $this->scenario('segunda');
-        $this->actingAs($secondClient)->post(route('orders.simulate-payment', $secondOrder));
-        $this->actingAs($secondProvider)->patch(route('orders.start', $secondOrder));
-        $this->actingAs($secondProvider)->patch(route('orders.cancel', $secondOrder), [
+        $this->actingAs($secondClient, 'web')->post(route('orders.simulate-payment', $secondOrder));
+        $this->actingAs($secondProvider, 'web')->patch(route('orders.start', $secondOrder));
+        $this->actingAs($secondProvider, 'web')->patch(route('orders.cancel', $secondOrder), [
             'reason' => 'Intento de cancelar un trabajo que ya está iniciado.',
         ])->assertStatus(422);
     }
@@ -79,9 +79,9 @@ class ServiceOrderTest extends TestCase
         [, , $order] = $this->scenario();
         $outsider = User::factory()->create(['account_type' => 'client']);
 
-        $this->actingAs($outsider)->get(route('orders.show', $order))->assertForbidden();
-        $this->actingAs($outsider)->patch(route('orders.start', $order))->assertForbidden();
-        $this->actingAs($outsider)->patch(route('orders.cancel', $order), [
+        $this->actingAs($outsider, 'web')->get(route('orders.show', $order))->assertForbidden();
+        $this->actingAs($outsider, 'web')->patch(route('orders.start', $order))->assertForbidden();
+        $this->actingAs($outsider, 'web')->patch(route('orders.cancel', $order), [
             'reason' => 'No debería poder modificar una orden de terceros.',
         ])->assertForbidden();
     }
@@ -91,8 +91,8 @@ class ServiceOrderTest extends TestCase
         [$client, , $order] = $this->scenario();
         $outsider = User::factory()->create(['account_type' => 'client']);
 
-        $this->actingAs($client)->get(route('orders.index'))->assertOk()->assertSee($order->jobRequest->title);
-        $this->actingAs($outsider)->get(route('orders.index'))->assertOk()->assertDontSee($order->jobRequest->title);
+        $this->actingAs($client, 'web')->get(route('orders.index'))->assertOk()->assertSee($order->jobRequest->title);
+        $this->actingAs($outsider, 'web')->get(route('orders.index'))->assertOk()->assertDontSee($order->jobRequest->title);
     }
 
     private function scenario(string $suffix = 'principal'): array

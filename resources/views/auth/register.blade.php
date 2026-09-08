@@ -39,6 +39,12 @@
 
         <div class="grid gap-4 sm:grid-cols-2">
             <label class="block sm:col-span-2">
+                <span class="text-sm font-black">Teléfono celular</span>
+                <input class="mt-2 w-full rounded-2xl border border-brand-forest-deep/15 bg-white px-4 py-3.5 outline-none focus:border-brand-forest-strong focus:ring-4 focus:ring-brand-forest-strong/10" type="tel" name="phone" value="{{ old('phone') }}" required inputmode="numeric" pattern="[0-9]{10}" minlength="10" maxlength="10" autocomplete="tel-national" placeholder="10 dígitos">
+                <span class="mt-1 block text-xs font-bold text-brand-caption">Será privado y no aparecerá en tu perfil público.</span>
+                @error('phone') <span class="mt-2 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
+            </label>
+            <label class="block sm:col-span-2">
                 <span class="text-sm font-black">Correo electrónico</span>
                 <input class="mt-2 w-full rounded-2xl border border-brand-forest-deep/15 bg-white px-4 py-3.5 outline-none focus:border-brand-forest-strong focus:ring-4 focus:ring-brand-forest-strong/10" type="email" name="email" value="{{ old('email') }}" required autocomplete="email">
                 @error('email') <span class="mt-2 block text-sm font-bold text-red-600">{{ $message }}</span> @enderror
@@ -52,6 +58,8 @@
             <li class="flex items-center gap-2" data-password-rule="number"><span aria-hidden="true">&bull;</span> Incluye un n&uacute;mero</li>
             <li class="flex items-center gap-2" data-password-rule="match"><span aria-hidden="true">&bull;</span> Las contrase&ntilde;as coinciden</li>
         </ul>
+
+        <p class="rounded-2xl bg-brand-gold-faint px-4 py-3 text-xs font-bold leading-5 text-brand-warning-copy">Después de registrarte tendrás 7 días para verificar tu correo. Si no lo haces y la cuenta no tiene actividad que debamos conservar, se eliminará automáticamente.</p>
 
         <button class="w-full rounded-2xl bg-brand-coral-strong px-5 py-4 font-black text-white transition hover:bg-brand-coral-dark" type="submit">Crear mi cuenta</button>
     </form>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Marketplace\Enums\OrderStatus;
 use App\Http\Requests\UpdateProfileRequest;
+use App\Models\AccountIdentityLink;
 use App\Models\Category;
 use App\Models\Community;
 use App\Models\Order;
@@ -11,6 +12,7 @@ use App\Models\PostComment;
 use App\Models\PostReaction;
 use App\Models\PostShare;
 use App\Models\User;
+use App\Services\Accounts\IdentityContacts;
 use App\ViewData\ProfileEditData;
 use App\ViewData\ProfileShowData;
 use Illuminate\Http\RedirectResponse;
@@ -23,6 +25,7 @@ class ProfileController extends Controller
 {
     public function show(User $user): View
     {
+        abort_if($user->migrated_to_admin_at, 404);
         $user->load(['vendor.categories', 'community'])->loadCount([
             'posts' => fn ($query) => $query->whereNull('removed_at'),
             'jobRequests' => fn ($query) => $query->whereHas('post', fn ($post) => $post->whereNull('removed_at')),
@@ -107,8 +110,16 @@ class ProfileController extends Controller
         $validated = $request->validated();
 
         DB::transaction(function () use ($request, $user, $validated): void {
+            IdentityContacts::lock();
+            $user->refresh();
+            IdentityContacts::assertPhoneAllowed($user, $validated['phone']);
             $community = Community::query()->where('is_active', true)->findOrFail($validated['community_id']);
             $userData = collect($validated)->only(['name', 'phone', 'bio', 'community_id'])->all();
+            if (($userData['phone'] ?? null) !== $user->phone) {
+                $link = AccountIdentityLink::where('user_id', $user->id)->first();
+                abort_if($link && $link->phone !== ($userData['phone'] ?? null), 422, 'El teléfono está vinculado a tu identidad administrativa. Solicita al superadministrador la actualización.');
+                $user->phone_verified_at = null;
+            }
             $userData['city'] = $community->municipality;
 
             if ($request->hasFile('avatar')) {

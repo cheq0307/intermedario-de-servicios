@@ -32,7 +32,7 @@ TWILIO_VERIFY_SERVICE_SID=
 Se requiere una cuenta del proveedor, un servicio Verify habilitado para enviar a México y sus credenciales. No se ha contratado un proveedor ni comprobado entrega real: las pruebas automatizadas simulan las respuestas HTTP del proveedor. Sin configuración, la interfaz indica que el SMS no está habilitado y no verifica ningún teléfono.
 
 - Números mexicanos de 10 dígitos, enviados al proveedor como `+52` más el número.
-- Código de 6 dígitos; desafío asociado a la identidad y sesión, con caducidad local de 10 minutos.
+- Código de 4 dígitos (configurar también esta longitud en Twilio Verify); desafío asociado a la identidad y sesión, con caducidad local de 10 minutos.
 - Hasta cinco intentos de validación por desafío y límites de envío por teléfono, identidad e IP.
 - Solo una respuesta `approved` del proveedor marca `phone_verified_at`.
 - Cambiar un teléfono no vinculado elimina su verificación previa.

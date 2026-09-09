@@ -78,7 +78,7 @@ class AdminIdentityTest extends TestCase
         $user = User::factory()->create(['phone_verified_at' => null]);
         foreach ([['expires' => now()->subMinute()->timestamp, 'attempts' => 0], ['expires' => now()->addMinute()->timestamp, 'attempts' => 5]] as $limits) {
             $this->actingAs($user, 'web')->withSession(['user.phone_challenge' => $limits + ['sid' => 'VEtest', 'identity_id' => $user->id, 'phone' => $user->phone]])
-                ->post(route('phone.verify'), ['code' => '123456'])->assertStatus(422);
+                ->post(route('phone.verify'), ['code' => '1234'])->assertStatus(422);
         }
         Http::assertNothingSent();
         $this->assertNull($user->fresh()->phone_verified_at);
@@ -203,8 +203,21 @@ class AdminIdentityTest extends TestCase
         config(['phone_verification.account_sid' => '', 'phone_verification.auth_token' => '', 'phone_verification.service_sid' => '']);
         $user = User::factory()->create(['phone_verified_at' => null]);
         $this->actingAs($user, 'web')->post(route('phone.send'), ['phone' => $user->phone])->assertSessionHasErrors('phone');
-        $this->post(route('phone.verify'), ['code' => '123456'])->assertStatus(422);
+        $this->post(route('phone.verify'), ['code' => '1234'])->assertStatus(422);
         $this->assertNull($user->fresh()->phone_verified_at);
+        Http::assertNothingSent();
+    }
+
+    public function test_sms_code_requires_exactly_four_digits_for_both_identities(): void
+    {
+        Http::fake();
+        foreach ([['web', User::factory()->create(['phone_verified_at' => null]), 'phone.verify'], ['admin', AdminUser::factory()->create(['phone_verified_at' => null]), 'admin.phone.verify']] as [$guard, $identity, $route]) {
+            $this->actingAs($identity, $guard);
+            foreach (['123', '123456', '12ab'] as $code) {
+                $this->post(route($route), ['code' => $code])->assertSessionHasErrors('code');
+            }
+            $this->assertNull($identity->fresh()->phone_verified_at);
+        }
         Http::assertNothingSent();
     }
 
@@ -219,11 +232,12 @@ class AdminIdentityTest extends TestCase
         $admin = AdminUser::factory()->create(['phone_verified_at' => null]);
         $this->actingAs($admin, 'admin')->post(route('admin.phone.send'), ['phone' => $admin->phone])->assertRedirect()->assertSessionHasNoErrors();
         Http::assertSent(fn ($request) => $request->url() === 'https://verify.twilio.com/v2/Services/VAtest/Verifications' && $request['To'] === '+52'.$admin->phone && $request['Channel'] === 'sms');
-        $this->post(route('admin.phone.verify'), ['code' => '000000'])->assertSessionHasErrors('code');
+        $this->post(route('admin.phone.verify'), ['code' => '0000'])->assertSessionHasErrors('code');
         $this->assertNull($admin->fresh()->phone_verified_at);
-        $this->post(route('admin.phone.verify'), ['code' => '123456'])->assertRedirect(route('admin.verification.notice'));
+        $this->post(route('admin.phone.verify'), ['code' => '0123'])->assertRedirect(route('admin.verification.notice'));
+        Http::assertSent(fn ($request) => str_ends_with($request->url(), '/VerificationCheck') && $request['Code'] === '0123');
         $this->assertNotNull($admin->fresh()->phone_verified_at);
-        $this->post(route('admin.phone.verify'), ['code' => '123456'])->assertStatus(422);
+        $this->post(route('admin.phone.verify'), ['code' => '0123'])->assertStatus(422);
     }
 
     public function test_phone_cannot_be_shared_without_an_authorized_link(): void

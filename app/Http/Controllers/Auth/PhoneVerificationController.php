@@ -41,7 +41,7 @@ class PhoneVerificationController extends Controller
 
     public function verify(Request $request, SmsVerification $sms)
     {
-        $request->validate(['code' => ['required', 'string', 'regex:/^[0-9]{6}$/']]);
+        $request->validate(['code' => ['required', 'string', 'regex:/^[0-9]{4}$/']], ['code.regex' => 'El código debe contener exactamente 4 dígitos.']);
         $identity = $request->user();
         $admin = $identity instanceof AdminUser;
         $key = $admin ? 'admin.phone_challenge' : 'user.phone_challenge';

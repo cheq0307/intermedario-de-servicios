@@ -8,6 +8,6 @@
 </form>
 <form method="POST" action="{{ route($identity instanceof \App\Models\AdminUser ? 'admin.phone.verify' : 'phone.verify') }}" class="mt-6 space-y-3">
     @csrf
-    <label class="block">Código de 6 dígitos<input class="mt-2 w-full rounded-xl border p-3" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label>
+    <label class="block">Código de 4 dígitos<input class="mt-2 w-full rounded-xl border p-3" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{4}" maxlength="4" required></label>
     <button class="min-h-11 rounded-xl bg-brand px-5 py-3 font-bold text-white disabled:opacity-50" @disabled(!$configured)>Verificar teléfono</button>
 </form>

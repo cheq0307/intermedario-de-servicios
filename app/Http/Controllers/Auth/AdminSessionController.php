@@ -14,7 +14,7 @@ class AdminSessionController extends Controller
 {
     public function create()
     {
-        return view('auth.admin-login');
+        return redirect()->route('login');
     }
 
     public function store(Request $request)

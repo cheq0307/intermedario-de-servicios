@@ -3,7 +3,8 @@
 ## Implementación
 
 - `users` y guard `web`: cuentas de Plaza Local, acceso por `/login`.
-- `admin_users` y guard `admin`: personal administrativo, acceso por `/administracion/login`.
+- `admin_users` y guard `admin`: personal administrativo. Todos entran por `/login`; `/administracion/login` redirige al formulario común. El correo y la contraseña determinan la identidad, sin selector de rol. Las cuentas vinculadas conservan contraseñas diferentes.
+- La recuperación desde el login común envía enlaces independientes para las identidades existentes, sin revelar qué tipos de cuenta tiene ese correo.
 - Cookie administrativa independiente, limitada a `/administracion`. Con sesiones de BD, utiliza `admin_sessions`; la plaza conserva `sessions`.
 - Contraseñas y recuperación independientes. El broker `admins` utiliza `admin_password_reset_tokens` y enlaces administrativos de 30 minutos. Un token de la plaza no restablece una contraseña administrativa.
 - Solo existe un propietario (rol `superadmin`, índice único `owner_slot`). No hay botón ni endpoint de promoción a superadministrador. Se crea mediante `php artisan plaza:create-superadmin`, con contraseña interactiva, sin credenciales predeterminadas.

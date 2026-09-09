@@ -45,7 +45,8 @@ class AdminIdentityTest extends TestCase
         };
         $visit('POST', route('login'), ['email' => $client->email, 'password' => 'ClienteSeguro1234'])->assertRedirect();
         $visit('GET', route('profile.edit'))->assertOk()->assertViewHas('user', fn ($user) => $user->is($client));
-        $visit('POST', route('admin.login.store'), ['email' => $admin->email, 'password' => 'AdminSeguro1234'])->assertRedirect();
+        $visit('GET', route('login'))->assertOk();
+        $visit('POST', route('login'), ['email' => $admin->email, 'password' => 'AdminSeguro1234'])->assertRedirect(route('admin.verification.notice'));
         $visit('GET', route('admin.index'))->assertOk();
         $visit('GET', route('profile.edit'))->assertOk()->assertViewHas('user', fn ($user) => $user->is($client));
         $visit('POST', route('admin.logout'))->assertRedirect(route('admin.login'));

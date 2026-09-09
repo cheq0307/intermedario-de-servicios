@@ -2,7 +2,7 @@
     <div>
         <p class="text-xs font-black uppercase tracking-[.2em] text-brand-coral-strong">Bienvenido de vuelta</p>
         <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Inicia sesión</h1>
-        <p class="mt-3 text-brand-sage-muted">Accede a tus mensajes, pedidos y publicaciones.</p>
+        <p class="mt-3 text-brand-sage-muted">Entra con tu correo y contraseña. Te llevaremos al espacio de tu cuenta.</p>
     </div>
 
     @if (session('status'))

@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\PhoneVerificationController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\UnifiedLoginController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DisputeController;
@@ -51,8 +52,11 @@ Route::post('/webhooks/mercado-pago', MercadoPagoWebhookController::class)->name
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
     Route::post('/register', [RegisteredUserController::class, 'store']);
-    Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
 });
+
+Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
+Route::post('/login', [UnifiedLoginController::class, 'store'])->middleware('throttle:login')->name('login.store');
+Route::post('/forgot-password', [UnifiedLoginController::class, 'recovery'])->middleware('throttle:3,1')->name('password.email');
 
 Route::middleware(['auth:web', 'marketplace.identity', 'account.active'])->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');

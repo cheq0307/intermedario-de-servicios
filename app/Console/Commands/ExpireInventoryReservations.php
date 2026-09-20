@@ -23,12 +23,17 @@ class ExpireInventoryReservations extends Command
 
         foreach ($ids as $id) {
             DB::transaction(function () use ($id, &$released): void {
+                $reference = InventoryReservation::find($id);
+                if (! $reference) {
+                    return;
+                }
+                // Match payment/cancellation locking order: order, then reservation.
+                $order = Order::lockForUpdate()->findOrFail($reference->order_id);
                 $reservation = InventoryReservation::lockForUpdate()->find($id);
                 if (! $reservation || $reservation->status !== 'active' || $reservation->expires_at->isFuture()) {
                     return;
                 }
 
-                $order = Order::lockForUpdate()->findOrFail($reservation->order_id);
                 if ($order->status !== OrderStatus::AwaitingPayment) {
                     return;
                 }

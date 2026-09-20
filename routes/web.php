@@ -51,7 +51,7 @@ Route::post('/webhooks/mercado-pago', MercadoPagoWebhookController::class)->name
 
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
-    Route::post('/register', [RegisteredUserController::class, 'store']);
+    Route::post('/register', [RegisteredUserController::class, 'store'])->middleware('throttle:registration');
 });
 
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
@@ -69,18 +69,19 @@ Route::middleware(['auth:web', 'marketplace.identity', 'account.active'])->group
     Route::post('/perfiles/{user}/seguir', [ProfileFollowController::class, 'toggle'])->name('profiles.follow.toggle');
     Route::get('/soporte', [SupportController::class, 'index'])->name('support.index');
     Route::get('/soporte/nueva', [SupportController::class, 'create'])->name('support.create');
-    Route::post('/soporte', [SupportController::class, 'store'])->name('support.store');
+    Route::post('/soporte', [SupportController::class, 'store'])->middleware('throttle:support-write')->name('support.store');
     Route::get('/soporte/{ticket}', [SupportController::class, 'show'])->name('support.show');
     Route::get('/soporte/{ticket}/mensajes', [SupportController::class, 'messages'])->name('support.messages.index');
-    Route::post('/soporte/{ticket}/respuestas', [SupportController::class, 'reply'])->name('support.reply');
+    Route::post('/soporte/{ticket}/respuestas', [SupportController::class, 'reply'])->middleware('throttle:support-write')->name('support.reply');
     Route::get('/actividad/resumen', [NotificationController::class, 'summary'])->middleware('throttle:120,1')->name('activity.summary');
-    Route::post('/publicaciones', [PostController::class, 'store'])->name('posts.store');
+    Route::post('/publicaciones', [PostController::class, 'store'])->middleware('throttle:publications')->name('posts.store');
     Route::middleware('verified')->group(function () {
         Route::post('/mi-cuenta/capacidades/{capability}', [MarketplaceCapabilityController::class, 'activate'])->name('capabilities.activate');
         Route::get('/mi-empleo', [JobVacancyController::class, 'mine'])->name('vacancies.mine');
         Route::get('/empleo-publicar', [JobVacancyController::class, 'create'])->name('vacancies.create');
         Route::post('/empleo', [JobVacancyController::class, 'store'])->name('vacancies.store');
-        Route::post('/empleo/{vacancy}/pagar', [JobVacancyController::class, 'pay'])->name('vacancies.pay');
+        Route::post('/empleo/{vacancy}/pagar', [JobVacancyController::class, 'pay'])->middleware('throttle:checkout')->name('vacancies.pay');
+        Route::get('/empleo/{vacancy}/resultado-pago', [JobVacancyController::class, 'paymentReturn'])->name('vacancies.payment-return');
         Route::post('/empleo/{vacancy}/postular', [JobVacancyController::class, 'apply'])->name('vacancies.apply');
         Route::patch('/empleo/{vacancy}/cerrar', [JobVacancyController::class, 'close'])->name('vacancies.close');
         Route::post('/mi-perfil/solicitar-verificacion', [MarketplaceCapabilityController::class, 'submitProviderApplication'])->name('provider-applications.submit');
@@ -99,10 +100,10 @@ Route::middleware(['auth:web', 'marketplace.identity', 'account.active'])->group
         Route::post('/publicaciones/{post}/compartir', [PostEngagementController::class, 'share'])->name('posts.shares.store');
         Route::get('/promociones', [PostPromotionController::class, 'index'])->name('promotions.index');
         Route::post('/promociones', [PostPromotionController::class, 'store'])->name('promotions.store');
-        Route::post('/promociones/{promotion}/pagar', [PostPromotionController::class, 'checkout'])->name('promotions.checkout');
+        Route::post('/promociones/{promotion}/pagar', [PostPromotionController::class, 'checkout'])->middleware('throttle:checkout')->name('promotions.checkout');
         Route::get('/promociones/{promotion}/resultado', [PostPromotionController::class, 'returned'])->name('promotions.return');
         Route::get('/productos/{listing}/comprar', [ProductOrderController::class, 'checkout'])->name('products.checkout');
-        Route::post('/productos/{listing}/pedidos', [ProductOrderController::class, 'store'])->name('products.orders.store');
+        Route::post('/productos/{listing}/pedidos', [ProductOrderController::class, 'store'])->middleware('throttle:checkout')->name('products.orders.store');
         Route::post('/pedidos/{order}/simular-pago', [ProductOrderController::class, 'simulatePayment'])->name('products.orders.simulate-payment');
         Route::patch('/pedidos/{order}/listo', [ProductOrderController::class, 'ready'])->name('products.orders.ready');
         Route::patch('/pedidos/{order}/entregar', [ProductOrderController::class, 'deliver'])->name('products.orders.deliver');
@@ -115,7 +116,7 @@ Route::middleware(['auth:web', 'marketplace.identity', 'account.active'])->group
         Route::post('/publicaciones/{post}/conversacion', [NegotiationConversationController::class, 'start'])->name('posts.conversations.start');
         Route::get('/mensajes/{conversation}/actualizaciones', [ConversationController::class, 'messages'])->middleware('throttle:120,1')->name('conversations.messages.index');
         Route::get('/mensajes/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
-        Route::post('/mensajes/{conversation}', [ConversationController::class, 'store'])->name('conversations.messages.store');
+        Route::post('/mensajes/{conversation}', [ConversationController::class, 'store'])->middleware('throttle:messages')->name('conversations.messages.store');
         Route::patch('/mensajes/{conversation}/extender', [NegotiationConversationController::class, 'extend'])->name('conversations.extend');
         Route::patch('/mensajes/{conversation}/terminar', [NegotiationConversationController::class, 'close'])->name('conversations.close');
         Route::get('/solicitudes/{jobRequest}/propuestas', [JobProposalController::class, 'index'])->name('job-proposals.index');

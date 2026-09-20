@@ -36,6 +36,7 @@ return [
     ],
 
     'stripe' => [
+        'livemode' => (bool) env('STRIPE_LIVE_MODE', false),
         'key' => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET'),
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),

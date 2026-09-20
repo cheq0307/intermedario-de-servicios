@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Community;
 use App\Models\JobVacancy;
+use App\Services\Payments\MercadoPagoVacancyCheckout;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -78,10 +79,14 @@ class JobVacancyController extends Controller
         return redirect()->route('vacancies.show', $vacancy)->with('status', 'La vacante quedó en borrador. Confirma la tarifa para publicarla.');
     }
 
-    public function pay(Request $request, JobVacancy $vacancy): RedirectResponse
+    public function pay(Request $request, JobVacancy $vacancy, MercadoPagoVacancyCheckout $checkout): RedirectResponse
     {
         abort_unless($vacancy->employer_id === $request->user()->id, 403);
         abort_unless($vacancy->status === 'pending_payment', 422);
+        if (config('marketplace.vacancy_payment_driver') === 'mercadopago') {
+            return redirect()->away($checkout->checkout($vacancy));
+        }
+        abort_unless(config('marketplace.vacancy_payment_driver') === 'fake', 503);
         $fakeAllowed = app()->environment(['local', 'testing']) || (app()->environment('staging') && config('marketplace.allow_fake_payments'));
         abort_unless($fakeAllowed, 422, 'La pasarela real debe estar configurada antes de cobrar una vacante.');
         DB::transaction(function () use ($vacancy): void {
@@ -91,6 +96,14 @@ class JobVacancyController extends Controller
         });
 
         return redirect()->route('vacancies.show', $vacancy)->with('status', 'Pago de prueba confirmado. La vacante ya está publicada.');
+    }
+
+    public function paymentReturn(Request $request, JobVacancy $vacancy): RedirectResponse
+    {
+        abort_unless($vacancy->employer_id === $request->user()->id, 403);
+
+        return redirect()->route('vacancies.show', $vacancy)->with('status',
+            $vacancy->paid_at ? 'Pago registrado.' : 'Estamos esperando la confirmación segura de Mercado Pago. No vuelvas a pagar si el cargo ya se realizó.');
     }
 
     public function apply(Request $request, JobVacancy $vacancy): RedirectResponse

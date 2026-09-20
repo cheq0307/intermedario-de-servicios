@@ -29,6 +29,7 @@ class JobVacancyTest extends TestCase
 
     public function test_verified_user_can_pay_to_publish_and_another_user_can_apply_once(): void
     {
+        config(['marketplace.vacancy_payment_driver' => 'fake']);
         $community = $this->community();
         $employer = User::factory()->create(['community_id' => $community->id]);
         $applicant = User::factory()->create(['community_id' => $community->id]);

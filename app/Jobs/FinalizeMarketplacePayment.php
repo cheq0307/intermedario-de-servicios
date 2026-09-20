@@ -2,8 +2,8 @@
 
 namespace App\Jobs;
 
-use App\Contracts\MarketplacePaymentGateway;
 use App\Models\Payment;
+use App\Services\Payments\PaymentGatewayResolver;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
@@ -17,14 +17,14 @@ class FinalizeMarketplacePayment implements ShouldQueue
 
     public function __construct(public readonly int $paymentId, public readonly string $action) {}
 
-    public function handle(MarketplacePaymentGateway $gateway): void
+    public function handle(PaymentGatewayResolver $resolver): void
     {
         $payment = Payment::findOrFail($this->paymentId);
         if ($this->action === 'release' && $payment->status->value === 'release_pending') {
-            $gateway->releasePayment($payment);
+            $resolver->forProvider($payment->provider)->releasePayment($payment);
         }
         if ($this->action === 'refund' && $payment->status->value === 'refund_pending') {
-            $gateway->refundPayment($payment);
+            $resolver->forProvider($payment->provider)->refundPayment($payment);
         }
     }
 }

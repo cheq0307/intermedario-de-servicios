@@ -26,7 +26,7 @@
                 @if($errors->any())<p class="rounded-2xl bg-red-100 p-3 text-sm font-black text-red-700">{{ $errors->first() }}</p>@endif
                 <button class="w-full rounded-full bg-brand-orange px-5 py-3.5 font-black text-white disabled:opacity-50" type="submit" @disabled(($listing->stock ?? 0) < 1)>Crear pedido</button>
             </form>
-            <p class="mt-5 text-xs font-bold leading-5 text-white/60">Las existencias se reservan durante {{ config('marketplace.reservation_minutes') }} minutos. En esta etapa el pago es simulado y no mueve dinero real.</p>
+            <p class="mt-5 text-xs font-bold leading-5 text-white/60">Las existencias se reservan durante {{ config('marketplace.reservation_minutes') }} minutos. @if(config('marketplace.payment_driver') === 'fake')El pago es simulado y no mueve dinero real.@elseEl pago se confirma mediante la pasarela configurada.@endif</p>
         </aside>
     </main>
 </body>

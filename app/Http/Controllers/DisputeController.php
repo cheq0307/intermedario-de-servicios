@@ -98,6 +98,9 @@ class DisputeController extends Controller
             $lockedDispute = Dispute::lockForUpdate()->findOrFail($dispute->id);
             abort_unless($lockedDispute->status === DisputeStatus::Open, 422);
             $order = Order::with(['vendor', 'jobRequest', 'payments'])->lockForUpdate()->findOrFail($lockedDispute->order_id);
+            abort_if($request->user()->ownsMarketplaceAccount($order->buyer_id)
+                || $request->user()->ownsMarketplaceAccount($order->vendor->user_id), 403,
+                'Otro administrador debe resolver una disputa vinculada a tu cuenta.');
             abort_unless($order->status === OrderStatus::Disputed, 422);
 
             $nextStatus = match ($validated['outcome']) {

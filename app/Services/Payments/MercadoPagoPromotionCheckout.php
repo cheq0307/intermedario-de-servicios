@@ -26,7 +26,7 @@ class MercadoPagoPromotionCheckout
         $this->configure();
         $promotion->loadMissing(['post.listing', 'user']);
         $options = new RequestOptions;
-        $options->setCustomHeaders(['X-Idempotency-Key' => 'post-promotion-'.$promotion->id]);
+        $options->setCustomHeaders(['X-Idempotency-Key: post-promotion-'.$promotion->id]);
 
         $preference = (new PreferenceClient)->create([
             'items' => [[
@@ -70,6 +70,7 @@ class MercadoPagoPromotionCheckout
     public function fetchPayment(int $paymentId): MercadoPagoPayment
     {
         $this->configure();
+
         return (new PaymentClient)->get($paymentId);
     }
 
@@ -84,11 +85,20 @@ class MercadoPagoPromotionCheckout
             if (! $promotion) {
                 return null;
             }
+            if (($payment->live_mode ?? null) !== ! (bool) config('services.mercadopago.sandbox')) {
+                report(new \RuntimeException('Pago de promoción de un entorno incorrecto.'));
 
-            if ($promotion->status === 'active' && $promotion->provider_payment_id !== null) {
-                if ($promotion->provider_payment_id !== (string) $payment->id) {
-                    report(new \RuntimeException('Se recibió un segundo pago para una promoción ya activada.'));
-                }
+                return $promotion;
+            }
+            $previousDate = $promotion->payment_payload['date_last_updated'] ?? null;
+            if ($previousDate && isset($payment->date_last_updated)
+                && strtotime($payment->date_last_updated) < strtotime($previousDate)) {
+                return $promotion;
+            }
+
+            if ($promotion->paid_at && $promotion->provider_payment_id !== null
+                && $promotion->provider_payment_id !== (string) $payment->id) {
+                report(new \RuntimeException('Se recibió un segundo pago para una promoción ya pagada. Requiere conciliación.'));
 
                 return $promotion;
             }
@@ -102,11 +112,11 @@ class MercadoPagoPromotionCheckout
 
             $payload = [
                 'status' => $payment->status,
-                'status_detail' => $payment->status_detail,
-                'payment_method_id' => $payment->payment_method_id,
-                'payment_type_id' => $payment->payment_type_id,
-                'live_mode' => $payment->live_mode,
-                'date_last_updated' => $payment->date_last_updated,
+                'status_detail' => $payment->status_detail ?? null,
+                'payment_method_id' => $payment->payment_method_id ?? null,
+                'payment_type_id' => $payment->payment_type_id ?? null,
+                'live_mode' => $payment->live_mode ?? null,
+                'date_last_updated' => $payment->date_last_updated ?? null,
             ];
 
             $attributes = [
@@ -114,15 +124,21 @@ class MercadoPagoPromotionCheckout
                 'provider_payment_id' => (string) $payment->id,
                 'payment_payload' => $payload,
             ];
-
-            if ($payment->status === 'approved' && $promotion->status !== 'active') {
+            // Terminal payment outcomes must never be undone by a stale approval.
+            if (in_array($promotion->status, ['refunded', 'charged_back'], true)) {
+                return $promotion;
+            }
+            if (in_array($payment->status, ['refunded', 'charged_back'], true)) {
+                $attributes['status'] = $payment->status;
+                $attributes['ends_at'] = now();
+            } elseif ($payment->status === 'approved' && ! $promotion->paid_at && $promotion->status !== 'active') {
                 $attributes += [
                     'status' => 'active',
                     'paid_at' => $payment->date_approved ?: now(),
                     'starts_at' => now(),
                     'ends_at' => now()->addDays($promotion->duration_days),
                 ];
-            } elseif (in_array($payment->status, ['rejected', 'cancelled'], true) && $promotion->status !== 'active') {
+            } elseif (in_array($payment->status, ['rejected', 'cancelled'], true) && ! $promotion->paid_at && $promotion->status !== 'active') {
                 $attributes['status'] = 'payment_failed';
             }
 

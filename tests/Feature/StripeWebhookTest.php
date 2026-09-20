@@ -22,7 +22,7 @@ class StripeWebhookTest extends TestCase
         $vendor = Vendor::create(['user_id' => $provider->id, 'display_name' => 'Proveedor', 'slug' => 'proveedor', 'status' => 'active']);
         $order = Order::create(['public_id' => (string) Str::uuid(), 'buyer_id' => $buyer->id, 'vendor_id' => $vendor->id, 'status' => 'awaiting_payment', 'fulfillment_type' => 'service', 'subtotal_amount' => 10000, 'commission_amount' => 800, 'total_amount' => 10000, 'currency' => 'MXN']);
         Payment::create(['order_id' => $order->id, 'provider' => 'stripe', 'provider_reference' => 'pi_test_123', 'status' => 'pending', 'gross_amount' => 10000, 'commission_amount' => 800, 'vendor_net_amount' => 9200, 'currency' => 'MXN']);
-        $payload = json_encode(['id' => 'evt_test_123', 'object' => 'event', 'type' => 'payment_intent.succeeded', 'data' => ['object' => ['id' => 'pi_test_123', 'object' => 'payment_intent', 'payment_method_types' => ['card']]]], JSON_THROW_ON_ERROR);
+        $payload = json_encode(['id' => 'evt_test_123', 'object' => 'event', 'livemode' => false, 'type' => 'payment_intent.succeeded', 'data' => ['object' => ['id' => 'pi_test_123', 'object' => 'payment_intent', 'amount_received' => 10000, 'currency' => 'mxn', 'payment_method_types' => ['card']]]], JSON_THROW_ON_ERROR);
         $timestamp = time();
         $signature = 't='.$timestamp.',v1='.hash_hmac('sha256', $timestamp.'.'.$payload, 'whsec_test');
 

@@ -47,10 +47,10 @@
                     @if (! $isBuyer)<div><dt class="text-xs font-black uppercase tracking-[.12em] text-brand-muted">Comisión Plaza Local</dt><dd class="mt-1 font-black">${{ number_format($order->commission_amount / 100, 2) }} MXN</dd></div><div><dt class="text-xs font-black uppercase tracking-[.12em] text-brand-muted">Ingreso estimado</dt><dd class="mt-1 font-black text-brand-success">${{ number_format(($order->subtotal_amount - $order->commission_amount) / 100, 2) }} MXN</dd></div>@endif
                 </dl>
                 <div class="mt-6 rounded-2xl bg-brand-surface p-4"><p class="text-xs font-black uppercase tracking-[.12em] text-brand-muted">Incluye</p><p class="mt-2 whitespace-pre-line leading-7">{{ $order->jobProposal?->message }}</p></div>
-                @unless($isProduct)
+                @if(!$isProduct && $payment?->provider === 'fake')
                 <div class="mt-5 rounded-2xl border border-brand-gold-pale bg-brand-gold-faint p-4 text-sm font-bold leading-6 text-brand-warning-copy">Modo de preproducción: el pago se simula para probar retención, comisión y liberación; no mueve dinero real.</div>
-                @endunless
-                @if($isProduct)<div class="mt-5 rounded-2xl border border-brand-gold-pale bg-brand-gold-faint p-4 text-sm font-bold leading-6 text-brand-warning-copy">Modo de desarrollo: el inventario sí se reserva, pero el botón de pago usa un simulador y no mueve dinero real.</div>@endif
+                @endif
+                @if($isProduct && $payment?->provider === 'fake')<div class="mt-5 rounded-2xl border border-brand-gold-pale bg-brand-gold-faint p-4 text-sm font-bold leading-6 text-brand-warning-copy">Modo de desarrollo: el inventario sí se reserva, pero el botón de pago usa un simulador y no mueve dinero real.</div>@endif
                 @if ($order->cancellation_reason)<div class="mt-5 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700"><strong>Motivo de cancelación:</strong> {{ $order->cancellation_reason }}</div>@endif
                 @if($order->reviews->isNotEmpty())<div class="mt-6 border-t border-brand/10 pt-6"><h2 class="text-xl font-black">Calificaciones verificadas</h2><div class="mt-4 space-y-3">@foreach($order->reviews as $review)<article class="rounded-2xl bg-brand-surface p-4"><strong>{{ $review->author->name }} · {{ str_repeat('★', $review->rating) }}</strong>@if($review->comment)<p class="mt-2 text-sm leading-6 text-brand-copy">{{ $review->comment }}</p>@endif</article>@endforeach</div></div>@endif
                 @if($order->status->value === 'completed' && ! $ownReview)

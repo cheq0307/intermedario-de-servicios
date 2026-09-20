@@ -13,6 +13,7 @@ class StripeConnectGateway implements MarketplacePaymentGateway
 
     public function createPayment(Order $order): array
     {
+        $this->assertEnvironment();
         $order->loadMissing('vendor');
         throw_unless($order->vendor->stripe_account_id && $order->vendor->stripe_payouts_enabled, new \RuntimeException('El proveedor debe completar la verificacion de Stripe antes de recibir pedidos.'));
         $intent = $this->stripe->paymentIntents->create([
@@ -28,6 +29,7 @@ class StripeConnectGateway implements MarketplacePaymentGateway
 
     public function releasePayment(Payment $payment): void
     {
+        $this->assertEnvironment();
         $payment->loadMissing('order.vendor');
         $account = $payment->order->vendor->stripe_account_id;
         throw_unless($account && $payment->order->vendor->stripe_payouts_enabled, new \RuntimeException('El proveedor no tiene depositos Stripe habilitados.'));
@@ -43,7 +45,19 @@ class StripeConnectGateway implements MarketplacePaymentGateway
 
     public function refundPayment(Payment $payment): void
     {
-        $refund = $this->stripe->refunds->create(['payment_intent' => $payment->provider_reference, 'metadata' => ['payment_id' => $payment->id]], ['idempotency_key' => 'refund-payment-'.$payment->id]);
+        $this->assertEnvironment();
+        $refundId = $payment->provider_payload['refund_id'] ?? null;
+        $refund = $refundId
+            ? $this->stripe->refunds->retrieve($refundId, [])
+            : $this->stripe->refunds->create(['payment_intent' => $payment->provider_reference, 'metadata' => ['payment_id' => $payment->id]], ['idempotency_key' => 'refund-payment-'.$payment->id]);
         $payment->update(['status' => $refund->status === 'succeeded' ? 'refunded' : 'refund_pending', 'refunded_at' => $refund->status === 'succeeded' ? now() : null, 'provider_payload' => [...($payment->provider_payload ?? []), 'refund_id' => $refund->id]]);
+    }
+
+    private function assertEnvironment(): void
+    {
+        $key = (string) $this->stripe->getApiKey();
+        $mode = config('services.stripe.livemode') ? 'live' : 'test';
+        throw_unless(preg_match('/^(sk|rk)_'.$mode.'_/', $key) === 1,
+            new \RuntimeException('El entorno Stripe configurado no coincide con las credenciales.'));
     }
 }

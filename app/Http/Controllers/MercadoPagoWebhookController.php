@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\Payments\MercadoPagoPromotionCheckout;
+use App\Services\Payments\MercadoPagoVacancyCheckout;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -60,7 +61,12 @@ class MercadoPagoWebhookController extends Controller
             'updated_at' => now(),
         ]);
 
-        $checkout->reconcile($checkout->fetchPayment((int) $dataId));
+        $payment = $checkout->fetchPayment((int) $dataId);
+        if (str_starts_with((string) $payment->external_reference, 'vacancy:')) {
+            app(MercadoPagoVacancyCheckout::class)->reconcile($payment);
+        } else {
+            $checkout->reconcile($payment);
+        }
 
         DB::table('payment_webhook_events')->where('event_id', $eventId)->update([
             'processed_at' => now(),

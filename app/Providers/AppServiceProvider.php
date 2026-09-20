@@ -6,7 +6,10 @@ use App\Contracts\MarketplacePaymentGateway;
 use App\Services\Payments\FakePaymentGateway;
 use App\Services\Payments\StripeConnectGateway;
 use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Stripe\StripeClient;
 
@@ -37,6 +40,13 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        RateLimiter::for('registration', fn (Request $request) => Limit::perHour(10)->by('register:'.$request->ip()));
+        foreach (['publications' => 10, 'messages' => 60, 'support-write' => 10, 'checkout' => 10] as $name => $perMinute) {
+            RateLimiter::for($name, fn (Request $request) => [
+                Limit::perMinute($perMinute)->by($name.':user:'.($request->user()?->id ?? $request->ip())),
+                Limit::perMinute($perMinute * 5)->by($name.':ip:'.$request->ip()),
+            ]);
+        }
         VerifyEmail::toMailUsing(function (object $notifiable, string $url): MailMessage {
             return (new MailMessage)
                 ->subject('Verifica tu correo en Plaza Local')

@@ -12,7 +12,7 @@ class JobVacancy extends Model
 
     protected function casts(): array
     {
-        return ['paid_at' => 'datetime', 'published_at' => 'datetime', 'expires_at' => 'datetime', 'closed_at' => 'datetime'];
+        return ['paid_at' => 'datetime', 'published_at' => 'datetime', 'expires_at' => 'datetime', 'closed_at' => 'datetime', 'payment_payload' => 'array'];
     }
 
     public function getRouteKeyName(): string

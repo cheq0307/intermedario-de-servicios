@@ -22,7 +22,7 @@ class AdministrativeAccess
         $admin = Auth::guard('admin')->user();
         abort_unless($admin instanceof AdminUser, 403);
         abort_unless($admin->active, 403, 'Tu acceso administrativo está suspendido.');
-        if (! $admin->hasVerifiedEmail() || ! $admin->phone_verified_at) {
+        if (! $admin->hasVerifiedEmail() || ! $admin->meetsPhoneAccessRequirement()) {
             return redirect()->route('admin.verification.notice');
         }
 

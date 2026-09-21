@@ -46,7 +46,7 @@ class AdminSessionController extends Controller
 
     public function verification(Request $request, SmsVerification $sms)
     {
-        if ($request->user()->hasVerifiedEmail() && $request->user()->phone_verified_at) {
+        if ($request->user()->hasVerifiedEmail() && $request->user()->meetsPhoneAccessRequirement()) {
             return redirect()->route('admin.index');
         }
 

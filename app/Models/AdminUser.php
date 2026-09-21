@@ -39,6 +39,12 @@ class AdminUser extends Authenticatable implements MustVerifyEmail
         return $this->role->value === $role;
     }
 
+    public function meetsPhoneAccessRequirement(): bool
+    {
+        return preg_match('/^[0-9]{10}$/', (string) $this->phone) === 1
+            && (! config('phone_verification.enabled') || $this->phone_verified_at !== null);
+    }
+
     public function hasAnyRole(array $roles): bool
     {
         return in_array($this->role->value, $roles, true);

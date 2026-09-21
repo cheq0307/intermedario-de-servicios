@@ -28,6 +28,26 @@ class PhoneVerificationController extends Controller
         IdentityContacts::assertPhoneAllowed($identity, $data['phone']);
         $link = AccountIdentityLink::where($admin ? 'admin_user_id' : 'user_id', $identity->id)->first();
         abort_if($link && $link->phone !== $data['phone'], 422, 'El teléfono está vinculado a tus dos cuentas. Contacta al superadministrador para actualizar la identidad.');
+        if (! config('phone_verification.enabled')) {
+            DB::transaction(function () use ($identity, $admin, $data) {
+                IdentityContacts::lock();
+                $locked = $identity->newQuery()->lockForUpdate()->findOrFail($identity->id);
+                abort_if($admin && ! $locked->active, 403);
+                IdentityContacts::assertPhoneAllowed($locked, $data['phone']);
+                $link = AccountIdentityLink::where($admin ? 'admin_user_id' : 'user_id', $identity->id)->first();
+                abort_if($link && $link->phone !== $data['phone'], 422);
+                abort_if($identity->newQuery()->where('phone', $data['phone'])->whereKeyNot($identity->id)->exists(), 422, 'El teléfono ya pertenece a otra cuenta.');
+                if ($locked->phone !== $data['phone']) {
+                    $locked->forceFill(['phone' => $data['phone'], 'phone_verified_at' => null])->save();
+                }
+                if (! $admin && $locked->vendor) {
+                    $locked->vendor->update(['phone' => $data['phone']]);
+                }
+            });
+            $request->session()->forget($admin ? 'admin.phone_challenge' : 'user.phone_challenge');
+
+            return back()->with('status', 'Celular guardado. Por ahora no enviaremos SMS.');
+        }
         foreach (['sms:ip:'.$request->ip() => 10, 'sms:phone:'.$data['phone'] => 5, 'sms:identity:'.($admin ? 'admin:' : 'user:').$identity->id => 5] as $key => $limit) {
             abort_if(RateLimiter::tooManyAttempts($key, $limit), 429, 'Demasiados SMS solicitados. Inténtalo más tarde.');
             RateLimiter::hit($key, 3600);
@@ -41,6 +61,7 @@ class PhoneVerificationController extends Controller
 
     public function verify(Request $request, SmsVerification $sms)
     {
+        abort_unless(config('phone_verification.enabled'), 422, 'La verificación por SMS está pausada.');
         $request->validate(['code' => ['required', 'string', 'regex:/^[0-9]{4}$/']], ['code.regex' => 'El código debe contener exactamente 4 dígitos.']);
         $identity = $request->user();
         $admin = $identity instanceof AdminUser;

@@ -12,8 +12,8 @@
         <p class="text-xs font-black uppercase tracking-[.18em] text-brand-orange">Tu presencia en la comunidad</p>
         <h1 class="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Completa tu perfil</h1>
         <section class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand/10 bg-white p-4">
-            <p class="text-sm font-bold">{{ $user->phone_verified_at ? 'Teléfono verificado por SMS' : 'Tu teléfono está pendiente de verificación por SMS' }}</p>
-            <a class="inline-flex min-h-11 items-center text-sm font-bold text-brand-success" href="{{ route('phone.show') }}">{{ $user->phone_verified_at ? 'Revisar teléfono' : 'Verificar mi teléfono' }}</a>
+            <p class="text-sm font-bold">{{ $user->phone_verified_at ? 'Teléfono verificado por SMS' : (config('phone_verification.enabled') ? 'Tu teléfono está pendiente de verificación por SMS' : 'Celular de contacto · Verificación por SMS pausada') }}</p>
+            <a class="inline-flex min-h-11 items-center text-sm font-bold text-brand-success" href="{{ route('phone.show') }}">{{ !config('phone_verification.enabled') || $user->phone_verified_at ? 'Revisar teléfono' : 'Verificar mi teléfono' }}</a>
         </section>
         <p class="mt-3 text-brand-muted">La información pública ayuda a generar confianza. Tu correo, teléfono y ubicación exacta permanecen privados.</p>
         @if(session('status'))

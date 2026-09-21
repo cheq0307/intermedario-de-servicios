@@ -1,6 +1,6 @@
 <x-layouts.auth title="Verificar acceso administrativo">
     <h1 class="text-2xl font-black">Confirma tu cuenta administrativa</h1>
-    <p class="mt-3">Para acceder, verifica tu correo y tu teléfono.</p>
+    <p class="mt-3">{{ config('phone_verification.enabled') ? 'Para acceder, verifica tu correo y tu teléfono.' : 'Para acceder, verifica tu correo y guarda tu celular. La verificación por SMS está pausada.' }}</p>
     @if($identity->phone_verified_at)
         @if(session('status'))<p class="mt-3" role="status">{{ session('status') }}</p>@endif
         @foreach($errors->all() as $error)<p class="mt-3 text-red-700" role="alert">{{ $error }}</p>@endforeach

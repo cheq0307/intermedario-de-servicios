@@ -29,6 +29,7 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="STRIPE_LIVE_MODE" value="false" force="true"/>
         <env name="MERCADOPAGO_SANDBOX" value="true" force="true"/>
+        <env name="PHONE_VERIFICATION_ENABLED" value="true" force="true"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
     </php>

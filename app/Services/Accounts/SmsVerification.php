@@ -10,7 +10,7 @@ class SmsVerification
 {
     public function configured(): bool
     {
-        return filled(config('phone_verification.account_sid')) && filled(config('phone_verification.auth_token'))
+        return config('phone_verification.enabled') && filled(config('phone_verification.account_sid')) && filled(config('phone_verification.auth_token'))
             && filled(config('phone_verification.service_sid'));
     }
 

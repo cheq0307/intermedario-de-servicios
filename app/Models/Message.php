@@ -6,6 +6,7 @@ use App\Domain\Marketplace\Enums\MessageType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Message extends Model
 {
@@ -13,6 +14,7 @@ class Message extends Model
 
     protected $fillable = ['admin_user_id',
         'conversation_id',
+        'client_message_id',
         'sender_id',
         'type',
         'body',
@@ -38,6 +40,16 @@ class Message extends Model
     public function sender(): BelongsTo
     {
         return $this->belongsTo(User::class, 'sender_id');
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(MessageAttachment::class);
+    }
+
+    public function receipts(): HasMany
+    {
+        return $this->hasMany(MessageReceipt::class);
     }
 
     public function admin(): BelongsTo

@@ -112,6 +112,7 @@ Route::middleware(['auth:web', 'marketplace.identity', 'account.active'])->group
         Route::patch('/notificaciones/leer-todas', [NotificationController::class, 'readAll'])->name('notifications.read-all');
         Route::patch('/notificaciones/{notification}/abrir', [NotificationController::class, 'open'])->name('notifications.open');
         Route::get('/mensajes', [ConversationController::class, 'index'])->name('conversations.index');
+        Route::get('/chat/adjuntos/{attachment}', \App\Http\Controllers\ChatAttachmentController::class)->middleware('throttle:120,1')->name('chat.attachments.show');
         Route::post('/mensajes/iniciar', [ConversationController::class, 'start'])->name('conversations.start');
         Route::post('/publicaciones/{post}/conversacion', [NegotiationConversationController::class, 'start'])->name('posts.conversations.start');
         Route::get('/mensajes/{conversation}/actualizaciones', [ConversationController::class, 'messages'])->middleware('throttle:120,1')->name('conversations.messages.index');

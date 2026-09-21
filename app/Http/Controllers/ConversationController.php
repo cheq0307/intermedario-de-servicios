@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Services\Chat\ChatService;
 use App\Services\Marketplace\NegotiationConversationService;
 use App\Support\LiveUpdates;
 use Illuminate\Http\JsonResponse;
@@ -160,18 +161,10 @@ class ConversationController extends Controller
 
         $validated = $request->validate([
             'body' => ['required', 'string', 'max:2000'],
+            'client_message_id' => ['nullable', 'uuid'],
         ]);
 
-        $message = DB::transaction(function () use ($conversation, $request, $validated): Message {
-            $message = $conversation->messages()->create([
-                'sender_id' => $request->user()->id,
-                'type' => 'text',
-                'body' => $validated['body'],
-            ]);
-            $conversation->update(['last_message_at' => now()]);
-
-            return $message;
-        });
+        $message = app(ChatService::class)->send($conversation, $request->user(), $validated['body'], $validated['client_message_id'] ?? (string) Str::uuid());
 
         if ($request->expectsJson()) {
             return response()->json([

@@ -24,5 +24,6 @@ Artisan::command('plaza:prune-unverified-accounts {--days=7} {--dry-run}', funct
 
 Schedule::command('plaza:expire-reservations')->everyMinute()->withoutOverlapping();
 Schedule::command('plaza:maintain-conversations')->hourly()->withoutOverlapping();
+Schedule::command('plaza:prune-chat-files')->dailyAt('04:00')->withoutOverlapping();
 Schedule::command('plaza:health-check --notify')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('plaza:prune-unverified-accounts --days=7')->dailyAt('03:30')->withoutOverlapping();

@@ -19,8 +19,8 @@
         <div class="border-b px-6 py-4">
             <div class="flex items-center gap-4"><span class="grid size-10 place-items-center rounded-full bg-brand-gold-faint"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="12" rx="2"/><path d="M8 7V4h8v3M3 12h18"/></svg></span><div><strong class="block">Empleo</strong><span class="text-xs font-semibold text-brand-muted">Busca trabajo, publica vacantes o revisa postulaciones.</span></div></div>
             <div class="mt-4 grid gap-2 sm:grid-cols-3">
-                <a class="rounded-2xl bg-brand-surface px-4 py-3 text-sm font-black hover:bg-brand-success-soft" href="{{ route('vacancies.index') }}">Buscar empleo <span class="float-right">›</span></a>
-                <a class="rounded-2xl bg-brand-surface px-4 py-3 text-sm font-black hover:bg-brand-success-soft" href="{{ route('vacancies.create') }}">Publicar vacante <span class="float-right">›</span></a>
+                <a class="rounded-2xl bg-brand-surface px-4 py-3 text-sm font-black hover:bg-brand-success-soft" href="{{ route('vacancies.index') }}">Buscar trabajo <span class="float-right">›</span></a>
+                <a class="rounded-2xl bg-brand-surface px-4 py-3 text-sm font-black hover:bg-brand-success-soft" href="{{ route('vacancies.create') }}">Ofrecer trabajo <span class="float-right">›</span></a>
                 <a class="rounded-2xl bg-brand-surface px-4 py-3 text-sm font-black hover:bg-brand-success-soft" href="{{ route('vacancies.mine') }}">Mis vacantes y postulaciones <span class="float-right">›</span></a>
             </div>
         </div>

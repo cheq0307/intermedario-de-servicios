@@ -37,4 +37,11 @@
             <a class="hidden rounded-full bg-brand-orange px-4 py-2.5 text-xs font-black text-white sm:inline-flex" href="{{ route('register') }}">Crear cuenta</a>
         @endguest
     </div>
+    <nav class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-3 pb-3 sm:px-5" aria-label="Bolsa de trabajo">
+        <span class="text-xs font-black text-brand-copy">Bolsa de trabajo</span>
+        <a class="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-success-soft px-4 py-2 text-sm font-black text-brand hover:bg-brand-avatar-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand" href="{{ route('vacancies.index') }}" @if(request()->routeIs('vacancies.index')) aria-current="page" @endif>
+            <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V4h8v3M3 12h18M10 12v3h4v-3"/></svg>
+            Buscar trabajo
+        </a>
+    </nav>
 </header>

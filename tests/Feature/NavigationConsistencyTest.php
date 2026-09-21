@@ -16,12 +16,29 @@ class NavigationConsistencyTest extends TestCase
 
         $this->actingAs($user, 'web')->get(route('more.index'))
             ->assertOk()
-            ->assertSee('Buscar empleo')
-            ->assertSee('Publicar vacante')
+            ->assertSee('Buscar trabajo')
+            ->assertSee('Ofrecer trabajo')
             ->assertSee('Mis vacantes y postulaciones')
             ->assertSee('href="'.route('vacancies.index').'"', false)
             ->assertSee('href="'.route('vacancies.create').'"', false)
             ->assertSee('href="'.route('vacancies.mine').'"', false);
+    }
+
+    public function test_job_search_is_visible_in_public_and_member_navigation(): void
+    {
+        $this->get(route('home'))->assertOk()
+            ->assertSee('aria-label="Bolsa de trabajo"', false)
+            ->assertSee('Buscar trabajo')
+            ->assertSee('href="'.route('vacancies.index').'"', false);
+
+        $this->get(route('vacancies.index'))->assertOk()
+            ->assertSee('Buscar trabajo')
+            ->assertSee('aria-current="page"', false);
+
+        $user = User::factory()->create();
+        $this->actingAs($user, 'web')->get(route('dashboard'))->assertOk()
+            ->assertSee('aria-label="Bolsa de trabajo"', false)
+            ->assertSee('Buscar trabajo');
     }
 
     public function test_secondary_account_screens_use_a_consistent_back_arrow(): void

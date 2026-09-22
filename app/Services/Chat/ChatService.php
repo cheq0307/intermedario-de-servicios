@@ -110,6 +110,7 @@ class ChatService
             $changed = false;
             $locked->messages()->where('id', '<=', $throughId)
                 ->where(fn ($q) => $q->where('sender_id', '!=', $user->id)->orWhereNotNull('admin_user_id'))
+                ->whereDoesntHave('receipts', fn ($q) => $q->where('user_id', $user->id)->whereNotNull($read ? 'read_at' : 'delivered_at'))
                 ->select('id')->chunkById(200, function ($messages) use ($user, $read, &$changed): void {
                     $rows = $messages->map(fn ($message) => ['message_id' => $message->id, 'user_id' => $user->id, 'created_at' => now(), 'updated_at' => now()])->all();
                     MessageReceipt::insertOrIgnore($rows);

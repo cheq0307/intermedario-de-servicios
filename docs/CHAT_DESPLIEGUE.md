@@ -1,6 +1,6 @@
 # Chat en tiempo real — instalación y comprobación
 
-## Fase 2
+## Fases 2 y 3
 
 Reverb 1.11.1 instalado por Composer. `ChatService` centraliza envío idempotente, recibos, presencia visible y escritura; autoriza cada operación con `ConversationPolicy`. Canales privados de conversación e inbox personal en `routes/channels.php`. `MessageSent`, `MessageRead` (entrega/lectura) y `UserTyping` se emiten después del commit; el texto y las rutas de archivos no viajan en los eventos. Laravel Notifications persiste la campana fuera del hilo activo, salvo que esté silenciado. La presencia visible tiene un TTL de 35 segundos, por lo que al cerrar abruptamente una pestaña puede existir ese pequeño periodo sin campana; el mensaje y el contador de no leídos no se pierden.
 
@@ -9,6 +9,18 @@ El servidor limita envíos/escritura. Los recibos validan conversación, destina
 Imágenes: hasta tres por mensaje, máximo 5 MB cada una y dimensiones máximas 3000×3000. PHP GD es obligatorio para adjuntar: se recodifica a PNG, sin EXIF/GPS ni SVG. Almacenamiento local privado, descarga autenticada, sin URL pública. `plaza:prune-chat-files` elimina únicamente imágenes sin registro y de más de 24 horas bajo `chat/`; corre diariamente y dispone de `--dry-run`. Así se limpian también archivos de historiales purgados por cascade.
 
 ### Requisitos
+
+La interfaz está en `app/Livewire/Chat/{ConversationList,ChatWindow,MessageInput}.php`, sus vistas completas en `resources/views/livewire/chat/` y la conexión/scroll/envío optimista en `resources/js/chat.js`. La lista agrupa por publicación, permite buscar y muestra no leídos. El historial usa cursor de ID (30 mensajes por página). Cada actualización vuelve a comprobar acceso. En móvil se alternan lista e hilo; en escritorio se muestran juntos.
+
+Echo usa Reverb y Livewire actualiza el contenido autorizado. Existe refresco visible cada 30 segundos como respaldo, no como transporte principal. La lectura requiere hilo visible, foco y scroll al final; abrir una URL en segundo plano no marca todo como leído. Un envío sin confirmación conserva su token para reintentar sin duplicar. Los controles existentes para cerrar/extender negociación permanecen y el chat cerrado es de solo lectura.
+
+### Prueba local aislada
+
+`php -d extension=gd tests/Browser/fixture.php` prepara **solo** `storage/framework/testing/chat-browser.sqlite`; borra y repuebla exclusivamente esa base de pruebas tras comprobar la ruta. Nunca usar este fixture para producción. En terminales separadas ejecutar `php -d extension=gd -S 127.0.0.1:8098 -t public tests/Browser/router.php` y `php tests/Browser/reverb.php`. Con Playwright instalado, ejecutar `node tests/Browser/chat.mjs`; opcionalmente `BROWSER_CHANNEL=chrome` para Chrome local o `PLAYWRIGHT_MODULE` para indicar el módulo disponible. No reutiliza el perfil personal del navegador. Los secretos y usuarios del fixture son ficticios y solo sirven en ese entorno aislado.
+
+La suite PHP se ejecuta con `php -d extension=gd vendor/phpunit/phpunit/phpunit`. En Linux con GD habilitado no hace falta `-d extension=gd`.
+
+### Infraestructura
 
 - PHP 8.2+, extensión GD y requisitos de Composer.
 - Cola `database`/Redis atendida por worker (no `sync` en producción).
@@ -36,13 +48,12 @@ REVERB_HOST=127.0.0.1
 REVERB_PORT=8080
 REVERB_SCHEME=http
 REVERB_ALLOWED_ORIGINS=tu-dominio.example
-VITE_REVERB_APP_KEY="${REVERB_APP_KEY}"
-VITE_REVERB_HOST=tu-dominio.example
-VITE_REVERB_PORT=443
-VITE_REVERB_SCHEME=https
+REVERB_PUBLIC_HOST=tu-dominio.example
+REVERB_PUBLIC_PORT=443
+REVERB_PUBLIC_SCHEME=https
 ```
 
-Generar key y secret diferentes con `php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"`. El secret no se pone en variables VITE. Los valores VITE quedan incrustados al compilar; si compilas localmente, deben corresponder al host público del servidor, no a 127.0.0.1 del visitante. No usar comodín de orígenes en producción. La conexión backend usa loopback; el navegador usa TLS público.
+Generar key y secret diferentes con `php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"`. El secret nunca se envía al navegador. La clave pública y `REVERB_PUBLIC_*` llegan desde Laravel al HTML autenticado: no hay que incrustar la configuración del servidor al compilar en Windows. No usar comodín de orígenes en producción. La conexión backend usa loopback; el navegador usa TLS público.
 
 Después del respaldo y durante el despliegue: `php artisan migrate --force`, `php artisan optimize`, reiniciar el worker y Reverb. No ejecutar `migrate:fresh`. Mantener la aplicación en mantenimiento si alguno de estos pasos falla.
 

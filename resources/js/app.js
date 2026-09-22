@@ -1,5 +1,6 @@
 import './live-updates';
 import './bootstrap';
+import './chat';
 
 const publicationForm = document.querySelector('[data-publication-form]');
 

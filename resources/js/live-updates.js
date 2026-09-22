@@ -79,7 +79,7 @@ function poll(task, options) {
 
 const summaryRoot = document.querySelector('[data-activity-summary-url]');
 if (summaryRoot) {
-    poll(async () => {
+    const activityPoller = poll(async () => {
         const data = await requestJson(summaryRoot.dataset.activitySummaryUrl);
         const count = Number(data.unread_notifications ?? 0);
         const messages = Number(data.unread_conversations ?? 0);
@@ -105,6 +105,7 @@ if (summaryRoot) {
             });
         }
     }, { interval: 15000, onState: connectionState('activity') });
+    window.addEventListener('plaza:chat-activity', () => activityPoller.refresh());
 }
 
 document.querySelectorAll('[data-live-fragment]').forEach((region, index) => {

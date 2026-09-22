@@ -48,6 +48,9 @@ class ConversationTest extends TestCase
             ->get(route('conversations.show', $conversation))
             ->assertOk()
             ->assertSee('Hola, ¿sigues disponible?');
+        // Rendering a page in a background tab is not a read acknowledgement.
+        $this->assertSame(1, $recipient->unreadConversationsCount());
+        app(\App\Services\Chat\ChatService::class)->acknowledge($conversation, $recipient, $conversation->messages()->max('id'), true);
         $this->assertSame(0, $recipient->unreadConversationsCount());
         $this->actingAs($sender, 'web')->get(route('conversations.show', $conversation))->assertOk()->assertSee('Visto');
 

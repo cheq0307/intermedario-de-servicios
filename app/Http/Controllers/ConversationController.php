@@ -23,6 +23,10 @@ class ConversationController extends Controller
     {
         $request->validate(['live_revision' => ['nullable', 'string', 'max:64']]);
 
+        if (! $request->expectsJson()) {
+            return view('conversations.chat', ['activeConversation' => null]);
+        }
+
         $conversations = $request->user()->conversations()
             ->with([
                 'participants:id,name,avatar_path,avatar_disk,account_type',
@@ -99,24 +103,8 @@ class ConversationController extends Controller
         abort_unless($conversation->includesUser($request->user()), 403);
 
         $conversation = $service->expireIfNeeded($conversation);
-        $conversation->load(['participants:id,name,avatar_path,avatar_disk,account_type', 'participants.roles:id,name', 'order.jobRequest', 'order.items', 'post.listing', 'post.jobRequest', 'agreementOrder']);
-        $messages = $conversation->messages()
-            ->with('sender:id,name,avatar_path,avatar_disk')
-            ->latest('id')
-            ->limit(50)
-            ->get()
-            ->reverse()
-            ->values();
 
-        $this->markReadThrough($conversation, $request->user()->id, $messages->last());
-        $otherUser = $conversation->participants->firstWhere('id', '!=', $request->user()->id);
-        $otherLastReadAt = $otherUser?->pivot?->last_read_at ? now()->parse($otherUser->pivot->last_read_at) : null;
-        $otherLastReadMessageId = $otherUser?->pivot?->last_read_message_id;
-        $supportConversation = (bool) ($otherUser?->hasAnyRole(['admin', 'superadmin']) && ! $otherUser?->canUseMarketplace());
-
-        $operationOrder = $conversation->order;
-
-        return view('conversations.show', compact('conversation', 'messages', 'otherUser', 'otherLastReadAt', 'otherLastReadMessageId', 'supportConversation', 'operationOrder'));
+        return view('conversations.chat', ['activeConversation' => $conversation]);
     }
 
     public function messages(Request $request, Conversation $conversation, NegotiationConversationService $service): JsonResponse

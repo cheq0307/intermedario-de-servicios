@@ -117,6 +117,7 @@ Route::middleware(['auth:web', 'marketplace.identity', 'account.active'])->group
         Route::post('/publicaciones/{post}/conversacion', [NegotiationConversationController::class, 'start'])->name('posts.conversations.start');
         Route::get('/mensajes/{conversation}/actualizaciones', [ConversationController::class, 'messages'])->middleware('throttle:120,1')->name('conversations.messages.index');
         Route::get('/mensajes/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
+        Route::get('/mensajes/{conversation}/publicacion', \App\Http\Controllers\ChatPublicationController::class)->name('chat.publication');
         Route::post('/mensajes/{conversation}', [ConversationController::class, 'store'])->middleware('throttle:messages')->name('conversations.messages.store');
         Route::patch('/mensajes/{conversation}/extender', [NegotiationConversationController::class, 'extend'])->name('conversations.extend');
         Route::patch('/mensajes/{conversation}/terminar', [NegotiationConversationController::class, 'close'])->name('conversations.close');

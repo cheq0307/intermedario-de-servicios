@@ -4,7 +4,10 @@
     $administrativeOnly = $navUser?->hasRole('superadmin') || ($navUser?->hasRole('admin') && ! $navUser?->canUseMarketplace());
     $accountUrl = $navUser ? ($administrativeOnly ? route('admin.index') : route('profile.show', $navUser)) : route('login');
 @endphp
-<header class="sticky top-0 z-40 border-b border-brand/10 bg-white/95 backdrop-blur-xl" @if($navUser) data-activity-summary-url="{{ route(\App\Support\IdentityRoutes::name('activity.summary')) }}" @endif>
+<header class="sticky top-0 z-40 border-b border-brand/10 bg-white/95 backdrop-blur-xl" @if($navUser) data-activity-summary-url="{{ route(\App\Support\IdentityRoutes::name('activity.summary')) }}" @endif
+    @if($navUser instanceof \App\Models\User && $navUser->canUseMarketplace() && $navUser->hasVerifiedEmail())
+        data-chat-user="{{ $navUser->id }}" data-reverb-key="{{ config('broadcasting.default') === 'reverb' ? config('broadcasting.connections.reverb.key') : '' }}" data-reverb-host="{{ config('chat.reverb.host') }}" data-reverb-port="{{ config('chat.reverb.port') }}" data-reverb-scheme="{{ config('chat.reverb.scheme') }}"
+    @endif>
     <div class="mx-auto flex max-w-5xl items-center gap-2 px-3 py-3 sm:gap-3 sm:px-5">
         @if($backUrl)
             <a class="grid size-10 shrink-0 place-items-center rounded-full border border-brand/10 bg-white text-brand shadow-sm" href="{{ $backUrl }}" aria-label="Regresar"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg></a>

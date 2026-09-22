@@ -81,7 +81,8 @@ class NotificationCenterTest extends TestCase
         $this->actingAs($user, 'web')->get(route('conversations.index'))
             ->assertOk()
             ->assertSee('Conversaciones')
-            ->assertDontSee('Notificaciones');
+            ->assertDontSee('Cuenta por verificar')
+            ->assertDontSee('Nuevo seguidor'); // The navigation bell remains available; notification contents stay separate.
     }
 
     public function test_user_cannot_open_another_users_notification(): void

@@ -47,6 +47,21 @@ class AppServiceProvider extends ServiceProvider
                 Limit::perMinute($perMinute * 5)->by($name.':ip:'.$request->ip()),
             ]);
         }
+        foreach ([
+            'postal-lookup' => 60,
+            'password-recovery' => 3,
+            'verification-email' => 6,
+            'verification-documents' => 6,
+            'admin-login' => 10,
+            'admin-invitation' => 10,
+            'phone-send' => 3,
+            'phone-verify' => 6,
+            'activity-read' => 120,
+            'realtime-read' => 120,
+        ] as $name => $perMinute) {
+            RateLimiter::for($name, fn (Request $request) => Limit::perMinute($perMinute)
+                ->by($name.':'.($request->user()?->getAuthIdentifier() ?? $request->ip())));
+        }
         VerifyEmail::toMailUsing(function (object $notifiable, string $url): MailMessage {
             return (new MailMessage)
                 ->subject('Verifica tu correo en Plaza Local')

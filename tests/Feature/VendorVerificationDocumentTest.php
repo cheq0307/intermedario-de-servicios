@@ -78,4 +78,33 @@ class VendorVerificationDocumentTest extends TestCase
             ->get(route('verification-documents.download', $document))
             ->assertForbidden();
     }
+
+    public function test_activity_refreshes_do_not_consume_the_document_upload_limit(): void
+    {
+        Storage::fake('local');
+        config(['marketplace.private_disk' => 'local']);
+        $provider = User::factory()->create(['email_verified_at' => now()]);
+        Vendor::create([
+            'user_id' => $provider->id,
+            'display_name' => 'Proveedor con actividad automática',
+            'slug' => 'proveedor-actividad-automatica',
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($provider, 'web');
+        for ($attempt = 0; $attempt < 10; $attempt++) {
+            $this->getJson(route('activity.summary'))->assertOk();
+        }
+
+        $this->post(route('verification-documents.store'), [
+            'type' => VendorVerificationDocument::TYPE_GOVERNMENT_ID,
+            'document' => UploadedFile::fake()->create('identificacion.pdf', 200, 'application/pdf'),
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('vendor_verification_documents', [
+            'vendor_id' => $provider->vendor->id,
+            'type' => VendorVerificationDocument::TYPE_GOVERNMENT_ID,
+            'status' => VendorVerificationDocument::STATUS_PENDING,
+        ]);
+    }
 }

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const playwrightModule = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const { chromium } = playwrightModule.default ?? playwrightModule;
 const browser = await chromium.launch({ headless: true, ...(process.env.BROWSER_CHANNEL ? { channel: process.env.BROWSER_CHANNEL } : {}) });
 const errors = [];
 try {

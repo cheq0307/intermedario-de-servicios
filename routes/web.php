@@ -12,6 +12,8 @@ use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\PhoneVerificationController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\UnifiedLoginController;
+use App\Http\Controllers\ChatAttachmentController;
+use App\Http\Controllers\ChatPublicationController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DisputeController;
@@ -42,7 +44,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
 Route::get('/explorar', ExploreController::class)->name('explore');
-Route::get('/codigos-postales/{postalCode}', [PostalCodeController::class, 'show'])->whereNumber('postalCode')->middleware('throttle:60,1')->name('postal-codes.show');
+Route::get('/codigos-postales/{postalCode}', [PostalCodeController::class, 'show'])->whereNumber('postalCode')->middleware('throttle:postal-lookup')->name('postal-codes.show');
 Route::get('/perfiles/{user}', [ProfileController::class, 'show'])->name('profile.show');
 Route::get('/empleo', [JobVacancyController::class, 'index'])->name('vacancies.index');
 Route::get('/empleo/{vacancy}', [JobVacancyController::class, 'show'])->name('vacancies.show');
@@ -56,7 +58,7 @@ Route::middleware('guest')->group(function () {
 
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [UnifiedLoginController::class, 'store'])->middleware('throttle:login')->name('login.store');
-Route::post('/forgot-password', [UnifiedLoginController::class, 'recovery'])->middleware('throttle:3,1')->name('password.email');
+Route::post('/forgot-password', [UnifiedLoginController::class, 'recovery'])->middleware('throttle:password-recovery')->name('password.email');
 
 Route::middleware(['auth:web', 'marketplace.identity', 'account.active'])->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
@@ -73,7 +75,7 @@ Route::middleware(['auth:web', 'marketplace.identity', 'account.active'])->group
     Route::get('/soporte/{ticket}', [SupportController::class, 'show'])->name('support.show');
     Route::get('/soporte/{ticket}/mensajes', [SupportController::class, 'messages'])->name('support.messages.index');
     Route::post('/soporte/{ticket}/respuestas', [SupportController::class, 'reply'])->middleware('throttle:support-write')->name('support.reply');
-    Route::get('/actividad/resumen', [NotificationController::class, 'summary'])->middleware('throttle:120,1')->name('activity.summary');
+    Route::get('/actividad/resumen', [NotificationController::class, 'summary'])->middleware('throttle:activity-read')->name('activity.summary');
     Route::post('/publicaciones', [PostController::class, 'store'])->middleware('throttle:publications')->name('posts.store');
     Route::middleware('verified')->group(function () {
         Route::post('/mi-cuenta/capacidades/{capability}', [MarketplaceCapabilityController::class, 'activate'])->name('capabilities.activate');
@@ -85,7 +87,7 @@ Route::middleware(['auth:web', 'marketplace.identity', 'account.active'])->group
         Route::post('/empleo/{vacancy}/postular', [JobVacancyController::class, 'apply'])->name('vacancies.apply');
         Route::patch('/empleo/{vacancy}/cerrar', [JobVacancyController::class, 'close'])->name('vacancies.close');
         Route::post('/mi-perfil/solicitar-verificacion', [MarketplaceCapabilityController::class, 'submitProviderApplication'])->name('provider-applications.submit');
-        Route::post('/mi-perfil/documentos-verificacion', [VendorVerificationDocumentController::class, 'store'])->middleware('throttle:6,1')->name('verification-documents.store');
+        Route::post('/mi-perfil/documentos-verificacion', [VendorVerificationDocumentController::class, 'store'])->middleware('throttle:verification-documents')->name('verification-documents.store');
         Route::get('/documentos-verificacion/{document}', [VendorVerificationDocumentController::class, 'download'])->name('verification-documents.download');
         Route::post('/stripe/conectar', [StripeConnectController::class, 'onboard'])->name('stripe.connect');
         Route::get('/stripe/conectar/actualizar', [StripeConnectController::class, 'refresh'])->name('stripe.connect.refresh');
@@ -112,12 +114,12 @@ Route::middleware(['auth:web', 'marketplace.identity', 'account.active'])->group
         Route::patch('/notificaciones/leer-todas', [NotificationController::class, 'readAll'])->name('notifications.read-all');
         Route::patch('/notificaciones/{notification}/abrir', [NotificationController::class, 'open'])->name('notifications.open');
         Route::get('/mensajes', [ConversationController::class, 'index'])->name('conversations.index');
-        Route::get('/chat/adjuntos/{attachment}', \App\Http\Controllers\ChatAttachmentController::class)->middleware('throttle:120,1')->name('chat.attachments.show');
+        Route::get('/chat/adjuntos/{attachment}', ChatAttachmentController::class)->middleware('throttle:realtime-read')->name('chat.attachments.show');
         Route::post('/mensajes/iniciar', [ConversationController::class, 'start'])->name('conversations.start');
         Route::post('/publicaciones/{post}/conversacion', [NegotiationConversationController::class, 'start'])->name('posts.conversations.start');
-        Route::get('/mensajes/{conversation}/actualizaciones', [ConversationController::class, 'messages'])->middleware('throttle:120,1')->name('conversations.messages.index');
+        Route::get('/mensajes/{conversation}/actualizaciones', [ConversationController::class, 'messages'])->middleware('throttle:realtime-read')->name('conversations.messages.index');
         Route::get('/mensajes/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
-        Route::get('/mensajes/{conversation}/publicacion', \App\Http\Controllers\ChatPublicationController::class)->name('chat.publication');
+        Route::get('/mensajes/{conversation}/publicacion', ChatPublicationController::class)->name('chat.publication');
         Route::post('/mensajes/{conversation}', [ConversationController::class, 'store'])->middleware('throttle:messages')->name('conversations.messages.store');
         Route::patch('/mensajes/{conversation}/extender', [NegotiationConversationController::class, 'extend'])->name('conversations.extend');
         Route::patch('/mensajes/{conversation}/terminar', [NegotiationConversationController::class, 'close'])->name('conversations.close');
@@ -143,29 +145,29 @@ Route::middleware(['auth:web', 'marketplace.identity', 'account.active'])->group
 });
 
 Route::post('/email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
-    ->middleware(['auth', 'throttle:6,1'])
+    ->middleware(['auth', 'throttle:verification-email'])
     ->name('verification.send');
 
 Route::get('/administracion/login', [AdminSessionController::class, 'create'])->name('admin.login');
 Route::get('/administracion/recuperar', [AdminPasswordController::class, 'request'])->name('admin.password.request');
-Route::post('/administracion/recuperar', [AdminPasswordController::class, 'send'])->middleware('throttle:3,1')->name('admin.password.email');
+Route::post('/administracion/recuperar', [AdminPasswordController::class, 'send'])->middleware('throttle:password-recovery')->name('admin.password.email');
 Route::get('/administracion/restablecer/{token}', [AdminPasswordController::class, 'reset'])->name('admin.password.reset');
-Route::post('/administracion/restablecer', [AdminPasswordController::class, 'update'])->middleware('throttle:6,1')->name('admin.password.update');
-Route::post('/administracion/login', [AdminSessionController::class, 'store'])->middleware('throttle:10,1')->name('admin.login.store');
+Route::post('/administracion/restablecer', [AdminPasswordController::class, 'update'])->middleware('throttle:verification-email')->name('admin.password.update');
+Route::post('/administracion/login', [AdminSessionController::class, 'store'])->middleware('throttle:admin-login')->name('admin.login.store');
 Route::get('/administracion/invitacion/{token}', [AdminTeamController::class, 'invitation'])->name('admin.invitation.show');
-Route::post('/administracion/invitacion/{token}', [AdminTeamController::class, 'accept'])->middleware('throttle:10,1')->name('admin.invitation.accept');
+Route::post('/administracion/invitacion/{token}', [AdminTeamController::class, 'accept'])->middleware('throttle:admin-invitation')->name('admin.invitation.accept');
 Route::middleware(['auth:admin', 'auth.session'])->group(function () {
     Route::post('/administracion/logout', [AdminSessionController::class, 'destroy'])->name('admin.logout');
     Route::get('/administracion/verificar', [AdminSessionController::class, 'verification'])->name('admin.verification.notice');
-    Route::post('/administracion/verificar/correo', [AdminSessionController::class, 'resend'])->middleware('throttle:3,1')->name('admin.verification.send');
+    Route::post('/administracion/verificar/correo', [AdminSessionController::class, 'resend'])->middleware('throttle:verification-email')->name('admin.verification.send');
     Route::get('/administracion/verificar/correo/{id}/{hash}', [AdminSessionController::class, 'verify'])->middleware('signed')->name('admin.verification.verify');
-    Route::post('/administracion/verificar/telefono/enviar', [PhoneVerificationController::class, 'send'])->middleware('throttle:3,1')->name('admin.phone.send');
-    Route::post('/administracion/verificar/telefono', [PhoneVerificationController::class, 'verify'])->middleware('throttle:6,1')->name('admin.phone.verify');
+    Route::post('/administracion/verificar/telefono/enviar', [PhoneVerificationController::class, 'send'])->middleware('throttle:phone-send')->name('admin.phone.send');
+    Route::post('/administracion/verificar/telefono', [PhoneVerificationController::class, 'verify'])->middleware('throttle:phone-verify')->name('admin.phone.verify');
 });
 Route::middleware(['administrative.access', 'auth.session'])->group(function () {
     Route::get('/administracion/usuarios/{user}/perfil', [ProfileController::class, 'show'])->name('admin.users.preview');
     Route::get('/administracion/disputas', [DisputeController::class, 'adminIndex'])->name('disputes.admin-index');
-    Route::get('/administracion/resumen', [AdminController::class, 'summary'])->middleware('throttle:120,1')->name('admin.summary');
+    Route::get('/administracion/resumen', [AdminController::class, 'summary'])->middleware('throttle:activity-read')->name('admin.summary');
     Route::get('/administracion', [AdminController::class, 'index'])->name('admin.index');
     Route::get('/administracion/soporte', [SupportController::class, 'adminIndex'])->name('admin.support.index');
     Route::get('/administracion/soporte/{ticket}', [SupportController::class, 'show'])->name('admin.support.show');
@@ -214,6 +216,6 @@ Route::middleware(['administrative.access', 'auth.session'])->group(function () 
 });
 Route::middleware(['auth:web', 'marketplace.identity'])->group(function () {
     Route::get('/verificar-telefono', [PhoneVerificationController::class, 'show'])->name('phone.show');
-    Route::post('/verificar-telefono/enviar', [PhoneVerificationController::class, 'send'])->middleware('throttle:3,1')->name('phone.send');
-    Route::post('/verificar-telefono', [PhoneVerificationController::class, 'verify'])->middleware('throttle:6,1')->name('phone.verify');
+    Route::post('/verificar-telefono/enviar', [PhoneVerificationController::class, 'send'])->middleware('throttle:phone-send')->name('phone.send');
+    Route::post('/verificar-telefono', [PhoneVerificationController::class, 'verify'])->middleware('throttle:phone-verify')->name('phone.verify');
 });

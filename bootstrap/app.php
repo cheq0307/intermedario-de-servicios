@@ -28,7 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: env('TRUSTED_PROXIES'));
         $middleware->validateCsrfTokens(except: ['webhooks/stripe', 'webhooks/mercado-pago']);
     })
-    ->withBroadcasting(__DIR__.'/../routes/channels.php', ['middleware' => ['web', 'auth:web', 'marketplace.identity', 'account.active', 'verified', 'throttle:120,1']])
+    ->withBroadcasting(__DIR__.'/../routes/channels.php', ['middleware' => ['web', 'auth:web', 'marketplace.identity', 'account.active', 'verified', 'throttle:realtime-read']])
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();

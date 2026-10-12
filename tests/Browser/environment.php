@@ -13,6 +13,7 @@ foreach ([
     'REVERB_SERVER_HOST' => '127.0.0.1', 'REVERB_SERVER_PORT' => '8099', 'REVERB_ALLOWED_ORIGINS' => '127.0.0.1',
     'REVERB_PUBLIC_HOST' => '127.0.0.1', 'REVERB_PUBLIC_PORT' => '8099', 'REVERB_PUBLIC_SCHEME' => 'http',
     'PHONE_VERIFICATION_ENABLED' => 'false', 'MARKETPLACE_PAYMENT_DRIVER' => 'fake',
+    'MARKETPLACE_VACANCY_PAYMENT_DRIVER' => 'fake',
 ] as $key => $value) {
     putenv($key.'='.$value);
     $_ENV[$key] = $_SERVER[$key] = $value;

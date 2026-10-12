@@ -95,6 +95,10 @@ class RealtimeChatServiceTest extends TestCase
 
     public function test_image_download_is_private(): void
     {
+        if (! function_exists('imagecreatefromstring')) {
+            $this->markTestSkipped('La extensión GD es obligatoria para procesar imágenes privadas del chat.');
+        }
+
         Storage::fake('local');
         [$chat, $sender, $recipient, $service] = $this->chat();
         $message = $service->send($chat, $sender, '', (string) Str::uuid(), [UploadedFile::fake()->image('producto.jpg', 100, 100)]);

@@ -27,7 +27,7 @@ class NavigationConsistencyTest extends TestCase
             ->assertSee('class="plaza-market-shell', false)
             ->assertSee('aria-label="Navegación superior"', false)
             ->assertSee('Explorando San Juan Tetla')
-            ->assertSee('Buscar trabajo')
+            ->assertSee('Empleo')
             ->assertSee('href="'.route('dashboard').'"', false)
             ->assertSee('href="'.route('orders.index').'"', false)
             ->assertSee('href="'.route('dashboard', ['publicar' => 'choose']).'#publicar"', false)
@@ -49,21 +49,21 @@ class NavigationConsistencyTest extends TestCase
             ->assertSee('href="'.route('vacancies.mine').'"', false);
     }
 
-    public function test_job_search_is_visible_in_public_and_member_navigation(): void
+    public function test_employment_is_integrated_into_the_primary_module_navigation(): void
     {
-        $this->get(route('home'))->assertOk()
-            ->assertSee('aria-label="Bolsa de trabajo"', false)
-            ->assertSee('Buscar trabajo')
-            ->assertSee('href="'.route('vacancies.index').'"', false);
-
-        $this->get(route('vacancies.index'))->assertOk()
-            ->assertSee('Buscar trabajo')
-            ->assertSee('aria-current="page"', false);
-
         $user = User::factory()->create();
-        $this->actingAs($user, 'web')->get(route('dashboard'))->assertOk()
-            ->assertSee('aria-label="Bolsa de trabajo"', false)
-            ->assertSee('Buscar trabajo');
+
+        $response = $this->actingAs($user, 'web')->get(route('dashboard', ['module' => 'employment']));
+
+        $response->assertOk()
+            ->assertSee('aria-label="Módulos del marketplace"', false)
+            ->assertSeeInOrder(['Inicio', 'Comida', 'Servicios', 'Productos', 'Transporte', 'Empleo'])
+            ->assertSee(route('dashboard', ['module' => 'home', 'feed' => 'for_you']).'#actividad')
+            ->assertSee(route('dashboard', ['module' => 'employment', 'feed' => 'for_you']).'#actividad')
+            ->assertSee('aria-current="page"', false)
+            ->assertSee('href="'.route('vacancies.create').'"', false)
+            ->assertSee('href="'.route('vacancies.mine').'"', false)
+            ->assertDontSee('aria-label="Bolsa de trabajo"', false);
     }
 
     public function test_secondary_account_screens_use_a_consistent_back_arrow(): void

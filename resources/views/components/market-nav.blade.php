@@ -24,12 +24,6 @@
                     </span>
                 </span>
             </a>
-            <span role="group" aria-label="Bolsa de trabajo">
-                <a class="plaza-icon-button" href="{{ route('vacancies.index') }}" aria-label="Buscar trabajo" @if(request()->routeIs('vacancies.*')) aria-current="page" @endif>
-                    <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V4h8v3M3 12h18M10 12v3h4v-3"/></svg>
-                    <span class="sr-only">Buscar trabajo</span>
-                </a>
-            </span>
             @if($showNotifications && $navUser && ! $administrativeOnly)
                 <a class="plaza-icon-button relative" href="{{ route(\App\Support\IdentityRoutes::name('notifications.index')) }}" aria-label="Notificaciones"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="absolute right-1.5 top-1.5 size-2.5 rounded-full bg-plaza-orange {{ $navUser->unreadNotifications()->exists() ? '' : 'hidden' }}" data-live-notification-dot></span></a>
             @endif

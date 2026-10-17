@@ -28,10 +28,12 @@
             'job_request' => 'bg-brand-coral-faint text-brand-danger-warm',
         ];
         $moduleLabels = [
+            'home' => 'Inicio',
             'food' => 'Comida',
             'services' => 'Servicios',
             'products' => 'Productos',
             'transport' => 'Transporte',
+            'employment' => 'Empleo',
         ];
         $feedLabels = [
             'for_you' => 'Para ti',
@@ -65,6 +67,18 @@
                     </a>
                 @endforeach
             </nav>
+            @if($module === 'employment')
+                <section class="flex flex-col gap-3 border-b border-brand/10 pb-5 sm:flex-row sm:items-center sm:justify-between" aria-labelledby="empleo-local-title">
+                    <div>
+                        <h2 id="empleo-local-title" class="text-xl font-black">Empleo cerca de ti</h2>
+                        <p class="mt-1 text-sm font-semibold text-brand-muted">Vacantes y postulaciones de tu comunidad.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <a class="inline-flex min-h-11 items-center rounded-full bg-brand-orange px-4 py-2 text-sm font-black text-white" href="{{ route('vacancies.create') }}">Publicar vacante</a>
+                        <a class="inline-flex min-h-11 items-center rounded-full border border-brand/15 px-4 py-2 text-sm font-black text-brand" href="{{ route('vacancies.mine') }}">Mis vacantes y postulaciones</a>
+                    </div>
+                </section>
+            @endif
             @if (session('status'))
                 <div class="rounded-2xl border border-brand-success-bright/20 bg-brand-success-soft px-5 py-4 text-sm font-black text-brand-success" role="status">
                     {{ session('status') }}

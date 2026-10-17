@@ -13,7 +13,7 @@
         ];
     @endphp
     @if($items !== [])
-        <nav class="plaza-bottom-nav fixed inset-x-0 bottom-0 z-50 pb-[env(safe-area-inset-bottom)] shadow-bottom-navigation" aria-label="Navegación principal" data-activity-summary-url="{{ route('activity.summary') }}">
+        <nav class="plaza-bottom-nav fixed inset-x-0 bottom-0 z-50 pb-[env(safe-area-inset-bottom)] shadow-bottom-navigation lg:hidden" aria-label="Navegación principal" data-activity-summary-url="{{ route('activity.summary') }}">
             <div class="mx-auto grid max-w-xl grid-cols-5 px-1">
                 @foreach($items as $item)
                     @php($selected = $active === $item['key'])

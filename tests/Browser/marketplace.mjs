@@ -10,6 +10,14 @@ const baseUrl = 'http://127.0.0.1:8098';
 const uploadPath = 'storage/framework/testing/chat-mobile.png';
 const pageErrors = [];
 
+async function assertNoHorizontalOverflow(page, label) {
+    assert.equal(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+        true,
+        `${label} has horizontal overflow`,
+    );
+}
+
 async function marketplacePage(email, viewport = { width: 1280, height: 900 }) {
     const context = await browser.newContext({ viewport });
     const page = await context.newPage();
@@ -42,6 +50,20 @@ try {
     ]);
     await provider.getByRole('status').filter({ hasText: /publicaci/i }).waitFor();
 
+    for (const width of [320, 375, 390, 412]) {
+        await provider.setViewportSize({ width, height: 844 });
+        await provider.goto(`${baseUrl}/dashboard?module=products&feed=offers`);
+        await provider.getByText('Tu plaza en Comunidad E2E').waitFor();
+        await provider.getByRole('navigation', { name: 'Navegación principal' }).waitFor();
+        await provider.getByRole('link', { name: 'Publicar', exact: true }).waitFor();
+        await provider.getByRole('navigation', { name: 'Filtros de actividad' }).waitFor();
+        await assertNoHorizontalOverflow(provider, `Dashboard ${width}px`);
+    }
+
+    await provider.setViewportSize({ width: 1280, height: 900 });
+    await provider.goto(`${baseUrl}/dashboard?module=products&feed=offers`);
+    assert.equal(await provider.getByRole('navigation', { name: 'Navegación principal' }).isVisible(), false, 'Desktop should use the top navigation instead of the mobile bottom bar');
+
     await provider.goto(`${baseUrl}/mi-perfil/editar`);
     const documentForm = provider.locator('form').filter({ has: provider.locator('[name=document]') });
     await documentForm.locator('[name=type]').selectOption('government_id');
@@ -60,8 +82,11 @@ try {
 
     const buyer = await marketplacePage('buyer-e2e@example.test');
     await buyer.goto(`${baseUrl}/explorar?type=product&scope=all`);
-    const productCard = buyer.locator('article').filter({ hasText: 'Producto integral E2E' });
-    await productCard.getByRole('link', { name: 'Comprar' }).click();
+    await buyer.setViewportSize({ width: 375, height: 844 });
+    await buyer.getByRole('navigation', { name: 'Tipos de resultado' }).waitFor();
+    await buyer.getByText('Producto · Servicios E2E').waitFor();
+    await assertNoHorizontalOverflow(buyer, 'Explore 375px');
+    await buyer.getByRole('link', { name: /Producto integral E2E/ }).click();
     await buyer.locator('[name=quantity]').fill('2');
     await buyer.locator('[name=buyer_notes]').fill('Compra E2E sin pago real.');
     await Promise.all([
@@ -96,7 +121,8 @@ try {
     await applicant.locator('[name=cover_letter]').fill('Me interesa la vacante E2E y cuento con disponibilidad para el horario indicado.');
     await applicant.getByRole('button', { name: 'Postularme gratis' }).click();
     await applicant.getByText('Ya enviaste tu postulación.').waitFor();
-    assert.equal(await applicant.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'Mobile vacancy overflow');
+    await applicant.getByRole('link', { name: 'Buscar trabajo' }).waitFor();
+    await assertNoHorizontalOverflow(applicant, 'Mobile vacancy');
 
     const adminContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const admin = await adminContext.newPage();

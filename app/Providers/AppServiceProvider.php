@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Contracts\MarketplacePaymentGateway;
 use App\Services\Payments\FakePaymentGateway;
 use App\Services\Payments\StripeConnectGateway;
+use App\Support\DemoMode;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -40,6 +41,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        app(DemoMode::class)->enforceFakePayments();
         RateLimiter::for('registration', fn (Request $request) => Limit::perHour(10)->by('register:'.$request->ip()));
         foreach (['publications' => 10, 'messages' => 60, 'support-write' => 10, 'checkout' => 10] as $name => $perMinute) {
             RateLimiter::for($name, fn (Request $request) => [

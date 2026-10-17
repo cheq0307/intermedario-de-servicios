@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Domain\Administration\AdminRole;
+use App\Models\AdminUser;
 use App\Models\Category;
 use App\Models\Community;
 use App\Models\JobApplication;
@@ -43,38 +45,66 @@ class SeedMarketplaceDemo extends Command
                 ['name' => 'Demostración Plaza Local', 'is_active' => true],
             );
 
-            $users = collect([
-                'provider' => ['Proveedor DEMO', 'proveedor.demo@example.test', '2229000101'],
-                'buyer' => ['Comprador DEMO', 'comprador.demo@example.test', '2229000102'],
-                'employer' => ['Empleador DEMO', 'empleador.demo@example.test', '2229000103'],
-                'applicant' => ['Postulante DEMO', 'postulante.demo@example.test', '2229000104'],
-            ])->mapWithKeys(function (array $data, string $key) use ($community, $password): array {
-                $user = User::updateOrCreate(
-                    ['email' => $data[1]],
-                    ['name' => $data[0], 'phone' => $data[2], 'community_id' => $community->id, 'password' => $password],
+            $users = collect();
+            $profileTypes = [
+                'buyer' => ['Comprador', 'comprador', 100],
+                'provider' => ['Proveedor', 'proveedor', 200],
+                'employer' => ['Empleador', 'empleador', 300],
+                'applicant' => ['Postulante', 'postulante', 400],
+            ];
+            foreach ($profileTypes as $key => [$label, $emailPrefix, $phoneBase]) {
+                foreach (range(1, 5) as $number) {
+                    $user = User::updateOrCreate(
+                        ['email' => "{$emailPrefix}{$number}.demo@example.test"],
+                        [
+                            'name' => "{$label} DEMO {$number}",
+                            'phone' => '2229'.str_pad((string) ($phoneBase + $number), 6, '0', STR_PAD_LEFT),
+                            'community_id' => $community->id,
+                            'password' => $password,
+                        ],
+                    );
+                    $user->forceFill(['email_verified_at' => now(), 'phone_verified_at' => now(), 'account_status' => 'active'])->save();
+                    $user->syncRoles([Role::findOrCreate('client', 'web')]);
+                    $users->put($key.$number, $user);
+                }
+            }
+
+            foreach (range(1, 5) as $number) {
+                $provider = $users['provider'.$number];
+                $provider->assignRole(Role::findOrCreate('provider', 'web'));
+                $providerVendor = Vendor::updateOrCreate(
+                    ['user_id' => $provider->id],
+                    [
+                        'display_name' => "Negocio DEMO {$number}",
+                        'slug' => "negocio-demo-plaza-local-{$number}",
+                        'description' => 'Cuenta demostrativa para revisar el flujo completo de Plaza Local.',
+                        'specialty' => 'Productos y servicios de demostración',
+                        'service_area' => 'Comunidad Demostración',
+                        'business_hours' => ['days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'], 'opens_at' => '09:00', 'closes_at' => '18:00'],
+                        'status' => 'active',
+                        'submitted_at' => now(),
+                        'reviewed_at' => now(),
+                    ],
                 );
-                $user->forceFill(['email_verified_at' => now(), 'account_status' => 'active'])->save();
-                $user->syncRoles([Role::findOrCreate('client', 'web')]);
+                $providerVendor->categories()->syncWithoutDetaching([$category->id]);
+            }
 
-                return [$key => $user];
-            });
+            foreach (range(1, 5) as $number) {
+                AdminUser::updateOrCreate(
+                    ['email' => "administrador{$number}.demo@example.test"],
+                    [
+                        'name' => "Administrador DEMO {$number}",
+                        'phone' => '2239'.str_pad((string) $number, 6, '0', STR_PAD_LEFT),
+                        'password' => $password,
+                        'role' => AdminRole::Admin,
+                        'active' => true,
+                        'email_verified_at' => now(),
+                        'phone_verified_at' => now(),
+                    ],
+                );
+            }
 
-            $users['provider']->assignRole(Role::findOrCreate('provider', 'web'));
-            $vendor = Vendor::updateOrCreate(
-                ['user_id' => $users['provider']->id],
-                [
-                    'display_name' => 'Negocio DEMO',
-                    'slug' => 'negocio-demo-plaza-local',
-                    'description' => 'Cuenta demostrativa para revisar el flujo completo de Plaza Local.',
-                    'specialty' => 'Productos de demostración',
-                    'service_area' => 'Comunidad Demostración',
-                    'business_hours' => ['days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'], 'opens_at' => '09:00', 'closes_at' => '18:00'],
-                    'status' => 'active',
-                    'submitted_at' => now(),
-                    'reviewed_at' => now(),
-                ],
-            );
-            $vendor->categories()->syncWithoutDetaching([$category->id]);
+            $vendor = $users['provider1']->vendor;
 
             $listing = Listing::updateOrCreate(
                 ['vendor_id' => $vendor->id, 'slug' => 'producto-demo-visible'],
@@ -93,7 +123,7 @@ class SeedMarketplaceDemo extends Command
             $post = Post::updateOrCreate(
                 ['submission_token' => 'demo-marketplace-product'],
                 [
-                    'user_id' => $users['provider']->id,
+                    'user_id' => $users['provider1']->id,
                     'vendor_id' => $vendor->id,
                     'listing_id' => $listing->id,
                     'category_id' => $category->id,
@@ -112,7 +142,7 @@ class SeedMarketplaceDemo extends Command
             $order = Order::updateOrCreate(
                 ['public_id' => 'd0000000-0000-4000-8000-000000000001'],
                 [
-                    'buyer_id' => $users['buyer']->id,
+                    'buyer_id' => $users['buyer1']->id,
                     'vendor_id' => $vendor->id,
                     'status' => 'awaiting_payment',
                     'fulfillment_type' => 'pickup',
@@ -131,7 +161,7 @@ class SeedMarketplaceDemo extends Command
             $vacancy = JobVacancy::updateOrCreate(
                 ['public_id' => 'd0000000-0000-4000-8000-000000000002'],
                 [
-                    'employer_id' => $users['employer']->id,
+                    'employer_id' => $users['employer1']->id,
                     'community_id' => $community->id,
                     'category_id' => $category->id,
                     'title' => 'Auxiliar DEMO de Plaza Local',
@@ -153,20 +183,21 @@ class SeedMarketplaceDemo extends Command
                 ],
             );
             JobApplication::updateOrCreate(
-                ['job_vacancy_id' => $vacancy->id, 'applicant_id' => $users['applicant']->id],
+                ['job_vacancy_id' => $vacancy->id, 'applicant_id' => $users['applicant1']->id],
                 ['cover_letter' => 'Postulación DEMO para comprobar el flujo del candidato.', 'status' => 'submitted'],
             );
         });
 
         $this->newLine();
-        $this->info('Escenario DEMO creado o actualizado. Todos usan esta contraseña temporal:');
-        $this->line($password);
-        $this->table(['Tipo', 'Correo'], [
-            ['Proveedor', 'proveedor.demo@example.test'],
-            ['Comprador', 'comprador.demo@example.test'],
-            ['Empleador', 'empleador.demo@example.test'],
-            ['Postulante', 'postulante.demo@example.test'],
+        $this->info('Escenario DEMO creado o actualizado: 5 perfiles por función y 5 administradores.');
+        $this->table(['Tipo', 'Patrón de correo'], [
+            ['Proveedor', 'proveedor1..5.demo@example.test'],
+            ['Comprador', 'comprador1..5.demo@example.test'],
+            ['Empleador', 'empleador1..5.demo@example.test'],
+            ['Postulante', 'postulante1..5.demo@example.test'],
+            ['Administrador', 'administrador1..5.demo@example.test'],
         ]);
+        $this->line('El acceso sin contraseña solo aparece cuando PLAZA_DEMO_ACCESS_ENABLED=true en local/testing.');
         $this->warn('Son datos ficticios visibles. No realices pagos ni cargues documentos reales en estas cuentas.');
 
         return self::SUCCESS;

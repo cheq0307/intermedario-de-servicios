@@ -10,4 +10,7 @@
     </form>
     <a href="{{ route('login') }}" class="mt-5 block text-brand-success">Entrar a mi cuenta de Plaza Local</a>
     <a class="mt-5 inline-block text-brand-success" href="{{ route('admin.password.request') }}">Olvidé mi contraseña administrativa</a>
+    @if (app(\App\Support\DemoMode::class)->enabled())
+        <a class="mt-4 block font-bold text-brand-coral-strong" href="{{ route('demo.access') }}">Entrar con perfiles de prueba</a>
+    @endif
 </x-layouts.auth>

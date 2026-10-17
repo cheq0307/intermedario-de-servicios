@@ -16,6 +16,7 @@ use App\Http\Controllers\ChatAttachmentController;
 use App\Http\Controllers\ChatPublicationController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DemoAccessController;
 use App\Http\Controllers\DisputeController;
 use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\HomeController;
@@ -43,6 +44,8 @@ use App\Http\Controllers\VendorVerificationDocumentController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
+Route::get('/demo/acceso', [DemoAccessController::class, 'index'])->name('demo.access');
+Route::post('/demo/acceso', [DemoAccessController::class, 'store'])->name('demo.access.store');
 Route::get('/explorar', ExploreController::class)->name('explore');
 Route::get('/codigos-postales/{postalCode}', [PostalCodeController::class, 'show'])->whereNumber('postalCode')->middleware('throttle:postal-lookup')->name('postal-codes.show');
 Route::get('/perfiles/{user}', [ProfileController::class, 'show'])->name('profile.show');

@@ -32,4 +32,7 @@
     </form>
 
     <p class="mt-7 text-center text-sm font-semibold text-brand-sage-muted">¿Aún no tienes cuenta? <a class="font-black text-brand-coral-strong hover:underline" href="{{ route('register') }}">Crear cuenta</a></p>
+    @if (app(\App\Support\DemoMode::class)->enabled())
+        <a class="mt-4 block text-center text-sm font-black text-brand-coral-strong hover:underline" href="{{ route('demo.access') }}">Entrar con perfiles de prueba</a>
+    @endif
 </x-layouts.auth>

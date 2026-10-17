@@ -124,7 +124,11 @@ class ExploreTest extends TestCase
         Listing::create(['vendor_id' => $vendor->id, 'type' => 'product', 'name' => 'Producto premium', 'slug' => 'premium', 'price_type' => 'fixed', 'price_amount' => 90000, 'stock' => 2, 'is_active' => true]);
         $viewer = User::factory()->create();
 
-        $this->actingAs($viewer, 'web')->get(route('explore', ['type' => 'product', 'max_price' => 200]))->assertOk()->assertSee('Producto económico')->assertDontSee('Producto premium');
+        $this->actingAs($viewer, 'web')->get(route('explore', ['type' => 'product', 'max_price' => 200]))
+            ->assertOk()
+            ->assertSee('Producto económico')
+            ->assertDontSee('Producto premium')
+            ->assertSee('href="'.e(route('explore', ['max_price' => 200, 'scope' => 'community', 'radius_km' => 8.0, 'type' => 'service'])).'"', false);
     }
 
     public function test_empty_search_explains_how_to_continue_without_losing_filters(): void

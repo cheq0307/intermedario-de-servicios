@@ -19,7 +19,7 @@
 
         @php
             $typeOptions = ['all' => 'Todo', 'product' => 'Productos', 'service' => 'Servicios', 'provider' => 'Personas', 'job_request' => 'Solicitudes'];
-            $baseTypeFilters = collect(['q' => $filters['q'] ?? null, 'category_id' => $categoryId, 'community_id' => $filters['community_id'] ?? null, 'scope' => $scope])->filter(fn ($value) => $value !== null && $value !== '')->all();
+            $baseTypeFilters = collect($filters)->except('type')->filter(fn ($value) => $value !== null && $value !== '')->all();
         @endphp
 
         <nav class="-mx-4 mt-6 flex gap-2 overflow-x-auto px-4 pb-2 scrollbar-none sm:mx-0 sm:px-0" aria-label="Tipos de resultado">

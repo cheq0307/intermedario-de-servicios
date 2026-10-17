@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\Community;
 use App\Models\JobRequest;
 use App\Models\Listing;
 use App\Models\Post;
@@ -165,8 +166,12 @@ class FeedPersonalizationTest extends TestCase
 
     public function test_dashboard_showcase_groups_real_approved_offers_by_category(): void
     {
-        $viewer = User::factory()->create(['account_type' => 'client']);
-        $provider = User::factory()->create(['account_type' => 'provider']);
+        $community = Community::query()->firstOrCreate(
+            ['name' => 'San Juan Tetla', 'municipality' => 'Chiautzingo'],
+            ['state' => 'Puebla', 'is_active' => true],
+        );
+        $viewer = User::factory()->create(['account_type' => 'client', 'community_id' => $community->id]);
+        $provider = User::factory()->create(['account_type' => 'provider', 'community_id' => $community->id]);
         $category = Category::query()->firstOrCreate(['slug' => 'comida-bebidas'], ['name' => 'Comida y bebidas', 'is_active' => true]);
         $vendor = Vendor::create([
             'user_id' => $provider->id,
@@ -206,8 +211,13 @@ class FeedPersonalizationTest extends TestCase
             ->get(route('dashboard', ['module' => 'food']))
             ->assertOk()
             ->assertSee('Escaparate local')
+            ->assertSee('Tu plaza en San Juan Tetla')
+            ->assertSee('Publicar en tu plaza')
             ->assertSee('Comida y bebidas')
             ->assertSee('Tacos dorados familiares')
+            ->assertSee('aria-label="Ruta local de la publicación"', false)
+            ->assertSee('Producto · Comida y bebidas')
+            ->assertSee('San Juan Tetla')
             ->assertSee('data-market-carousel', false)
             ->assertSee('storage/posts/tacos.webp', false);
     }

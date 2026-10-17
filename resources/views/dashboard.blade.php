@@ -44,6 +44,19 @@
 
     <main class="mx-auto grid max-w-5xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,680px)_280px]">
         <div id="inicio" class="min-w-0 space-y-5">
+            <section class="relative overflow-hidden rounded-[1.75rem] bg-plaza-ink px-5 py-6 text-white shadow-market-feature sm:px-7 sm:py-8">
+                <div class="pointer-events-none absolute -right-10 -top-12 size-40 rounded-full bg-plaza-gold/25 blur-2xl" aria-hidden="true"></div>
+                <div class="relative flex items-end justify-between gap-4">
+                    <div class="min-w-0">
+                        <p class="text-xs font-black uppercase tracking-[.16em] text-brand-gold-soft">Tu plaza en {{ $currentUser->community?->name ?? 'tu comunidad' }}</p>
+                        <h1 class="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Descubre, compra o pide ayuda cerca de ti</h1>
+                        <p class="mt-2 max-w-xl text-sm font-semibold leading-6 text-white/70">Productos, servicios, solicitudes y empleo local, cada uno con su flujo claro.</p>
+                    </div>
+                    <a class="hidden shrink-0 rounded-full bg-plaza-orange px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 sm:inline-flex" href="{{ route('dashboard', ['publicar' => 'choose']).'#publicar' }}">Publicar en tu plaza</a>
+                </div>
+                <a class="relative mt-5 inline-flex min-h-11 items-center rounded-full bg-plaza-orange px-5 py-2.5 text-sm font-black text-white sm:hidden" href="{{ route('dashboard', ['publicar' => 'choose']).'#publicar' }}">Publicar en tu plaza</a>
+            </section>
+
             <nav class="-mx-4 flex gap-6 overflow-x-auto border-b border-brand/10 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0" aria-label="Módulos del marketplace">
                 @foreach($moduleLabels as $moduleKey => $moduleLabel)
                     <a class="relative shrink-0 px-0.5 pb-3 pt-1 text-sm font-bold transition {{ $module === $moduleKey ? 'text-brand' : 'text-brand-muted hover:text-brand' }}" href="{{ route('dashboard', ['module' => $moduleKey, 'feed' => $feed]) }}#actividad" @if($module === $moduleKey) aria-current="page" @endif>
@@ -112,30 +125,7 @@
                             </div>
                             <div id="{{ $carouselId }}" class="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" data-carousel-track tabindex="0" aria-label="Ofertas de {{ $section['category']->name }}">
                                 @foreach($section['listings'] as $listing)
-                                    @php
-                                        $image = $listing->post?->media?->firstWhere('type', 'image');
-                                        $canBuy = $listing->type->value === 'product' && $listing->price_type->value === 'fixed' && $listing->price_amount !== null;
-                                        $destination = $canBuy ? route('products.checkout', $listing) : route('profile.show', $listing->vendor->user);
-                                    @endphp
-                                    <a class="group w-[72vw] max-w-[17rem] shrink-0 snap-start overflow-hidden rounded-[1.4rem] border border-brand/10 bg-brand-surface transition hover:-translate-y-1 hover:shadow-lg sm:w-[15rem]" href="{{ $destination }}">
-                                        <div class="relative h-36 overflow-hidden bg-gradient-to-br from-brand-success-soft via-brand-amber-soft to-brand-gold-highlight">
-                                            @if($image)
-                                                <img class="size-full object-cover transition duration-500 group-hover:scale-105" src="{{ $image->url }}" alt="{{ $image->alt_text ?: $listing->name }}" loading="lazy">
-                                            @else
-                                                <span class="grid size-full place-items-center text-sm font-black text-brand-muted">Sin imagen</span>
-                                            @endif
-                                            <span class="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-brand shadow-sm">{{ $listing->type->value === 'product' ? 'Producto' : 'Servicio' }}</span>
-                                            @if($listing->post?->activePromotion)<span class="absolute right-3 top-3 rounded-full bg-brand-ink/90 px-2.5 py-1 text-[10px] font-black text-white shadow-sm">Patrocinado</span>@endif
-                                        </div>
-                                        <div class="p-4">
-                                            <h4 class="line-clamp-2 min-h-12 font-black leading-6">{{ $listing->name }}</h4>
-                                            <p class="mt-1 truncate text-xs font-bold text-brand-muted">{{ $listing->vendor->display_name }} · {{ $listing->vendor->user->community?->name ?? 'Tu comunidad' }}</p>
-                                            <div class="mt-3 flex items-center justify-between gap-2">
-                                                <strong class="truncate text-sm text-brand-success">@if($listing->price_amount === null)Cotizar @else{{ $listing->price_type->value === 'starting_at' ? 'Desde ' : '' }}${{ number_format($listing->price_amount / 100, 2) }}@endif</strong>
-                                                <span class="shrink-0 rounded-full bg-brand px-3 py-1.5 text-[11px] font-black text-white">{{ $canBuy ? 'Comprar' : 'Ver' }}</span>
-                                            </div>
-                                        </div>
-                                    </a>
+                                    <x-marketplace.listing-card :listing="$listing" compact class="w-[76vw] max-w-[17rem] shrink-0 snap-start sm:w-[15rem]" />
                                 @endforeach
                             </div>
                         </div>

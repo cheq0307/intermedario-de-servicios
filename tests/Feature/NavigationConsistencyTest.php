@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Community;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -9,6 +10,30 @@ use Tests\TestCase;
 class NavigationConsistencyTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_member_navigation_keeps_local_context_and_the_five_primary_destinations_visible(): void
+    {
+        $community = Community::query()->create([
+            'name' => 'San Juan Tetla',
+            'municipality' => 'Chiautzingo',
+            'state' => 'Puebla',
+            'is_active' => true,
+        ]);
+        $user = User::factory()->create(['community_id' => $community->id]);
+
+        $response = $this->actingAs($user, 'web')->get(route('dashboard'));
+
+        $response->assertOk()
+            ->assertSee('class="plaza-market-shell', false)
+            ->assertSee('aria-label="Navegación superior"', false)
+            ->assertSee('Explorando San Juan Tetla')
+            ->assertSee('Buscar trabajo')
+            ->assertSee('href="'.route('dashboard').'"', false)
+            ->assertSee('href="'.route('orders.index').'"', false)
+            ->assertSee('href="'.route('dashboard', ['publicar' => 'choose']).'#publicar"', false)
+            ->assertSee('href="'.route('conversations.index').'"', false)
+            ->assertSee('href="'.route('more.index').'"', false);
+    }
 
     public function test_more_menu_exposes_each_employment_flow_explicitly(): void
     {

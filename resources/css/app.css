@@ -103,6 +103,12 @@
     --color-brand-coral-faint: #fff8f2;
     --color-brand-warning-faint: #fff9e7;
     --color-brand-orange-page: #fff9f3;
+    --color-plaza-ink: #103f3b;
+    --color-plaza-orange: #eb6a2c;
+    --color-plaza-cream: #fbf7ee;
+    --color-plaza-mint: #e4f2ea;
+    --color-plaza-line: #ddd5c7;
+    --color-plaza-gold: #e3a93b;
     --color-stripe: #635bff;
     --shadow-market-search: 0 24px 70px rgb(23 53 43 / 13%);
     --shadow-market-feature: 0 35px 90px rgb(23 53 43 / 25%);
@@ -138,6 +144,22 @@
 }
 
 @layer components {
+    .plaza-market-shell {
+        @apply border-b border-plaza-line/70 bg-plaza-cream/95 text-plaza-ink backdrop-blur-xl;
+    }
+
+    .plaza-search-field {
+        @apply flex min-h-12 min-w-0 items-center gap-2 rounded-2xl border border-transparent bg-white px-4 shadow-sm transition focus-within:border-plaza-orange/40 focus-within:ring-4 focus-within:ring-plaza-orange/10;
+    }
+
+    .plaza-icon-button {
+        @apply grid size-11 shrink-0 place-items-center rounded-full border border-plaza-line/80 bg-white text-plaza-ink shadow-sm transition hover:-translate-y-0.5 hover:border-plaza-orange/35 hover:text-plaza-orange focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-plaza-orange;
+    }
+
+    .plaza-bottom-nav {
+        @apply border-t border-plaza-line/80 bg-plaza-cream/95 text-plaza-ink backdrop-blur-xl;
+    }
+
     .market-surface {
         @apply rounded-3xl border border-brand/10 bg-white shadow-sm;
     }

@@ -3,17 +3,46 @@
     $navUser = auth()->user();
     $administrativeOnly = $navUser?->hasRole('superadmin') || ($navUser?->hasRole('admin') && ! $navUser?->canUseMarketplace());
     $accountUrl = $navUser ? ($administrativeOnly ? route('admin.index') : route('profile.show', $navUser)) : route('login');
+    $communityName = $navUser?->community?->name;
 @endphp
-<header class="sticky top-0 z-40 border-b border-brand/10 bg-white/95 backdrop-blur-xl" @if($navUser) data-activity-summary-url="{{ route(\App\Support\IdentityRoutes::name('activity.summary')) }}" @endif
+<header class="plaza-market-shell sticky top-0 z-40" @if($navUser) data-activity-summary-url="{{ route(\App\Support\IdentityRoutes::name('activity.summary')) }}" @endif
     @if($navUser instanceof \App\Models\User && $navUser->canUseMarketplace() && $navUser->hasVerifiedEmail())
         data-chat-user="{{ $navUser->id }}" data-reverb-key="{{ config('broadcasting.default') === 'reverb' ? config('broadcasting.connections.reverb.key') : '' }}" data-reverb-host="{{ config('chat.reverb.host') }}" data-reverb-port="{{ config('chat.reverb.port') }}" data-reverb-scheme="{{ config('chat.reverb.scheme') }}"
     @endif>
-    <div class="mx-auto flex max-w-5xl items-center gap-2 px-3 py-3 sm:gap-3 sm:px-5">
-        @if($backUrl)
-            <a class="grid size-10 shrink-0 place-items-center rounded-full border border-brand/10 bg-white text-brand shadow-sm" href="{{ $backUrl }}" aria-label="Regresar"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg></a>
-        @endif
-        <div class="group/search relative min-w-0 flex-1 sm:mx-auto sm:max-w-2xl">
-            <form class="flex min-w-0 items-center gap-2 rounded-2xl bg-brand-neutral-canvas px-3 py-2.5 ring-brand/10 focus-within:ring-2" role="search" method="GET" action="{{ route('explore') }}">
+    <nav class="mx-auto max-w-5xl px-3 py-2.5 sm:px-5 sm:py-3" aria-label="Navegación superior">
+        <div class="flex min-w-0 items-center gap-2 sm:gap-3">
+            @if($backUrl)
+                <a class="plaza-icon-button" href="{{ $backUrl }}" aria-label="Regresar"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg></a>
+            @endif
+            <a class="flex min-w-0 flex-1 items-center gap-2" href="{{ $navUser && ! $administrativeOnly ? route('dashboard') : route('home') }}">
+                <span class="grid size-9 shrink-0 place-items-center rounded-xl bg-plaza-ink text-sm font-black text-white">P</span>
+                <span class="min-w-0">
+                    <span class="block text-xs font-black leading-none sm:text-sm">Plaza Local</span>
+                    <span class="mt-1 flex min-w-0 items-center gap-1 text-[10px] font-bold text-brand-muted sm:text-xs">
+                        <svg class="size-3 shrink-0 text-plaza-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2"/></svg>
+                        <span class="truncate">{{ $communityName ? 'Explorando '.$communityName : 'Explora tu comunidad' }}</span>
+                    </span>
+                </span>
+            </a>
+            <span role="group" aria-label="Bolsa de trabajo">
+                <a class="plaza-icon-button" href="{{ route('vacancies.index') }}" aria-label="Buscar trabajo" @if(request()->routeIs('vacancies.*')) aria-current="page" @endif>
+                    <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V4h8v3M3 12h18M10 12v3h4v-3"/></svg>
+                    <span class="sr-only">Buscar trabajo</span>
+                </a>
+            </span>
+            @if($showNotifications && $navUser && ! $administrativeOnly)
+                <a class="plaza-icon-button relative" href="{{ route(\App\Support\IdentityRoutes::name('notifications.index')) }}" aria-label="Notificaciones"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="absolute right-1.5 top-1.5 size-2.5 rounded-full bg-plaza-orange {{ $navUser->unreadNotifications()->exists() ? '' : 'hidden' }}" data-live-notification-dot></span></a>
+            @endif
+            @if($navUser?->hasAnyRole(['admin', 'superadmin']))
+                <a class="hidden rounded-full bg-plaza-ink px-4 py-2.5 text-xs font-black text-white sm:inline-flex" href="{{ route('admin.index') }}">Administración</a>
+            @endif
+            @if($showAccount)
+                <a class="plaza-icon-button" href="{{ $accountUrl }}" aria-label="{{ $navUser ? 'Abrir mi cuenta' : 'Iniciar sesión' }}"><svg class="size-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 4a3.2 3.2 0 1 1 0 6.4A3.2 3.2 0 0 1 12 6Zm0 13.2a7.2 7.2 0 0 1-5.3-2.3c.7-1.8 2.8-3 5.3-3s4.6 1.2 5.3 3a7.2 7.2 0 0 1-5.3 2.3Z"/></svg></a>
+            @endif
+        </div>
+
+        <div class="group/search relative mt-2.5 min-w-0 sm:mx-auto sm:max-w-2xl">
+            <form class="plaza-search-field" role="search" method="GET" action="{{ route('explore') }}">
                 <input class="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none placeholder:text-brand-caption" type="search" name="q" value="{{ $searchValue }}" maxlength="100" placeholder="Buscar en Plaza Local" autocomplete="off">
                 <button class="grid size-8 shrink-0 place-items-center rounded-full text-brand-copy" type="submit" aria-label="Buscar"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
             </form>
@@ -27,24 +56,8 @@
                 </div>
             </div>
         </div>
-        @if($showNotifications && $navUser && ! $administrativeOnly)
-            <a class="relative grid size-11 shrink-0 place-items-center rounded-full text-brand-copy hover:bg-brand-success-soft" href="{{ route(\App\Support\IdentityRoutes::name('notifications.index')) }}" aria-label="Notificaciones"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="absolute right-1.5 top-1.5 size-2.5 rounded-full bg-brand-orange {{ $navUser->unreadNotifications()->exists() ? '' : 'hidden' }}" data-live-notification-dot></span></a>
-        @endif
-        @if($navUser?->hasAnyRole(['admin', 'superadmin']))
-            <a class="hidden rounded-full bg-brand px-4 py-2.5 text-xs font-black text-white sm:inline-flex" href="{{ route('admin.index') }}">Abrir administración</a>
-        @endif
-        @if($showAccount)
-            <a class="grid size-11 shrink-0 place-items-center rounded-full text-brand-copy hover:bg-brand-success-soft" href="{{ $accountUrl }}" aria-label="{{ $navUser ? 'Abrir mi cuenta' : 'Iniciar sesión' }}"><svg class="size-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 4a3.2 3.2 0 1 1 0 6.4A3.2 3.2 0 0 1 12 6Zm0 13.2a7.2 7.2 0 0 1-5.3-2.3c.7-1.8 2.8-3 5.3-3s4.6 1.2 5.3 3a7.2 7.2 0 0 1-5.3 2.3Z"/></svg></a>
-        @endif
         @guest
-            <a class="hidden rounded-full bg-brand-orange px-4 py-2.5 text-xs font-black text-white sm:inline-flex" href="{{ route('register') }}">Crear cuenta</a>
+            <div class="mt-2 flex justify-end"><a class="rounded-full bg-plaza-orange px-4 py-2 text-xs font-black text-white" href="{{ route('register') }}">Crear cuenta</a></div>
         @endguest
-    </div>
-    <nav class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-3 pb-3 sm:px-5" aria-label="Bolsa de trabajo">
-        <span class="text-xs font-black text-brand-copy">Bolsa de trabajo</span>
-        <a class="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-success-soft px-4 py-2 text-sm font-black text-brand hover:bg-brand-avatar-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand" href="{{ route('vacancies.index') }}" @if(request()->routeIs('vacancies.index')) aria-current="page" @endif>
-            <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V4h8v3M3 12h18M10 12v3h4v-3"/></svg>
-            Buscar trabajo
-        </a>
     </nav>
 </header>

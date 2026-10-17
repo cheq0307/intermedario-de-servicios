@@ -27,6 +27,15 @@ class PaymentReadinessAuditTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Conserva cobertura de la infraestructura futura sin exponerla en la
+        // versión actual, cuyo valor de producción permanece desactivado.
+        config(['marketplace.payments_enabled' => true, 'marketplace.live_payments_enabled' => true]);
+    }
+
     private function payment(): Payment
     {
         Queue::fake();

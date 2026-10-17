@@ -106,13 +106,13 @@ Route::middleware(['auth:web', 'marketplace.identity', 'account.active'])->group
         Route::patch('/comentarios/{comment}', [PostEngagementController::class, 'updateComment'])->name('posts.comments.update');
         Route::delete('/comentarios/{comment}', [PostEngagementController::class, 'deleteComment'])->name('posts.comments.destroy');
         Route::post('/publicaciones/{post}/compartir', [PostEngagementController::class, 'share'])->name('posts.shares.store');
-        Route::get('/promociones', [PostPromotionController::class, 'index'])->name('promotions.index');
-        Route::post('/promociones', [PostPromotionController::class, 'store'])->name('promotions.store');
+        Route::get('/promociones', [PostPromotionController::class, 'index'])->middleware(EnsureLivePaymentsEnabled::class)->name('promotions.index');
+        Route::post('/promociones', [PostPromotionController::class, 'store'])->middleware(EnsureLivePaymentsEnabled::class)->name('promotions.store');
         Route::post('/promociones/{promotion}/pagar', [PostPromotionController::class, 'checkout'])->middleware([EnsureLivePaymentsEnabled::class, 'throttle:checkout'])->name('promotions.checkout');
         Route::get('/promociones/{promotion}/resultado', [PostPromotionController::class, 'returned'])->middleware(EnsureLivePaymentsEnabled::class)->name('promotions.return');
         Route::get('/productos/{listing}/comprar', [ProductOrderController::class, 'checkout'])->name('products.checkout');
         Route::post('/productos/{listing}/pedidos', [ProductOrderController::class, 'store'])->middleware('throttle:checkout')->name('products.orders.store');
-        Route::post('/pedidos/{order}/simular-pago', [ProductOrderController::class, 'simulatePayment'])->name('products.orders.simulate-payment');
+        Route::post('/pedidos/{order}/simular-pago', [ProductOrderController::class, 'simulatePayment'])->middleware(EnsureLivePaymentsEnabled::class)->name('products.orders.simulate-payment');
         Route::patch('/pedidos/{order}/listo', [ProductOrderController::class, 'ready'])->name('products.orders.ready');
         Route::patch('/pedidos/{order}/entregar', [ProductOrderController::class, 'deliver'])->name('products.orders.deliver');
         Route::patch('/pedidos/{order}/cancelar', [ProductOrderController::class, 'cancel'])->name('products.orders.cancel');
@@ -136,7 +136,7 @@ Route::middleware(['auth:web', 'marketplace.identity', 'account.active'])->group
         Route::patch('/solicitudes/{jobRequest}/propuestas/{proposal}/retirar', [JobProposalController::class, 'withdraw'])->name('job-proposals.withdraw');
         Route::get('/trabajos', [ServiceOrderController::class, 'index'])->name('orders.index');
         Route::get('/trabajos/{order}', [ServiceOrderController::class, 'show'])->name('orders.show');
-        Route::post('/trabajos/{order}/simular-pago', [ServiceOrderController::class, 'simulatePayment'])->name('orders.simulate-payment');
+        Route::post('/trabajos/{order}/simular-pago', [ServiceOrderController::class, 'simulatePayment'])->middleware(EnsureLivePaymentsEnabled::class)->name('orders.simulate-payment');
         Route::patch('/trabajos/{order}/iniciar', [ServiceOrderController::class, 'start'])->name('orders.start');
         Route::patch('/trabajos/{order}/entregar', [ServiceOrderController::class, 'deliver'])->name('orders.deliver');
         Route::patch('/trabajos/{order}/completar', [ServiceOrderController::class, 'complete'])->name('orders.complete');
@@ -185,8 +185,8 @@ Route::middleware(['administrative.access', 'auth.session'])->group(function () 
     Route::patch('/administracion/usuarios/{user}/baja', [AdminAccountController::class, 'deactivate'])->name('admin.users.deactivate');
     Route::get('/administracion/empleo', [AdminInsightsController::class, 'jobs'])->name('admin.jobs.index');
     Route::get('/administracion/operaciones', [AdminInsightsController::class, 'operations'])->name('admin.operations.index');
-    Route::get('/administracion/publicidad', [AdminInsightsController::class, 'promotions'])->name('admin.promotions.index');
-    Route::get('/administracion/pagos', [AdminInsightsController::class, 'payments'])->name('admin.payments.index');
+    Route::get('/administracion/publicidad', [AdminInsightsController::class, 'promotions'])->middleware(EnsureLivePaymentsEnabled::class)->name('admin.promotions.index');
+    Route::get('/administracion/pagos', [AdminInsightsController::class, 'payments'])->middleware(EnsureLivePaymentsEnabled::class)->name('admin.payments.index');
     Route::get('/administracion/publicaciones', [AdminDirectoryController::class, 'posts'])->name('admin.posts.index');
     Route::patch('/administracion/publicaciones/{post}/retirar', [AdminController::class, 'removePost'])->name('admin.posts.remove');
     Route::get('/administracion/proveedores/{vendor}', [AdminDirectoryController::class, 'showVendor'])->name('admin.vendors.show');

@@ -18,6 +18,13 @@ class VacancyPaymentTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['marketplace.payments_enabled' => true, 'marketplace.live_payments_enabled' => true]);
+    }
+
     private function vacancy(): JobVacancy
     {
         config(['marketplace.vacancy_payment_driver' => 'mercadopago', 'services.mercadopago.sandbox' => true]);

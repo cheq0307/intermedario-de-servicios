@@ -22,16 +22,15 @@ final class DemoMode
         return str_ends_with(strtolower($identity->email), '.demo@example.test');
     }
 
-    public function enforceFakePayments(): void
+    public function enforcePaymentFreeRelease(): void
     {
         if (! $this->enabled()) {
             return;
         }
 
         config([
-            'marketplace.payment_driver' => 'fake',
-            'marketplace.vacancy_payment_driver' => 'fake',
-            'marketplace.allow_fake_payments' => true,
+            'marketplace.payments_enabled' => false,
+            'marketplace.allow_fake_payments' => false,
         ]);
     }
 }

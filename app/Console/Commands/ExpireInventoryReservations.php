@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use App\Domain\Marketplace\Enums\OrderStatus;
-use App\Domain\Marketplace\Enums\PaymentStatus;
 use App\Models\InventoryReservation;
 use App\Models\Listing;
 use App\Models\Order;
@@ -14,7 +13,7 @@ class ExpireInventoryReservations extends Command
 {
     protected $signature = 'plaza:expire-reservations';
 
-    protected $description = 'Libera inventario de pedidos cuyo pago no se completó a tiempo';
+    protected $description = 'Libera inventario de pedidos que no avanzaron a preparación a tiempo';
 
     public function handle(): int
     {
@@ -27,24 +26,23 @@ class ExpireInventoryReservations extends Command
                 if (! $reference) {
                     return;
                 }
-                // Match payment/cancellation locking order: order, then reservation.
+                // Match order cancellation locking order: order, then reservation.
                 $order = Order::lockForUpdate()->findOrFail($reference->order_id);
                 $reservation = InventoryReservation::lockForUpdate()->find($id);
                 if (! $reservation || $reservation->status !== 'active' || $reservation->expires_at->isFuture()) {
                     return;
                 }
 
-                if ($order->status !== OrderStatus::AwaitingPayment) {
+                if ($order->status !== OrderStatus::Accepted) {
                     return;
                 }
 
                 Listing::lockForUpdate()->findOrFail($reservation->listing_id)->increment('stock', $reservation->quantity);
                 $reservation->update(['status' => 'released', 'released_at' => now()]);
-                $order->payments()->where('status', PaymentStatus::Pending->value)->update(['status' => PaymentStatus::Cancelled->value]);
                 $order->update([
                     'status' => OrderStatus::Cancelled,
                     'cancelled_at' => now(),
-                    'cancellation_reason' => 'La reserva de inventario venció antes del pago.',
+                    'cancellation_reason' => 'La reserva de inventario venció antes de preparar el pedido.',
                 ]);
                 $order->conversation?->archive();
                 $released++;

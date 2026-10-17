@@ -18,15 +18,21 @@ class AdminInsightsTest extends TestCase
         foreach ([
             'admin.jobs.index' => 'Empleo y postulaciones',
             'admin.operations.index' => 'Operaciones',
-            'admin.promotions.index' => 'Publicidad',
-            'admin.payments.index' => 'Pagos y conciliación',
         ] as $route => $heading) {
             $this->actingAs($admin, 'admin')
                 ->get(route($route))
                 ->assertOk()
                 ->assertSee($heading)
                 ->assertSee('Cuentas')
-                ->assertDontSee('>Proveedores</a>', false);
+                ->assertDontSee('>Proveedores</a>', false)
+                ->assertDontSee('Pagos y conciliación')
+                ->assertDontSee('>Publicidad</a>', false);
+        }
+
+        foreach (['admin.promotions.index', 'admin.payments.index'] as $route) {
+            $this->actingAs($admin, 'admin')
+                ->get(route($route))
+                ->assertStatus(503);
         }
     }
 

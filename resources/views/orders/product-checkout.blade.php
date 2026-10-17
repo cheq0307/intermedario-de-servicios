@@ -3,14 +3,14 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Comprar {{ $listing->name }} - Plaza Local</title>
+    <title>Pedir {{ $listing->name }} - Plaza Local</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-brand-surface text-brand-ink antialiased">
     <x-market-nav :back-url="route('dashboard')" />
     <main class="mx-auto grid max-w-4xl gap-6 px-5 py-9 md:grid-cols-[1fr_340px]">
         <section class="rounded-[2rem] border border-brand/10 bg-white p-6 shadow-sm sm:p-8">
-            <p class="text-xs font-black uppercase tracking-[.18em] text-brand-orange">Compra local</p>
+            <p class="text-sm font-black text-brand-orange">Pedido local</p>
             <h1 class="mt-3 text-3xl font-black">{{ $listing->name }}</h1>
             <p class="mt-2 font-bold text-brand-muted">Vendido por {{ $listing->vendor->display_name }}</p>
             @if($listing->description)<p class="mt-6 leading-7">{{ $listing->description }}</p>@endif
@@ -24,9 +24,9 @@
                 <label class="block text-sm font-black">Cantidad<input class="mt-2 w-full rounded-2xl border-0 bg-white px-4 py-3 text-brand-ink" type="number" name="quantity" min="1" max="{{ min(50, $listing->stock ?? 0) }}" value="{{ old('quantity', 1) }}" required></label>
                 <label class="block text-sm font-black">Nota para el comercio<textarea class="mt-2 min-h-24 w-full rounded-2xl border-0 bg-white px-4 py-3 text-brand-ink" name="buyer_notes" maxlength="1000" placeholder="Opcional">{{ old('buyer_notes') }}</textarea></label>
                 @if($errors->any())<p class="rounded-2xl bg-red-100 p-3 text-sm font-black text-red-700">{{ $errors->first() }}</p>@endif
-                <button class="w-full rounded-full bg-brand-orange px-5 py-3.5 font-black text-white disabled:opacity-50" type="submit" @disabled(($listing->stock ?? 0) < 1)>Crear pedido</button>
+                <button class="w-full rounded-full bg-brand-orange px-5 py-3.5 font-black text-white disabled:opacity-50" type="submit" @disabled(($listing->stock ?? 0) < 1)>Confirmar pedido</button>
             </form>
-            <p class="mt-5 text-xs font-bold leading-5 text-white/60">Las existencias se reservan durante {{ config('marketplace.reservation_minutes') }} minutos. @if(config('marketplace.payment_driver') === 'fake')El pago es simulado y no mueve dinero real.@elseEl pago se confirma mediante la pasarela configurada.@endif</p>
+            <p class="mt-5 text-xs font-bold leading-5 text-white/60">Las existencias se reservan durante {{ config('marketplace.reservation_minutes') }} minutos mientras el comercio prepara el pedido.</p>
         </aside>
     </main>
 </body>

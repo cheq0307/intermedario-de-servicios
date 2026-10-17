@@ -398,7 +398,7 @@
                                 @if ($canSendProposal)
                                     <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-brand-surface hover:text-brand-orange" href="{{ route('job-proposals.index', $post->jobRequest) }}">Enviar propuesta</a>
                                 @elseif ($canBuyProduct)
-                                    <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-brand-surface hover:text-brand-orange" href="{{ route('products.checkout', $post->listing) }}">Comprar</a>
+                                    <a class="rounded-xl px-3 py-2.5 text-center transition hover:bg-brand-surface hover:text-brand-orange" href="{{ route('products.checkout', $post->listing) }}">Pedir</a>
                                 @elseif ($canContactSeller)
                                     <form method="POST" action="{{ route('posts.conversations.start', $post) }}">
                                         @csrf

@@ -44,9 +44,8 @@ class JobVacancyController extends Controller
         abort_if(request()->user()->hasAnyRole(['admin', 'superadmin']) && ! request()->user()->canUseMarketplace(), 403);
         $communities = Community::where('is_active', true)->orderBy('name')->get();
         $categories = Category::where('is_active', true)->orderBy('name')->get();
-        $fee = config('marketplace.job_posting_fee_amount');
 
-        return view('vacancies.create', compact('communities', 'categories', 'fee'));
+        return view('vacancies.create', compact('communities', 'categories'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -72,11 +71,13 @@ class JobVacancyController extends Controller
             'employer_id' => $request->user()->id,
             'salary_min_amount' => $this->minor($data['salary_min'] ?? null),
             'salary_max_amount' => $this->minor($data['salary_max'] ?? null),
-            'publication_fee_amount' => config('marketplace.job_posting_fee_amount'),
-            'status' => 'pending_payment',
+            'publication_fee_amount' => 0,
+            'status' => 'published',
+            'published_at' => now(),
+            'expires_at' => now()->addDays(config('marketplace.job_posting_days')),
         ]);
 
-        return redirect()->route('vacancies.show', $vacancy)->with('status', 'La vacante quedó en borrador. Confirma la tarifa para publicarla.');
+        return redirect()->route('vacancies.show', $vacancy)->with('status', 'La vacante quedó publicada.');
     }
 
     public function pay(Request $request, JobVacancy $vacancy, MercadoPagoVacancyCheckout $checkout): RedirectResponse

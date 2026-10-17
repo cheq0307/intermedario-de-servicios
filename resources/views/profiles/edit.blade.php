@@ -63,13 +63,6 @@
                         <label class="block"><span class="text-sm font-black">Herramientas y capacidades</span><textarea class="mt-2 min-h-28 w-full rounded-2xl border border-brand/10 bg-brand-surface px-4 py-3" name="tools" maxlength="1000">{{ old('tools', $user->vendor?->tools) }}</textarea></label>
                     </div>
                 </section>
-                @if($user->vendor?->status === 'active')
-                    <section class="rounded-[2rem] border border-brand/10 bg-white p-6 shadow-sm sm:p-8">
-                        <h2 class="text-xl font-black">Cobros y depositos</h2>
-                        <p class="mt-2 text-sm leading-6 text-brand-muted">Stripe recopila y verifica identidad y cuenta bancaria. Plaza Local no almacena esos datos sensibles.</p>
-                        @if($user->vendor->stripe_payouts_enabled)<p class="mt-4 rounded-2xl bg-brand-success-soft p-4 text-sm font-black text-brand-success">Cuenta verificada y habilitada para recibir depositos.</p>@else<form class="mt-4" method="POST" action="{{ route('stripe.connect') }}">@csrf<button class="rounded-full bg-stripe px-5 py-3 text-sm font-black text-white" type="submit">{{ $user->vendor->stripe_account_id ? 'Continuar verificacion con Stripe' : 'Configurar cobros con Stripe' }}</button></form>@endif
-                    </section>
-                @endif
             @endif
 
             <div class="grid grid-cols-2 gap-3 sm:flex sm:justify-end"><a class="rounded-full border border-brand/10 bg-white px-4 py-3.5 text-center font-black sm:px-7" href="{{ route('more.index') }}">Cancelar</a><button class="rounded-full bg-brand-orange px-4 py-3.5 font-black text-white shadow-lg shadow-brand-orange/15 sm:px-7" type="submit">Guardar perfil</button></div>
@@ -97,7 +90,7 @@
                 <p class="text-xs font-black uppercase tracking-[.16em] text-brand-orange">Verificación de proveedor</p>
                 @if($profileForm->vendorStatus === 'active')
                     <h2 class="mt-2 text-xl font-black">Tu perfil está aprobado</h2>
-                    <p class="mt-2 text-sm font-semibold text-brand-muted">Ya puedes publicar ofertas, enviar propuestas y configurar tus depósitos.</p>
+                    <p class="mt-2 text-sm font-semibold text-brand-muted">Ya puedes publicar ofertas, enviar propuestas y registrar acuerdos con tu comunidad.</p>
                 @elseif($profileForm->vendorStatus === 'pending')
                     <h2 class="mt-2 text-xl font-black">Solicitud en revisión</h2>
                     <p class="mt-2 text-sm font-semibold text-brand-muted">La enviaste {{ $user->vendor->submitted_at?->format('d/m/Y H:i') }}. Si editas los datos comerciales, volverá a borrador y tendrás que enviarla nuevamente.</p>

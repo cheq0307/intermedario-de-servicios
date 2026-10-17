@@ -2,7 +2,7 @@
     <div>
         <p class="text-xs font-black uppercase tracking-[.2em] text-brand-coral-strong">Entorno local de validación</p>
         <h1 class="mt-3 text-3xl font-black tracking-tight">Perfiles de prueba</h1>
-        <p class="mt-3 text-sm font-semibold text-brand-sage-muted">Entra con un perfil ficticio sin contraseña. Los pagos de este modo siempre son simulados.</p>
+        <p class="mt-3 text-sm font-semibold text-brand-sage-muted">Entra con un perfil ficticio sin contraseña y recorre los flujos completos de la comunidad.</p>
     </div>
 
     <div class="mt-8 space-y-7">

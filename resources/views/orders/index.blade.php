@@ -8,7 +8,7 @@
 </head>
 <body class="min-h-screen pb-24 bg-brand-surface text-brand-ink antialiased">
     @php($statusLabels = ['accepted' => 'Contratación aceptada', 'in_progress' => 'En progreso', 'delivered' => 'Esperando confirmación', 'completed' => 'Completado', 'cancelled' => 'Cancelado', 'disputed' => 'En disputa'])
-    @php($statusLabels = array_merge($statusLabels, ['awaiting_payment' => 'Pendiente de pago', 'paid' => 'Pagado', 'ready' => 'Listo para entregar']))
+    @php($statusLabels = array_merge($statusLabels, ['awaiting_payment' => 'Registro anterior', 'paid' => 'Confirmado anteriormente', 'ready' => 'Listo para entregar']))
     <x-market-nav :back-url="route('more.index')" />
     <main class="mx-auto max-w-5xl px-5 py-9">
         <p class="text-xs font-black uppercase tracking-[.18em] text-brand-orange">Contrataciones</p>
@@ -22,7 +22,7 @@
                 <a class="block rounded-[1.75rem] border border-brand/10 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-orange/25" href="{{ route('orders.show', $order) }}">
                     <div class="flex flex-wrap items-start justify-between gap-4">
                         <div>
-                            <span class="rounded-full bg-brand-avatar-soft px-3 py-1.5 text-xs font-black text-brand-success">{{ $isProduct ? ($isBuyer ? 'Compraste' : 'Te compraron') : ($isBuyer ? 'Contrataste' : 'Te contrataron') }}</span>
+                            <span class="rounded-full bg-brand-avatar-soft px-3 py-1.5 text-xs font-black text-brand-success">{{ $isProduct ? ($isBuyer ? 'Pediste' : 'Recibiste un pedido') : ($isBuyer ? 'Contrataste' : 'Te contrataron') }}</span>
                             <h2 class="mt-3 text-xl font-black">{{ $order->jobRequest?->title ?? $order->items->first()?->name_snapshot ?? 'Trabajo local' }}</h2>
                             <p class="mt-2 text-sm font-bold text-brand-muted">Con {{ $isBuyer ? $order->vendor->display_name : $order->buyer->name }}</p>
                         </div>

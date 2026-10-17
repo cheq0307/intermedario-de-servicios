@@ -14,6 +14,13 @@ class StripeWebhookTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['marketplace.payments_enabled' => true, 'marketplace.live_payments_enabled' => true]);
+    }
+
     public function test_signed_payment_webhook_is_idempotent_and_marks_order_paid(): void
     {
         config(['services.stripe.webhook_secret' => 'whsec_test']);

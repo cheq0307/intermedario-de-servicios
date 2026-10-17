@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Contracts\MarketplacePaymentGateway;
 use App\Domain\Marketplace\Enums\ListingType;
 use App\Domain\Marketplace\Enums\OrderStatus;
 use App\Domain\Marketplace\Enums\PaymentStatus;
@@ -30,14 +29,14 @@ class ProductOrderController extends Controller
         return view('orders.product-checkout', compact('listing'));
     }
 
-    public function store(Request $request, Listing $listing, MarketplacePaymentGateway $gateway, NegotiationConversationService $negotiations): RedirectResponse
+    public function store(Request $request, Listing $listing, NegotiationConversationService $negotiations): RedirectResponse
     {
         $validated = $request->validate([
             'quantity' => ['required', 'integer', 'min:1', 'max:50'],
             'buyer_notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $order = DB::transaction(function () use ($request, $listing, $validated, $gateway, $negotiations): Order {
+        $order = DB::transaction(function () use ($request, $listing, $validated, $negotiations): Order {
             $lockedListing = Listing::with('vendor')->lockForUpdate()->findOrFail($listing->id);
             $this->ensurePurchasable($request, $lockedListing);
 
@@ -46,16 +45,14 @@ class ProductOrderController extends Controller
             abort_if($lockedListing->stock < $quantity, 422, 'No hay suficientes piezas disponibles.');
 
             $subtotal = $lockedListing->price_amount * $quantity;
-            $commission = (int) round($subtotal * $lockedListing->vendor->commission_rate_basis_points / 10000);
-
             $order = Order::create([
                 'public_id' => (string) Str::uuid(),
                 'buyer_id' => $request->user()->id,
                 'vendor_id' => $lockedListing->vendor_id,
-                'status' => OrderStatus::AwaitingPayment,
+                'status' => OrderStatus::Accepted,
                 'fulfillment_type' => 'pickup',
                 'subtotal_amount' => $subtotal,
-                'commission_amount' => $commission,
+                'commission_amount' => 0,
                 'total_amount' => $subtotal,
                 'currency' => $lockedListing->currency,
                 'buyer_notes' => $validated['buyer_notes'] ?? null,
@@ -78,18 +75,6 @@ class ProductOrderController extends Controller
                 'expires_at' => now()->addMinutes(config('marketplace.reservation_minutes')),
             ]);
 
-            $gatewayData = $gateway->createPayment($order);
-            $order->payments()->create([
-                'provider' => $gatewayData['provider'],
-                'provider_reference' => $gatewayData['reference'],
-                'status' => PaymentStatus::Pending,
-                'gross_amount' => $subtotal,
-                'commission_amount' => $commission,
-                'vendor_net_amount' => $subtotal - $commission,
-                'currency' => $lockedListing->currency,
-                'provider_payload' => $gatewayData['payload'],
-            ]);
-
             $participantIds = collect([$request->user()->id, $lockedListing->vendor->user_id])->sort()->values();
             $conversation = Conversation::create([
                 'public_id' => (string) Str::uuid(),
@@ -101,7 +86,7 @@ class ProductOrderController extends Controller
             $conversation->messages()->create([
                 'sender_id' => $request->user()->id,
                 'type' => 'system',
-                'body' => 'Se creó un pedido de producto pendiente de pago.',
+                'body' => 'Se creó un pedido de producto y el acuerdo quedó registrado.',
                 'metadata' => ['order_public_id' => $order->public_id],
             ]);
             $conversation->update(['last_message_at' => now()]);
@@ -120,7 +105,7 @@ class ProductOrderController extends Controller
         });
         $this->notify($order->vendor->user, 'Nuevo pedido recibido', 'Un cliente reservó '.$order->items()->firstOrFail()->name_snapshot.'.', $order, 'order_created');
 
-        return redirect()->route('orders.show', $order)->with('status', 'Pedido creado. El inventario quedó reservado temporalmente.');
+        return redirect()->route('orders.show', $order)->with('status', 'Pedido confirmado. El inventario quedó reservado.');
     }
 
     public function simulatePayment(Request $request, Order $order): RedirectResponse
@@ -148,7 +133,7 @@ class ProductOrderController extends Controller
 
     public function ready(Request $request, Order $order): RedirectResponse
     {
-        $this->vendorTransition($request, $order, OrderStatus::Paid, OrderStatus::Ready);
+        $this->vendorTransition($request, $order, OrderStatus::Accepted, OrderStatus::Ready);
         $this->notify($order->buyer, 'Tu pedido está listo', 'El comercio marcó tu pedido como listo para entregar.', $order, 'order_ready');
 
         return back()->with('status', 'Pedido marcado como listo para entregar.');
@@ -167,18 +152,17 @@ class ProductOrderController extends Controller
         DB::transaction(function () use ($request, $order): void {
             $lockedOrder = Order::with(['payments', 'inventoryReservation.listing'])->lockForUpdate()->findOrFail($order->id);
             abort_unless($lockedOrder->buyer_id === $request->user()->id, 403);
-            abort_unless($lockedOrder->status === OrderStatus::AwaitingPayment, 422);
+            abort_unless($lockedOrder->status === OrderStatus::Accepted, 422);
 
             $this->releaseReservation($lockedOrder->inventoryReservation);
             $lockedOrder->conversation?->archive();
-            $lockedOrder->payments()->where('status', PaymentStatus::Pending->value)->update(['status' => PaymentStatus::Cancelled->value]);
             $lockedOrder->update([
                 'status' => OrderStatus::Cancelled,
                 'cancelled_at' => now(),
-                'cancellation_reason' => 'Cancelado por el comprador antes del pago.',
+                'cancellation_reason' => 'Cancelado por el comprador antes de preparar el pedido.',
             ]);
         });
-        $this->notify($order->vendor->user, 'Pedido cancelado', 'El comprador canceló el pedido antes del pago y se liberó el inventario.', $order, 'order_cancelled');
+        $this->notify($order->vendor->user, 'Pedido cancelado', 'El comprador canceló el pedido y se liberó el inventario.', $order, 'order_cancelled');
 
         return back()->with('status', 'Pedido cancelado e inventario liberado.');
     }

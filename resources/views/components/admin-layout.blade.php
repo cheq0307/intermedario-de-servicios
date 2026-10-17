@@ -25,8 +25,10 @@
         ],
         'Atención y negocio' => [
             ['key' => 'support', 'label' => 'Soporte', 'href' => route('admin.support.index'), 'icon' => 'support'],
-            ['key' => 'promotions', 'label' => 'Publicidad', 'href' => route('admin.promotions.index'), 'icon' => 'megaphone'],
-            ['key' => 'payments', 'label' => 'Pagos y conciliación', 'href' => route('admin.payments.index'), 'icon' => 'payment'],
+            ...(config('marketplace.payments_enabled') ? [
+                ['key' => 'promotions', 'label' => 'Publicidad', 'href' => route('admin.promotions.index'), 'icon' => 'megaphone'],
+                ['key' => 'payments', 'label' => 'Pagos y conciliación', 'href' => route('admin.payments.index'), 'icon' => 'payment'],
+            ] : []),
         ],
         'Sistema' => [
             ...($isSuperadmin ? [['key'=>'team','label'=>'Administradores','href'=>route('admin.team.index'),'icon'=>'users']] : []),

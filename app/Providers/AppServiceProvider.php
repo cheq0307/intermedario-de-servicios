@@ -45,7 +45,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        app(DemoMode::class)->enforceFakePayments();
+        app(DemoMode::class)->enforcePaymentFreeRelease();
         RateLimiter::for('registration', fn (Request $request) => Limit::perHour(10)->by('register:'.$request->ip()));
         foreach (['publications' => 10, 'messages' => 60, 'support-write' => 10, 'checkout' => 10] as $name => $perMinute) {
             RateLimiter::for($name, fn (Request $request) => [

@@ -25,26 +25,20 @@ class ProductOrderTest extends TestCase
 
         $order = Order::firstOrFail();
         $response->assertRedirect(route('orders.show', $order));
-        $this->assertSame('awaiting_payment', $order->status->value);
+        $this->assertSame('accepted', $order->status->value);
         $this->assertSame(3, $listing->fresh()->stock);
         $this->assertSame(30000, $order->subtotal_amount);
-        $this->assertSame(2400, $order->commission_amount);
+        $this->assertSame(0, $order->commission_amount);
         $this->assertDatabaseHas('inventory_reservations', ['order_id' => $order->id, 'quantity' => 2, 'status' => 'active']);
-        $this->assertDatabaseHas('payments', ['order_id' => $order->id, 'provider' => 'fake', 'status' => 'pending']);
+        $this->assertDatabaseCount('payments', 0);
         $this->assertDatabaseHas('conversations', ['order_id' => $order->id, 'type' => 'operation', 'state' => 'active']);
     }
 
-    public function test_product_order_follows_payment_and_delivery_lifecycle(): void
+    public function test_product_order_follows_confirmation_and_delivery_lifecycle(): void
     {
         [$buyer, $provider, $listing] = $this->scenario();
         $this->actingAs($buyer, 'web')->post(route('products.orders.store', $listing), ['quantity' => 1]);
         $order = Order::firstOrFail();
-
-        $this->actingAs($provider, 'web')->post(route('products.orders.simulate-payment', $order))->assertForbidden();
-        $this->actingAs($buyer, 'web')->post(route('products.orders.simulate-payment', $order))->assertRedirect();
-        $this->assertSame('paid', $order->fresh()->status->value);
-        $this->assertSame('paid', $order->payments()->firstOrFail()->status->value);
-        $this->assertSame('consumed', $order->inventoryReservation()->firstOrFail()->status);
 
         $this->actingAs($provider, 'web')->patch(route('products.orders.ready', $order))->assertRedirect();
         $this->assertSame('ready', $order->fresh()->status->value);
@@ -54,7 +48,7 @@ class ProductOrderTest extends TestCase
         $this->assertSame('completed', $order->fresh()->status->value);
     }
 
-    public function test_buyer_can_cancel_before_payment_and_stock_is_restored_once(): void
+    public function test_buyer_can_cancel_before_fulfillment_and_stock_is_restored_once(): void
     {
         [$buyer, , $listing] = $this->scenario(stock: 2);
         $this->actingAs($buyer, 'web')->post(route('products.orders.store', $listing), ['quantity' => 2]);
@@ -80,7 +74,7 @@ class ProductOrderTest extends TestCase
 
         $this->assertSame(2, $listing->fresh()->stock);
         $this->assertSame('cancelled', $order->fresh()->status->value);
-        $this->assertSame('cancelled', $order->payments()->firstOrFail()->status->value);
+        $this->assertDatabaseCount('payments', 0);
         $this->assertSame('archived', $order->conversation()->firstOrFail()->state);
     }
 

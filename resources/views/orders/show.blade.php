@@ -9,16 +9,15 @@
 <body class="min-h-screen pb-24 bg-brand-surface text-brand-ink antialiased">
     @php
         $isBuyer = $order->buyer_id === auth()->id();
-        $statusLabels = ['accepted' => 'Aceptada', 'awaiting_payment' => 'Pendiente de pago', 'paid' => 'Pagada', 'in_progress' => 'En progreso', 'ready' => 'Lista para entregar', 'delivered' => 'Entregada', 'completed' => 'Completada', 'cancelled' => 'Cancelada', 'disputed' => 'En disputa'];
-        $steps = ['awaiting_payment' => 'Pago', 'paid' => 'Pagado', 'in_progress' => 'En progreso', 'delivered' => 'Entregado', 'completed' => 'Completado'];
+        $statusLabels = ['accepted' => 'Confirmada', 'in_progress' => 'En progreso', 'ready' => 'Lista para entregar', 'delivered' => 'Entregada', 'completed' => 'Completada', 'cancelled' => 'Cancelada', 'disputed' => 'En disputa'];
+        $steps = ['accepted' => 'Acuerdo', 'in_progress' => 'En progreso', 'delivered' => 'Entregado', 'completed' => 'Completado'];
         $isProduct = $order->fulfillment_type === 'pickup';
         if ($isProduct) {
-            $steps = ['awaiting_payment' => 'Pago', 'paid' => 'Pagado', 'ready' => 'Listo', 'delivered' => 'Entregado', 'completed' => 'Completado'];
+            $steps = ['accepted' => 'Confirmado', 'ready' => 'Listo', 'delivered' => 'Entregado', 'completed' => 'Completado'];
         }
 
         $currentStep = array_search($order->status->value, array_keys($steps), true);
         $ownReview = $order->reviews->firstWhere('author_id', auth()->id());
-        $payment = $order->payments->sortByDesc('id')->first();
     @endphp
     <x-market-nav :back-url="route('orders.index')" />
     <main class="mx-auto max-w-5xl px-5 py-9">
@@ -44,13 +43,9 @@
                 <dl class="mt-5 grid gap-5 sm:grid-cols-2">
                     <div><dt class="text-xs font-black uppercase tracking-[.12em] text-brand-muted">Precio acordado</dt><dd class="mt-1 font-black">${{ number_format($order->subtotal_amount / 100, 2) }} MXN</dd></div>
                     <div><dt class="text-xs font-black uppercase tracking-[.12em] text-brand-muted">Fecha estimada</dt><dd class="mt-1 font-black">{{ $order->due_at?->translatedFormat('j M Y') ?? 'Por confirmar' }}</dd></div>
-                    @if (! $isBuyer)<div><dt class="text-xs font-black uppercase tracking-[.12em] text-brand-muted">Comisión Plaza Local</dt><dd class="mt-1 font-black">${{ number_format($order->commission_amount / 100, 2) }} MXN</dd></div><div><dt class="text-xs font-black uppercase tracking-[.12em] text-brand-muted">Ingreso estimado</dt><dd class="mt-1 font-black text-brand-success">${{ number_format(($order->subtotal_amount - $order->commission_amount) / 100, 2) }} MXN</dd></div>@endif
+                    @if (! $isBuyer)<div><dt class="text-xs font-black uppercase tracking-[.12em] text-brand-muted">Importe acordado</dt><dd class="mt-1 font-black text-brand-success">${{ number_format($order->subtotal_amount / 100, 2) }} MXN</dd></div>@endif
                 </dl>
                 <div class="mt-6 rounded-2xl bg-brand-surface p-4"><p class="text-xs font-black uppercase tracking-[.12em] text-brand-muted">Incluye</p><p class="mt-2 whitespace-pre-line leading-7">{{ $order->jobProposal?->message }}</p></div>
-                @if(!$isProduct && $payment?->provider === 'fake')
-                <div class="mt-5 rounded-2xl border border-brand-gold-pale bg-brand-gold-faint p-4 text-sm font-bold leading-6 text-brand-warning-copy">Modo de preproducción: el pago se simula para probar retención, comisión y liberación; no mueve dinero real.</div>
-                @endif
-                @if($isProduct && $payment?->provider === 'fake')<div class="mt-5 rounded-2xl border border-brand-gold-pale bg-brand-gold-faint p-4 text-sm font-bold leading-6 text-brand-warning-copy">Modo de desarrollo: el inventario sí se reserva, pero el botón de pago usa un simulador y no mueve dinero real.</div>@endif
                 @if ($order->cancellation_reason)<div class="mt-5 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700"><strong>Motivo de cancelación:</strong> {{ $order->cancellation_reason }}</div>@endif
                 @if($order->reviews->isNotEmpty())<div class="mt-6 border-t border-brand/10 pt-6"><h2 class="text-xl font-black">Calificaciones verificadas</h2><div class="mt-4 space-y-3">@foreach($order->reviews as $review)<article class="rounded-2xl bg-brand-surface p-4"><strong>{{ $review->author->name }} · {{ str_repeat('★', $review->rating) }}</strong>@if($review->comment)<p class="mt-2 text-sm leading-6 text-brand-copy">{{ $review->comment }}</p>@endif</article>@endforeach</div></div>@endif
                 @if($order->status->value === 'completed' && ! $ownReview)
@@ -63,13 +58,9 @@
             <aside class="space-y-4">
                 <section class="rounded-[1.75rem] border border-brand/10 bg-white p-5 shadow-sm"><h2 class="font-black">Siguiente acción</h2>
                     <div class="mt-4 space-y-3">
-                        @if($isBuyer && $order->status->value === 'awaiting_payment' && $payment?->provider === 'stripe')
-                            <form id="stripe-payment-form" class="space-y-3"><div id="stripe-payment-element" class="rounded-2xl border border-brand/10 p-3"></div><p id="stripe-payment-error" class="text-sm font-bold text-red-600"></p><button id="stripe-payment-button" class="w-full rounded-full bg-stripe px-5 py-3 font-black text-white" type="submit">Pagar de forma segura</button></form>
-                        @elseif ($isProduct && $isBuyer && $order->status->value === 'awaiting_payment' && (app()->environment(['local', 'testing']) || (app()->environment('staging') && config('marketplace.allow_fake_payments'))))<form method="POST" action="{{ route('products.orders.simulate-payment', $order) }}">@csrf<button class="w-full rounded-full bg-brand-orange px-5 py-3 font-black text-white" type="submit">Simular pago aprobado</button></form>
-                        @elseif (! $isProduct && $isBuyer && $order->status->value === 'awaiting_payment' && (app()->environment(['local', 'testing']) || (app()->environment('staging') && config('marketplace.allow_fake_payments'))))<form method="POST" action="{{ route('orders.simulate-payment', $order) }}">@csrf<button class="w-full rounded-full bg-brand-orange px-5 py-3 font-black text-white" type="submit">Simular pago del servicio</button></form>
-                        @elseif ($isProduct && ! $isBuyer && $order->status->value === 'paid')<form method="POST" action="{{ route('products.orders.ready', $order) }}">@csrf @method('PATCH')<button class="w-full rounded-full bg-brand-orange px-5 py-3 font-black text-white" type="submit">Marcar pedido listo</button></form>
+                        @if ($isProduct && ! $isBuyer && $order->status->value === 'accepted')<form method="POST" action="{{ route('products.orders.ready', $order) }}">@csrf @method('PATCH')<button class="w-full rounded-full bg-brand-orange px-5 py-3 font-black text-white" type="submit">Marcar pedido listo</button></form>
                         @elseif ($isProduct && ! $isBuyer && $order->status->value === 'ready')<form method="POST" action="{{ route('products.orders.deliver', $order) }}">@csrf @method('PATCH')<button class="w-full rounded-full bg-brand-orange px-5 py-3 font-black text-white" type="submit">Registrar entrega</button></form>
-                        @elseif (! $isProduct && ! $isBuyer && $order->status->value === 'paid')<form method="POST" action="{{ route('orders.start', $order) }}">@csrf @method('PATCH')<button class="w-full rounded-full bg-brand-orange px-5 py-3 font-black text-white" type="submit">Iniciar trabajo</button></form>
+                        @elseif (! $isProduct && ! $isBuyer && $order->status->value === 'accepted')<form method="POST" action="{{ route('orders.start', $order) }}">@csrf @method('PATCH')<button class="w-full rounded-full bg-brand-orange px-5 py-3 font-black text-white" type="submit">Iniciar trabajo</button></form>
                         @elseif (! $isBuyer && $order->status->value === 'in_progress')<form method="POST" action="{{ route('orders.deliver', $order) }}">@csrf @method('PATCH')<button class="w-full rounded-full bg-brand-orange px-5 py-3 font-black text-white" type="submit">Marcar como entregado</button></form>
                         @elseif ($isBuyer && $order->status->value === 'delivered')<form method="POST" action="{{ route('orders.complete', $order) }}">@csrf @method('PATCH')<button class="w-full rounded-full bg-brand-success px-5 py-3 font-black text-white" type="submit">Confirmar entrega</button></form>
                         @else<p class="text-sm font-bold leading-6 text-brand-muted">No tienes una acción pendiente en este momento.</p>@endif
@@ -77,10 +68,10 @@
                     </div>
                 </section>
 
-                @if (! $isProduct && in_array($order->status->value, ['accepted', 'awaiting_payment'], true))
+                @if (! $isProduct && $order->status->value === 'accepted')
                     <section class="rounded-[1.75rem] border border-red-100 bg-white p-5"><h2 class="font-black">Cancelar antes de iniciar</h2><p class="mt-2 text-xs font-bold leading-5 text-brand-muted">El motivo quedará registrado para ambas partes.</p><form class="mt-4 space-y-3" method="POST" action="{{ route('orders.cancel', $order) }}">@csrf @method('PATCH')<textarea class="min-h-24 w-full rounded-2xl border border-brand/10 bg-brand-surface px-4 py-3 text-sm" name="reason" minlength="10" maxlength="1000" required placeholder="Explica el motivo"></textarea><button class="w-full rounded-full border border-red-200 px-5 py-2.5 text-sm font-black text-red-700" type="submit">Cancelar contratación</button></form></section>
                 @endif
-                @if ($isProduct && $isBuyer && $order->status->value === 'awaiting_payment')<section class="rounded-[1.75rem] border border-red-100 bg-white p-5"><h2 class="font-black">Cancelar pedido</h2><p class="mt-2 text-xs font-bold leading-5 text-brand-muted">Se devolverán inmediatamente las piezas reservadas al inventario.</p><form class="mt-4" method="POST" action="{{ route('products.orders.cancel', $order) }}">@csrf @method('PATCH')<button class="w-full rounded-full border border-red-200 px-5 py-2.5 text-sm font-black text-red-700" type="submit">Cancelar pedido</button></form></section>@endif
+                @if ($isProduct && $isBuyer && $order->status->value === 'accepted')<section class="rounded-[1.75rem] border border-red-100 bg-white p-5"><h2 class="font-black">Cancelar pedido</h2><p class="mt-2 text-xs font-bold leading-5 text-brand-muted">Se devolverán inmediatamente las piezas reservadas al inventario.</p><form class="mt-4" method="POST" action="{{ route('products.orders.cancel', $order) }}">@csrf @method('PATCH')<button class="w-full rounded-full border border-red-200 px-5 py-2.5 text-sm font-black text-red-700" type="submit">Cancelar pedido</button></form></section>@endif
                 @if($order->dispute)
                     <a class="block rounded-[1.75rem] bg-brand-orange-soft p-5 font-black text-brand-danger-warm" href="{{ route('disputes.show', $order->dispute) }}">Ver expediente de disputa →</a>
                 @elseif(in_array($order->status->value, ['paid', 'in_progress', 'ready', 'delivered'], true))
@@ -89,20 +80,6 @@
             </aside>
         </div>
     </main>
-@if($isBuyer && $order->status->value === 'awaiting_payment' && $payment?->provider === 'stripe')
-<script src="https://js.stripe.com/v3/"></script>
-<script>
-const stripe = Stripe(@json(config('services.stripe.key')));
-const elements = stripe.elements({clientSecret: @json($payment->provider_payload['client_secret'] ?? null)});
-elements.create('payment').mount('#stripe-payment-element');
-document.getElementById('stripe-payment-form').addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const button = document.getElementById('stripe-payment-button'); button.disabled = true;
-    const {error} = await stripe.confirmPayment({elements, confirmParams: {return_url: @json(route('orders.show', $order))}});
-    if (error) { document.getElementById('stripe-payment-error').textContent = error.message; button.disabled = false; }
-});
-</script>
-@endif
 <x-bottom-nav active="orders" />
 </body>
 </html>

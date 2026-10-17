@@ -88,12 +88,12 @@ try {
     await assertNoHorizontalOverflow(buyer, 'Explore 375px');
     await buyer.getByRole('link', { name: /Producto integral E2E/ }).click();
     await buyer.locator('[name=quantity]').fill('2');
-    await buyer.locator('[name=buyer_notes]').fill('Compra E2E sin pago real.');
+    await buyer.locator('[name=buyer_notes]').fill('Pedido local E2E.');
     await Promise.all([
         buyer.waitForURL((url) => url.pathname.startsWith('/trabajos/')),
         buyer.getByRole('button', { name: /Crear pedido|Confirmar pedido|Reservar/i }).click(),
     ]);
-    await buyer.getByText(/Por pagar|Esperando pago|pendiente/i).first().waitFor();
+    await buyer.getByText(/Aceptad|Pedido registrado|acuerdo/i).first().waitFor();
 
     const employer = await marketplacePage('employer-e2e@example.test');
     await employer.goto(`${baseUrl}/empleo-publicar`);
@@ -112,14 +112,13 @@ try {
         employer.waitForURL((url) => /^\/empleo\/[^/]+$/.test(url.pathname)),
         employer.getByRole('button', { name: /Crear vacante|Continuar|Publicar/i }).click(),
     ]);
-    await employer.getByRole('button', { name: 'Confirmar pago y publicar' }).click();
     await employer.getByText('VACANTE DE EMPLEO', { exact: true }).waitFor();
 
     const applicant = await marketplacePage('applicant-e2e@example.test', { width: 390, height: 844 });
     await applicant.goto(`${baseUrl}/empleo`);
     await applicant.getByRole('link', { name: /Auxiliar integral E2E/ }).click();
     await applicant.locator('[name=cover_letter]').fill('Me interesa la vacante E2E y cuento con disponibilidad para el horario indicado.');
-    await applicant.getByRole('button', { name: 'Postularme gratis' }).click();
+    await applicant.getByRole('button', { name: 'Postularme' }).click();
     await applicant.getByText('Ya enviaste tu postulación.').waitFor();
     await applicant.getByRole('link', { name: 'Buscar trabajo' }).waitFor();
     await assertNoHorizontalOverflow(applicant, 'Mobile vacancy');

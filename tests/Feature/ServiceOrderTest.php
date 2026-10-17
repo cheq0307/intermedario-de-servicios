@@ -21,14 +21,6 @@ class ServiceOrderTest extends TestCase
         [$client, $provider, $order, $jobRequest] = $this->scenario();
         $this->actingAs($provider, 'web')->get(route('orders.show', $order))->assertOk();
 
-        $this->actingAs($provider, 'web')->patch(route('orders.start', $order))->assertStatus(422);
-        $this->actingAs($client, 'web')->post(route('orders.simulate-payment', $order))->assertRedirect();
-        $this->assertSame('paid', $order->fresh()->status->value);
-        $this->assertDatabaseHas('payments', [
-            'order_id' => $order->id,
-            'status' => 'paid',
-        ]);
-
         $this->actingAs($provider, 'web')->patch(route('orders.start', $order))->assertRedirect();
         $this->assertSame('in_progress', $order->fresh()->status->value);
         $this->assertNotNull($order->fresh()->started_at);
@@ -42,10 +34,7 @@ class ServiceOrderTest extends TestCase
         $this->actingAs($client, 'web')->patch(route('orders.complete', $order))->assertRedirect();
         $this->assertSame('completed', $order->fresh()->status->value);
         $this->assertSame('completed', $jobRequest->fresh()->status->value);
-        $this->assertDatabaseHas('payments', [
-            'order_id' => $order->id,
-            'status' => 'released',
-        ]);
+        $this->assertDatabaseCount('payments', 0);
         $this->actingAs($client, 'web')->get(route('orders.show', $order))->assertOk()->assertSee('Califica esta experiencia');
     }
 
@@ -61,13 +50,9 @@ class ServiceOrderTest extends TestCase
         $this->assertSame('cancelled', $jobRequest->fresh()->status->value);
         $this->assertNotNull($order->fresh()->cancellation_reason);
 
-        $this->assertDatabaseHas('payments', [
-            'order_id' => $order->id,
-            'status' => 'cancelled',
-        ]);
+        $this->assertDatabaseCount('payments', 0);
 
         [$secondClient, $secondProvider, $secondOrder] = $this->scenario('segunda');
-        $this->actingAs($secondClient, 'web')->post(route('orders.simulate-payment', $secondOrder));
         $this->actingAs($secondProvider, 'web')->patch(route('orders.start', $secondOrder));
         $this->actingAs($secondProvider, 'web')->patch(route('orders.cancel', $secondOrder), [
             'reason' => 'Intento de cancelar un trabajo que ya está iniciado.',
@@ -132,10 +117,10 @@ class ServiceOrderTest extends TestCase
             'vendor_id' => $vendor->id,
             'job_request_id' => $jobRequest->id,
             'job_proposal_id' => $proposal->id,
-            'status' => 'awaiting_payment',
+            'status' => 'accepted',
             'fulfillment_type' => 'service',
             'subtotal_amount' => 125000,
-            'commission_amount' => 10000,
+            'commission_amount' => 0,
             'total_amount' => 125000,
             'currency' => 'MXN',
             'accepted_at' => now(),
@@ -148,16 +133,6 @@ class ServiceOrderTest extends TestCase
             'line_total_amount' => 125000,
         ]);
 
-        $order->payments()->create([
-            'provider' => 'fake',
-            'provider_reference' => 'fake_'.Str::uuid(),
-            'status' => 'pending',
-            'gross_amount' => 125000,
-            'commission_amount' => 10000,
-            'vendor_net_amount' => 115000,
-            'currency' => 'MXN',
-            'provider_payload' => [],
-        ]);
         $conversation = Conversation::create([
             'public_id' => (string) Str::uuid(),
             'order_id' => $order->id,

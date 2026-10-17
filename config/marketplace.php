@@ -32,6 +32,9 @@ return [
     ],
 
     'payment_driver' => env('MARKETPLACE_PAYMENT_DRIVER', 'fake'),
+    // Product decision: the first production release has no in-platform payments.
+    // This is intentionally not controlled by credentials or an environment flag.
+    'payments_enabled' => false,
     'live_payments_enabled' => (bool) env('MARKETPLACE_LIVE_PAYMENTS_ENABLED', false),
     'allow_fake_payments' => (bool) env('MARKETPLACE_ALLOW_FAKE_PAYMENTS', false),
     'reservation_minutes' => (int) env('MARKETPLACE_RESERVATION_MINUTES', 20),

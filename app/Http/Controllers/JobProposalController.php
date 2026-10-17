@@ -2,12 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Contracts\MarketplacePaymentGateway;
 use App\Domain\Marketplace\Enums\JobRequestStatus;
 use App\Domain\Marketplace\Enums\OrderStatus;
-use App\Domain\Marketplace\Enums\PaymentStatus;
 use App\Domain\Marketplace\Enums\ProposalStatus;
-use App\Domain\Marketplace\Services\CommissionCalculator;
 use App\Models\Conversation;
 use App\Models\JobProposal;
 use App\Models\JobRequest;
@@ -24,8 +21,6 @@ use Illuminate\View\View;
 
 class JobProposalController extends Controller
 {
-    public function __construct(private readonly CommissionCalculator $commissionCalculator) {}
-
     public function index(Request $request, JobRequest $jobRequest): View
     {
         $jobRequest->loadMissing('post');
@@ -91,7 +86,7 @@ class JobProposalController extends Controller
         return redirect()->route('job-proposals.index', $jobRequest)->with('status', 'Tu propuesta fue enviada correctamente.');
     }
 
-    public function accept(Request $request, JobRequest $jobRequest, JobProposal $proposal, MarketplacePaymentGateway $gateway, NegotiationConversationService $negotiations): RedirectResponse
+    public function accept(Request $request, JobRequest $jobRequest, JobProposal $proposal, NegotiationConversationService $negotiations): RedirectResponse
     {
         $this->assertOwnerAndProposal($request, $jobRequest, $proposal);
 
@@ -99,7 +94,7 @@ class JobProposalController extends Controller
             ->where('status', ProposalStatus::Pending->value)
             ->pluck('provider_id');
 
-        $order = DB::transaction(function () use ($request, $jobRequest, $proposal, $gateway, $negotiations): Order {
+        $order = DB::transaction(function () use ($request, $jobRequest, $proposal, $negotiations): Order {
             $lockedRequest = JobRequest::query()->lockForUpdate()->findOrFail($jobRequest->id);
             $lockedProposal = JobProposal::query()->with('provider.vendor')->lockForUpdate()->findOrFail($proposal->id);
 
@@ -108,21 +103,16 @@ class JobProposalController extends Controller
             abort_unless($lockedProposal->provider->vendor, 422, 'El proveedor debe completar su perfil comercial antes de ser contratado.');
 
             $vendor = $lockedProposal->provider->vendor;
-            $commissionAmount = $this->commissionCalculator->calculate(
-                $lockedProposal->amount,
-                $vendor->commission_rate_basis_points,
-            );
-
             $order = Order::create([
                 'public_id' => (string) Str::uuid(),
                 'buyer_id' => $lockedRequest->client_id,
                 'vendor_id' => $vendor->id,
                 'job_request_id' => $lockedRequest->id,
                 'job_proposal_id' => $lockedProposal->id,
-                'status' => OrderStatus::AwaitingPayment,
+                'status' => OrderStatus::Accepted,
                 'fulfillment_type' => 'service',
                 'subtotal_amount' => $lockedProposal->amount,
-                'commission_amount' => $commissionAmount,
+                'commission_amount' => 0,
                 'total_amount' => $lockedProposal->amount,
                 'currency' => $lockedProposal->currency,
                 'buyer_notes' => $lockedRequest->description,
@@ -139,18 +129,6 @@ class JobProposalController extends Controller
                     'estimated_days' => $lockedProposal->estimated_days,
                 ],
             ]);
-            $gatewayData = $gateway->createPayment($order);
-            $order->payments()->create([
-                'provider' => $gatewayData['provider'],
-                'provider_reference' => $gatewayData['reference'],
-                'status' => PaymentStatus::Pending,
-                'gross_amount' => $lockedProposal->amount,
-                'commission_amount' => $commissionAmount,
-                'vendor_net_amount' => $lockedProposal->amount - $commissionAmount,
-                'currency' => $lockedProposal->currency,
-                'provider_payload' => $gatewayData['payload'],
-            ]);
-
             $lockedProposal->update(['status' => ProposalStatus::Accepted, 'responded_at' => now()]);
             $lockedRequest->proposals()
                 ->where('id', '!=', $lockedProposal->id)

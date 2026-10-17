@@ -45,7 +45,7 @@
                     {{ $communityName }}
                 </span>
             </span>
-            <span class="shrink-0 rounded-full bg-plaza-ink px-3 py-2 text-[11px] font-black text-white">{{ $canBuy ? 'Comprar' : 'Ver perfil' }}</span>
+            <span class="shrink-0 rounded-full bg-plaza-ink px-3 py-2 text-[11px] font-black text-white">{{ $canBuy ? 'Pedir' : 'Ver perfil' }}</span>
         </div>
     </div>
 </a>

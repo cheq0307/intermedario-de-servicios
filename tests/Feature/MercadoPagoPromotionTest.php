@@ -14,6 +14,13 @@ class MercadoPagoPromotionTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['marketplace.payments_enabled' => true, 'marketplace.live_payments_enabled' => true]);
+    }
+
     public function test_owner_can_resume_an_existing_checkout_without_creating_another_preference(): void
     {
         $user = User::factory()->create();

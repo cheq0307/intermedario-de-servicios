@@ -70,7 +70,7 @@ class DemoAccessTest extends TestCase
         $this->assertFalse(Auth::guard('web')->check());
     }
 
-    public function test_demo_mode_forces_fake_payment_drivers(): void
+    public function test_demo_mode_keeps_all_payment_flows_disabled(): void
     {
         config([
             'demo.enabled' => true,
@@ -78,9 +78,9 @@ class DemoAccessTest extends TestCase
             'marketplace.vacancy_payment_driver' => 'mercadopago',
         ]);
 
-        $this->app->make(DemoMode::class)->enforceFakePayments();
+        $this->app->make(DemoMode::class)->enforcePaymentFreeRelease();
 
-        $this->assertSame('fake', config('marketplace.payment_driver'));
-        $this->assertSame('fake', config('marketplace.vacancy_payment_driver'));
+        $this->assertFalse(config('marketplace.payments_enabled'));
+        $this->assertFalse(config('marketplace.allow_fake_payments'));
     }
 }

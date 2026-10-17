@@ -146,7 +146,7 @@ class SeedMarketplaceDemo extends Command
                     'listing_id' => $listing->id,
                     'category_id' => $category->id,
                     'type' => 'offer',
-                    'body' => 'Publicación DEMO: producto con imagen para recorrer una compra completa sin usar dinero real.',
+                    'body' => 'Publicación DEMO: producto con imagen para recorrer un pedido local completo.',
                     'comments_enabled' => true,
                     'published_at' => now(),
                 ],
@@ -162,13 +162,13 @@ class SeedMarketplaceDemo extends Command
                 [
                     'buyer_id' => $users['buyer1']->id,
                     'vendor_id' => $vendor->id,
-                    'status' => 'awaiting_payment',
+                    'status' => 'accepted',
                     'fulfillment_type' => 'pickup',
                     'subtotal_amount' => 35100,
-                    'commission_amount' => 2808,
-                    'total_amount' => 37908,
+                    'commission_amount' => 0,
+                    'total_amount' => 35100,
                     'currency' => 'MXN',
-                    'buyer_notes' => 'Pedido DEMO. No realizar ningún pago real.',
+                    'buyer_notes' => 'Pedido DEMO para revisar la coordinación local.',
                 ],
             );
             $order->items()->updateOrCreate(
@@ -195,7 +195,7 @@ class SeedMarketplaceDemo extends Command
                     'publication_fee_amount' => 0,
                     'currency' => 'MXN',
                     'status' => 'published',
-                    'paid_at' => now(),
+                    'paid_at' => null,
                     'published_at' => now(),
                     'expires_at' => now()->addDays(30),
                 ],
@@ -218,7 +218,7 @@ class SeedMarketplaceDemo extends Command
             ['Administrador', 'administrador1..5.demo@example.test'],
         ]);
         $this->line('El acceso sin contraseña solo aparece cuando PLAZA_DEMO_ACCESS_ENABLED=true en local/testing.');
-        $this->warn('Son datos ficticios visibles. No realices pagos ni cargues documentos reales en estas cuentas.');
+        $this->warn('Son datos ficticios visibles. No cargues documentos reales en estas cuentas.');
 
         return self::SUCCESS;
     }
@@ -231,7 +231,7 @@ class SeedMarketplaceDemo extends Command
 <rect width="1200" height="800" fill="#f7f3ea"/><rect x="70" y="70" width="1060" height="660" rx="48" fill="#123b4a"/>
 <circle cx="220" cy="220" r="85" fill="#ff6b19"/><text x="600" y="365" fill="#ffffff" font-family="Arial,sans-serif" font-size="88" text-anchor="middle" font-weight="700">PLAZA LOCAL</text>
 <text x="600" y="465" fill="#ffffff" font-family="Arial,sans-serif" font-size="42" text-anchor="middle">PRODUCTO DEMO</text>
-<text x="600" y="560" fill="#dce9e5" font-family="Arial,sans-serif" font-size="28" text-anchor="middle">No realizar pagos reales</text>
+<text x="600" y="560" fill="#dce9e5" font-family="Arial,sans-serif" font-size="28" text-anchor="middle">Escenario local de demostración</text>
 </svg>
 SVG;
     }

@@ -70,7 +70,7 @@ class TrustAndPromotionTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'vendor.verified', 'subject_id' => $vendor->id]);
     }
 
-    public function test_user_can_request_a_sponsored_campaign_only_for_own_offer(): void
+    public function test_sponsored_campaigns_are_not_available_in_the_payment_free_release(): void
     {
         $user = User::factory()->create();
         $other = User::factory()->create();
@@ -82,11 +82,9 @@ class TrustAndPromotionTest extends TestCase
         $post = Post::create(['user_id' => $user->id, 'vendor_id' => $vendor->id, 'listing_id' => $listing->id, 'type' => 'service', 'body' => 'Servicio local', 'published_at' => now()]);
         $otherPost = Post::create(['user_id' => $other->id, 'vendor_id' => $otherVendor->id, 'listing_id' => $otherListing->id, 'type' => 'service', 'body' => 'Servicio ajeno', 'published_at' => now()]);
 
-        $this->actingAs($user, 'web')->post(route('promotions.store'), ['post_id' => $post->id, 'duration_days' => 7])->assertRedirect();
-        $this->assertDatabaseHas('post_promotions', ['post_id' => $post->id, 'status' => 'pending_payment', 'amount' => 4900]);
-
-        $this->post(route('promotions.store'), ['post_id' => $otherPost->id, 'duration_days' => 7])->assertSessionHasErrors('post_id');
-        $this->assertSame(1, PostPromotion::count());
+        $this->actingAs($user, 'web')->post(route('promotions.store'), ['post_id' => $post->id, 'duration_days' => 7])->assertServiceUnavailable();
+        $this->post(route('promotions.store'), ['post_id' => $otherPost->id, 'duration_days' => 7])->assertServiceUnavailable();
+        $this->assertSame(0, PostPromotion::count());
     }
 
     public function test_only_active_paid_campaign_is_exposed_as_sponsored(): void

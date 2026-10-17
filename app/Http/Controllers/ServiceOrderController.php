@@ -68,7 +68,7 @@ class ServiceOrderController extends Controller
 
     public function start(Request $request, Order $order): RedirectResponse
     {
-        $this->transition($request, $order, OrderStatus::Paid, OrderStatus::InProgress, 'provider', [
+        $this->transition($request, $order, OrderStatus::Accepted, OrderStatus::InProgress, 'provider', [
             'started_at' => now(),
         ], 'El proveedor inició el trabajo.');
         $this->notifyCounterpart($order, $request->user()->id, 'Trabajo iniciado', 'El proveedor marcó la contratación como iniciada.', 'order_started');
@@ -130,7 +130,7 @@ class ServiceOrderController extends Controller
                 ->where('status', PaymentStatus::Pending->value)
                 ->update(['status' => PaymentStatus::Cancelled->value]);
             $lockedOrder->jobRequest?->update(['status' => JobRequestStatus::Cancelled]);
-            $this->recordSystemMessage($lockedOrder, 'La contratación fue cancelada antes de iniciar. Motivo: ' . $validated['reason'], $request->user()->id);
+            $this->recordSystemMessage($lockedOrder, 'La contratación fue cancelada antes de iniciar. Motivo: '.$validated['reason'], $request->user()->id);
             $lockedOrder->conversation?->archive();
         });
         $this->notifyCounterpart($order, $request->user()->id, 'Contratación cancelada', 'La otra parte canceló la contratación antes de iniciar.', 'order_cancelled');

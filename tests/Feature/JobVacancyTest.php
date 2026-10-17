@@ -27,9 +27,8 @@ class JobVacancyTest extends TestCase
         ]);
     }
 
-    public function test_verified_user_can_pay_to_publish_and_another_user_can_apply_once(): void
+    public function test_verified_user_can_publish_without_payment_and_another_user_can_apply_once(): void
     {
-        config(['marketplace.vacancy_payment_driver' => 'fake']);
         $community = $this->community();
         $employer = User::factory()->create(['community_id' => $community->id]);
         $applicant = User::factory()->create(['community_id' => $community->id]);
@@ -50,13 +49,8 @@ class JobVacancyTest extends TestCase
 
         $vacancy = JobVacancy::firstOrFail();
         $response->assertRedirect(route('vacancies.show', $vacancy));
-        $this->assertSame('pending_payment', $vacancy->status);
-        $this->get(route('vacancies.index'))->assertDontSee('Ayudante para taquería');
-
-        $this->actingAs($employer, 'web')->post(route('vacancies.pay', $vacancy))->assertRedirect();
-        $vacancy->refresh();
         $this->assertSame('published', $vacancy->status);
-        $this->assertNotNull($vacancy->paid_at);
+        $this->assertNull($vacancy->paid_at);
         $this->get(route('vacancies.index'))->assertSee('Ayudante para taquería');
 
         $application = ['cover_letter' => 'Tengo experiencia atendiendo clientes y disponibilidad en el horario indicado.'];

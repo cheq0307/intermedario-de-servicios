@@ -76,7 +76,11 @@ class SeedMarketplaceDemoTest extends TestCase
         $this->assertSame(15, PostShare::count());
         $this->assertNotNull(Post::firstOrFail()->published_at);
         $this->assertTrue(PostMedia::where('type', 'video')->exists());
-        Storage::disk('public')->assertExists('demo/publicacion-01.svg');
+        Storage::disk('public')->assertExists('demo/publicacion-01.webp');
+        $this->assertSame(
+            15,
+            PostMedia::where('type', 'image')->where('path', 'like', 'demo/%.webp')->count(),
+        );
         Storage::disk('public')->assertExists('demo/plaza-local-demo.mp4');
     }
 }

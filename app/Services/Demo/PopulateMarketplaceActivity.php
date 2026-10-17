@@ -421,8 +421,14 @@ final class PopulateMarketplaceActivity
 
     private function attachDemoImage(Post $post, int $number, string $title): void
     {
-        $path = 'demo/publicacion-'.str_pad((string) $number, 2, '0', STR_PAD_LEFT).'.svg';
-        Storage::disk('public')->put($path, $this->demoImage($number, $title));
+        $filename = 'publicacion-'.str_pad((string) $number, 2, '0', STR_PAD_LEFT).'.webp';
+        $path = 'demo/'.$filename;
+        $source = database_path('seeders/assets/marketplace-demo/'.$filename);
+        $contents = file_get_contents($source);
+
+        throw_if($contents === false, new \RuntimeException("No fue posible leer la imagen DEMO {$filename}."));
+
+        Storage::disk('public')->put($path, $contents);
         $post->media()->updateOrCreate(
             ['position' => 0],
             ['type' => 'image', 'disk' => 'public', 'path' => $path, 'alt_text' => $title],
@@ -437,23 +443,6 @@ final class PopulateMarketplaceActivity
             ['position' => 1],
             ['type' => 'video', 'disk' => 'public', 'path' => $path, 'alt_text' => null],
         );
-    }
-
-    private function demoImage(int $number, string $title): string
-    {
-        $safeTitle = htmlspecialchars($title, ENT_XML1 | ENT_QUOTES, 'UTF-8');
-        $accent = $number % 2 === 0 ? '#E8734D' : '#FFB36B';
-
-        return <<<SVG
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-labelledby="title description">
-<title id="title">{$safeTitle}</title><desc id="description">Contenido ficticio para probar Plaza Local</desc>
-<rect width="1200" height="800" fill="#F7F3EA"/><rect x="55" y="55" width="1090" height="690" rx="52" fill="#123B4A"/>
-<circle cx="210" cy="205" r="92" fill="{$accent}"/><text x="210" y="225" fill="#123B4A" font-family="Arial,sans-serif" font-size="58" text-anchor="middle" font-weight="700">{$number}</text>
-<text x="600" y="370" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="64" text-anchor="middle" font-weight="700">PLAZA LOCAL</text>
-<text x="600" y="465" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="38" text-anchor="middle">{$safeTitle}</text>
-<text x="600" y="565" fill="#DCE9E5" font-family="Arial,sans-serif" font-size="28" text-anchor="middle">PUBLICACIÓN DEMO · SIN PAGOS REALES</text>
-</svg>
-SVG;
     }
 
     private function uuid(string $group, int $number): string

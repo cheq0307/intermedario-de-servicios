@@ -32,6 +32,7 @@ return [
     ],
 
     'payment_driver' => env('MARKETPLACE_PAYMENT_DRIVER', 'fake'),
+    'live_payments_enabled' => (bool) env('MARKETPLACE_LIVE_PAYMENTS_ENABLED', false),
     'allow_fake_payments' => (bool) env('MARKETPLACE_ALLOW_FAKE_PAYMENTS', false),
     'reservation_minutes' => (int) env('MARKETPLACE_RESERVATION_MINUTES', 20),
     'publication_draft_days' => (int) env('MARKETPLACE_PUBLICATION_DRAFT_DAYS', 30),

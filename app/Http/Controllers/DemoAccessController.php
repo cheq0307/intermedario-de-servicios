@@ -29,6 +29,31 @@ final class DemoAccessController extends Controller
                 ->orderBy('name')
                 ->get()
                 ->groupBy(fn (User $user): string => (string) preg_replace('/\d+\.demo@example\.test$/', '', $user->email)),
+        ]);
+    }
+
+    public function store(Request $request, DemoMode $demoMode): RedirectResponse
+    {
+        $demoMode->ensureEnabled();
+        $validated = $request->validate([
+            'id' => ['required', 'integer'],
+        ]);
+
+        $identity = User::query()->where('account_status', 'active')->findOrFail($validated['id']);
+
+        abort_unless($demoMode->isDemoIdentity($identity), 403);
+
+        Auth::guard('web')->login($identity);
+        $request->session()->regenerate();
+
+        return redirect()->route('dashboard');
+    }
+
+    public function adminIndex(DemoMode $demoMode): View
+    {
+        $demoMode->ensureEnabled();
+
+        return view('auth.demo-admin-access', [
             'administrators' => AdminUser::query()
                 ->where('email', 'like', '%.demo@example.test')
                 ->where('active', true)
@@ -37,23 +62,20 @@ final class DemoAccessController extends Controller
         ]);
     }
 
-    public function store(Request $request, DemoMode $demoMode): RedirectResponse
+    public function storeAdmin(Request $request, DemoMode $demoMode): RedirectResponse
     {
         $demoMode->ensureEnabled();
         $validated = $request->validate([
-            'guard' => ['required', 'in:web,admin'],
             'id' => ['required', 'integer'],
         ]);
 
-        $identity = $validated['guard'] === 'admin'
-            ? AdminUser::query()->where('active', true)->findOrFail($validated['id'])
-            : User::query()->where('account_status', 'active')->findOrFail($validated['id']);
+        $identity = AdminUser::query()->where('active', true)->findOrFail($validated['id']);
 
         abort_unless($demoMode->isDemoIdentity($identity), 403);
 
-        Auth::guard($validated['guard'])->login($identity);
+        Auth::guard('admin')->login($identity);
         $request->session()->regenerate();
 
-        return redirect()->route($validated['guard'] === 'admin' ? 'admin.index' : 'dashboard');
+        return redirect()->route('admin.index');
     }
 }

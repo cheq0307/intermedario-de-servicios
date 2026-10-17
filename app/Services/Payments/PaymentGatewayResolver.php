@@ -9,6 +9,11 @@ final class PaymentGatewayResolver
     public function forProvider(string $provider): MarketplacePaymentGateway
     {
         if ($provider === 'stripe') {
+            throw_unless(
+                config('marketplace.live_payments_enabled'),
+                new \RuntimeException('Los pagos reales están deshabilitados en esta versión de Plaza Local.'),
+            );
+
             return app(StripeConnectGateway::class);
         }
         if ($provider === 'fake' && (app()->environment(['local', 'testing'])

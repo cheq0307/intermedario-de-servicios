@@ -13,6 +13,7 @@ use App\Models\Order;
 use App\Models\Post;
 use App\Models\User;
 use App\Models\Vendor;
+use App\Services\Demo\PopulateMarketplaceActivity;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -90,18 +91,20 @@ class SeedMarketplaceDemo extends Command
             }
 
             foreach (range(1, 5) as $number) {
-                AdminUser::updateOrCreate(
+                $administrator = AdminUser::updateOrCreate(
                     ['email' => "administrador{$number}.demo@example.test"],
                     [
                         'name' => "Administrador DEMO {$number}",
                         'phone' => '2239'.str_pad((string) $number, 6, '0', STR_PAD_LEFT),
                         'password' => $password,
-                        'role' => AdminRole::Admin,
                         'active' => true,
-                        'email_verified_at' => now(),
-                        'phone_verified_at' => now(),
                     ],
                 );
+                $administrator->forceFill([
+                    'role' => AdminRole::Admin,
+                    'email_verified_at' => now(),
+                    'phone_verified_at' => now(),
+                ])->save();
             }
 
             $vendor = $users['provider1']->vendor;
@@ -186,6 +189,8 @@ class SeedMarketplaceDemo extends Command
                 ['job_vacancy_id' => $vacancy->id, 'applicant_id' => $users['applicant1']->id],
                 ['cover_letter' => 'Postulación DEMO para comprobar el flujo del candidato.', 'status' => 'submitted'],
             );
+
+            app(PopulateMarketplaceActivity::class)->handle($users, $community, $category);
         });
 
         $this->newLine();

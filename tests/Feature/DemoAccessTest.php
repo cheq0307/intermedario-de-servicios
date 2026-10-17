@@ -31,8 +31,13 @@ class DemoAccessTest extends TestCase
             ->assertSee('Perfiles de prueba')
             ->assertSee('Comprador DEMO 1')
             ->assertSee('Proveedor DEMO 5')
-            ->assertSee('Administrador DEMO 1')
+            ->assertSee(route('demo.admin-access'))
             ->assertDontSee('password');
+
+        $this->get(route('demo.admin-access'))
+            ->assertOk()
+            ->assertSee('Administrador DEMO 1')
+            ->assertSee(route('demo.admin-access.store'));
     }
 
     public function test_demo_access_logs_into_seeded_marketplace_and_admin_profiles(): void
@@ -42,13 +47,17 @@ class DemoAccessTest extends TestCase
         $user = User::where('email', 'comprador1.demo@example.test')->firstOrFail();
         $admin = AdminUser::where('email', 'administrador1.demo@example.test')->firstOrFail();
 
-        $this->post('/demo/acceso', ['guard' => 'web', 'id' => $user->id])
+        $this->post('/demo/acceso', ['id' => $user->id])
             ->assertRedirect(route('dashboard'));
         $this->assertTrue(Auth::guard('web')->user()->is($user));
 
-        $this->post('/demo/acceso', ['guard' => 'admin', 'id' => $admin->id])
+        Auth::guard('web')->logout();
+        $this->post(route('demo.admin-access.store'), ['id' => $admin->id])
             ->assertRedirect(route('admin.index'));
         $this->assertTrue(Auth::guard('admin')->user()->is($admin));
+        $this->get(route('admin.index'))
+            ->assertOk()
+            ->assertSee('Centro de operación');
     }
 
     public function test_demo_access_rejects_normal_accounts(): void
@@ -56,7 +65,7 @@ class DemoAccessTest extends TestCase
         config(['demo.enabled' => true]);
         $user = User::factory()->create(['email' => 'persona@example.com']);
 
-        $this->post('/demo/acceso', ['guard' => 'web', 'id' => $user->id])
+        $this->post('/demo/acceso', ['id' => $user->id])
             ->assertForbidden();
         $this->assertFalse(Auth::guard('web')->check());
     }

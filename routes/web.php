@@ -41,18 +41,21 @@ use App\Http\Controllers\StripeConnectController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\VendorVerificationDocumentController;
+use App\Http\Middleware\EnsureLivePaymentsEnabled;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
 Route::get('/demo/acceso', [DemoAccessController::class, 'index'])->name('demo.access');
 Route::post('/demo/acceso', [DemoAccessController::class, 'store'])->name('demo.access.store');
+Route::get('/administracion/demo/acceso', [DemoAccessController::class, 'adminIndex'])->name('demo.admin-access');
+Route::post('/administracion/demo/acceso', [DemoAccessController::class, 'storeAdmin'])->name('demo.admin-access.store');
 Route::get('/explorar', ExploreController::class)->name('explore');
 Route::get('/codigos-postales/{postalCode}', [PostalCodeController::class, 'show'])->whereNumber('postalCode')->middleware('throttle:postal-lookup')->name('postal-codes.show');
 Route::get('/perfiles/{user}', [ProfileController::class, 'show'])->name('profile.show');
 Route::get('/empleo', [JobVacancyController::class, 'index'])->name('vacancies.index');
 Route::get('/empleo/{vacancy}', [JobVacancyController::class, 'show'])->name('vacancies.show');
-Route::post('/webhooks/stripe', StripeWebhookController::class)->name('stripe.webhook');
-Route::post('/webhooks/mercado-pago', MercadoPagoWebhookController::class)->name('mercadopago.webhook');
+Route::post('/webhooks/stripe', StripeWebhookController::class)->middleware(EnsureLivePaymentsEnabled::class)->name('stripe.webhook');
+Route::post('/webhooks/mercado-pago', MercadoPagoWebhookController::class)->middleware(EnsureLivePaymentsEnabled::class)->name('mercadopago.webhook');
 
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
@@ -85,16 +88,16 @@ Route::middleware(['auth:web', 'marketplace.identity', 'account.active'])->group
         Route::get('/mi-empleo', [JobVacancyController::class, 'mine'])->name('vacancies.mine');
         Route::get('/empleo-publicar', [JobVacancyController::class, 'create'])->name('vacancies.create');
         Route::post('/empleo', [JobVacancyController::class, 'store'])->name('vacancies.store');
-        Route::post('/empleo/{vacancy}/pagar', [JobVacancyController::class, 'pay'])->middleware('throttle:checkout')->name('vacancies.pay');
-        Route::get('/empleo/{vacancy}/resultado-pago', [JobVacancyController::class, 'paymentReturn'])->name('vacancies.payment-return');
+        Route::post('/empleo/{vacancy}/pagar', [JobVacancyController::class, 'pay'])->middleware([EnsureLivePaymentsEnabled::class, 'throttle:checkout'])->name('vacancies.pay');
+        Route::get('/empleo/{vacancy}/resultado-pago', [JobVacancyController::class, 'paymentReturn'])->middleware(EnsureLivePaymentsEnabled::class)->name('vacancies.payment-return');
         Route::post('/empleo/{vacancy}/postular', [JobVacancyController::class, 'apply'])->name('vacancies.apply');
         Route::patch('/empleo/{vacancy}/cerrar', [JobVacancyController::class, 'close'])->name('vacancies.close');
         Route::post('/mi-perfil/solicitar-verificacion', [MarketplaceCapabilityController::class, 'submitProviderApplication'])->name('provider-applications.submit');
         Route::post('/mi-perfil/documentos-verificacion', [VendorVerificationDocumentController::class, 'store'])->middleware('throttle:verification-documents')->name('verification-documents.store');
         Route::get('/documentos-verificacion/{document}', [VendorVerificationDocumentController::class, 'download'])->name('verification-documents.download');
-        Route::post('/stripe/conectar', [StripeConnectController::class, 'onboard'])->name('stripe.connect');
-        Route::get('/stripe/conectar/actualizar', [StripeConnectController::class, 'refresh'])->name('stripe.connect.refresh');
-        Route::get('/stripe/conectar/resultado', [StripeConnectController::class, 'returned'])->name('stripe.connect.return');
+        Route::post('/stripe/conectar', [StripeConnectController::class, 'onboard'])->middleware(EnsureLivePaymentsEnabled::class)->name('stripe.connect');
+        Route::get('/stripe/conectar/actualizar', [StripeConnectController::class, 'refresh'])->middleware(EnsureLivePaymentsEnabled::class)->name('stripe.connect.refresh');
+        Route::get('/stripe/conectar/resultado', [StripeConnectController::class, 'returned'])->middleware(EnsureLivePaymentsEnabled::class)->name('stripe.connect.return');
         Route::get('/publicaciones/{post}/editar', [PostManagementController::class, 'edit'])->name('posts.edit');
         Route::put('/publicaciones/{post}', [PostManagementController::class, 'update'])->name('posts.update');
         Route::post('/publicaciones/{post}/reaccion', [PostEngagementController::class, 'toggleReaction'])->name('posts.reactions.toggle');
@@ -105,8 +108,8 @@ Route::middleware(['auth:web', 'marketplace.identity', 'account.active'])->group
         Route::post('/publicaciones/{post}/compartir', [PostEngagementController::class, 'share'])->name('posts.shares.store');
         Route::get('/promociones', [PostPromotionController::class, 'index'])->name('promotions.index');
         Route::post('/promociones', [PostPromotionController::class, 'store'])->name('promotions.store');
-        Route::post('/promociones/{promotion}/pagar', [PostPromotionController::class, 'checkout'])->middleware('throttle:checkout')->name('promotions.checkout');
-        Route::get('/promociones/{promotion}/resultado', [PostPromotionController::class, 'returned'])->name('promotions.return');
+        Route::post('/promociones/{promotion}/pagar', [PostPromotionController::class, 'checkout'])->middleware([EnsureLivePaymentsEnabled::class, 'throttle:checkout'])->name('promotions.checkout');
+        Route::get('/promociones/{promotion}/resultado', [PostPromotionController::class, 'returned'])->middleware(EnsureLivePaymentsEnabled::class)->name('promotions.return');
         Route::get('/productos/{listing}/comprar', [ProductOrderController::class, 'checkout'])->name('products.checkout');
         Route::post('/productos/{listing}/pedidos', [ProductOrderController::class, 'store'])->middleware('throttle:checkout')->name('products.orders.store');
         Route::post('/pedidos/{order}/simular-pago', [ProductOrderController::class, 'simulatePayment'])->name('products.orders.simulate-payment');

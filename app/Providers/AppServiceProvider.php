@@ -23,6 +23,10 @@ class AppServiceProvider extends ServiceProvider
             $driver = config('marketplace.payment_driver');
 
             if ($driver === 'stripe') {
+                throw_unless(
+                    config('marketplace.live_payments_enabled'),
+                    new \RuntimeException('Los pagos reales están deshabilitados en esta versión de Plaza Local.'),
+                );
                 throw_unless(config('services.stripe.secret'), new \RuntimeException('Falta STRIPE_SECRET.'));
 
                 return new StripeConnectGateway(app(StripeClient::class));

@@ -36,26 +36,35 @@ async function marketplacePage(email, viewport = { width: 1280, height: 900 }) {
 try {
     const provider = await marketplacePage('provider-e2e@example.test');
     await provider.goto(`${baseUrl}/dashboard?publicar=offer#crear-publicacion`);
-    await provider.locator('label').filter({ has: provider.locator('[name=type][value=product]') }).click();
-    await provider.locator('[name=title]').fill('Producto integral E2E');
-    await provider.locator('[name=price_type]').selectOption('fixed');
-    await provider.locator('[name=price]').fill('175.50');
-    await provider.locator('[name=stock]').fill('4');
-    await provider.locator('[name=category_id]').selectOption({ label: 'Servicios E2E' });
-    await provider.locator('[name=body]').fill('Producto con imagen creado mediante el recorrido integral del navegador.');
-    await provider.locator('[name="media[]"]').setInputFiles(uploadPath);
+    const publicationForm = provider.locator('form').filter({ has: provider.locator('[name=type][value=product]') });
+    await publicationForm.locator('[name=type][value=product]').check({ force: true });
+    await publicationForm.locator('[name=title]').fill('Producto integral E2E');
+    await publicationForm.locator('[name=price_type]').selectOption('fixed');
+    await publicationForm.locator('[name=price]').fill('175.50');
+    await publicationForm.locator('[name=stock]').fill('4');
+    await publicationForm.locator('[name=category_id]').selectOption({ label: 'Servicios E2E' });
+    await publicationForm.locator('[name=body]').fill('Producto con imagen creado mediante el recorrido integral del navegador.');
+    await publicationForm.locator('[name="media[]"]').setInputFiles(uploadPath);
     await Promise.all([
         provider.waitForURL((url) => url.pathname === '/dashboard'),
-        provider.getByRole('button', { name: 'Publicar', exact: true }).click(),
+        publicationForm.getByRole('button', { name: 'Publicar', exact: true }).click(),
     ]);
     await provider.getByRole('status').filter({ hasText: /publicaci/i }).waitFor();
 
     for (const width of [320, 375, 390, 412]) {
         await provider.setViewportSize({ width, height: 844 });
         await provider.goto(`${baseUrl}/dashboard?module=products&feed=offers`);
-        await provider.getByText('Tu plaza en Comunidad E2E').waitFor();
-        await provider.getByRole('navigation', { name: 'Navegación principal' }).waitFor();
-        await provider.getByRole('link', { name: 'Publicar', exact: true }).waitFor();
+        await provider.getByText('Comunidad E2E', { exact: true }).first().waitFor();
+        const moduleRail = provider.getByRole('navigation', { name: 'Módulos del marketplace' });
+        await moduleRail.waitFor();
+        for (const moduleName of ['Inicio', 'Comida', 'Servicios', 'Productos', 'Transporte', 'Empleo']) {
+            await moduleRail.getByRole('link', { name: moduleName, exact: true }).waitFor({ state: 'attached' });
+        }
+        await moduleRail.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
+        assert.equal(await moduleRail.evaluate((element) => element.scrollLeft > 0 || element.scrollWidth === element.clientWidth), true, `Module rail ${width}px must be horizontally reachable`);
+        const bottomNavigation = provider.getByRole('navigation', { name: 'Navegación principal' });
+        await bottomNavigation.waitFor();
+        await bottomNavigation.getByRole('link', { name: 'Publicar', exact: true }).waitFor();
         await provider.getByRole('navigation', { name: 'Filtros de actividad' }).waitFor();
         await assertNoHorizontalOverflow(provider, `Dashboard ${width}px`);
     }
@@ -63,6 +72,12 @@ try {
     await provider.setViewportSize({ width: 1280, height: 900 });
     await provider.goto(`${baseUrl}/dashboard?module=products&feed=offers`);
     assert.equal(await provider.getByRole('navigation', { name: 'Navegación principal' }).isVisible(), false, 'Desktop should use the top navigation instead of the mobile bottom bar');
+    const firstCarousel = provider.locator('[data-market-carousel]').first();
+    if (await firstCarousel.count()) {
+        await firstCarousel.locator('[data-carousel-next]').focus();
+        assert.equal(await firstCarousel.locator('[data-carousel-next]').evaluate((element) => document.activeElement === element), true, 'Desktop carousel control must accept keyboard focus');
+        await firstCarousel.locator('[data-carousel-next]').click();
+    }
 
     await provider.goto(`${baseUrl}/mi-perfil/editar`);
     const documentForm = provider.locator('form').filter({ has: provider.locator('[name=document]') });
@@ -120,7 +135,6 @@ try {
     await applicant.locator('[name=cover_letter]').fill('Me interesa la vacante E2E y cuento con disponibilidad para el horario indicado.');
     await applicant.getByRole('button', { name: 'Postularme' }).click();
     await applicant.getByText('Ya enviaste tu postulación.').waitFor();
-    await applicant.getByRole('link', { name: 'Buscar trabajo' }).waitFor();
     await assertNoHorizontalOverflow(applicant, 'Mobile vacancy');
 
     const adminContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });

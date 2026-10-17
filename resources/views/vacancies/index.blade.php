@@ -19,7 +19,7 @@
     </form>
     <div class="mt-6 grid min-w-0 gap-4 md:grid-cols-2">
         @forelse($vacancies as $vacancy)
-            <a class="min-w-0 overflow-hidden rounded-3xl border bg-white p-5 shadow-sm" href="{{ route('vacancies.show',$vacancy) }}"><span class="rounded-full bg-brand-warning-soft px-3 py-1 text-xs font-black text-brand-warning-deep">EMPLEO</span><h2 class="mt-3 break-words text-xl font-black">{{ $vacancy->title }}</h2><p class="mt-2 break-words font-bold text-brand-copy">{{ $vacancy->employer->name }} · {{ $vacancy->community->name }}</p><p class="mt-3 line-clamp-2 break-words text-sm leading-6 text-brand-copy">{{ $vacancy->description }}</p><div class="mt-4 flex flex-wrap gap-2 text-xs font-black"><span class="rounded-full bg-brand-success-soft px-3 py-1.5">{{ $vacancy->work_mode }}</span>@if($vacancy->salary_min_amount)<span class="rounded-full bg-brand-surface px-3 py-1.5">Desde MXN {{ number_format($vacancy->salary_min_amount/100,2) }}</span>@endif<span class="rounded-full bg-brand-surface px-3 py-1.5">{{ $vacancy->applications_count }} postulaciones</span></div></a>
+            <x-marketplace.vacancy-card :vacancy="$vacancy" />
         @empty
             <div class="rounded-3xl border border-dashed bg-white/60 p-10 text-center font-bold text-brand-muted md:col-span-2">No hay vacantes que coincidan.</div>
         @endforelse

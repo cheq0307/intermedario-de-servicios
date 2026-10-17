@@ -93,4 +93,39 @@ class JobVacancyTest extends TestCase
         $staff = AdminUser::factory()->create();
         $this->actingAs($staff, 'admin')->get(route('vacancies.create'))->assertRedirect(route('login'));
     }
+
+    public function test_home_and_employment_render_published_vacancies_as_discovery_cards(): void
+    {
+        $community = $this->community();
+        $employer = User::factory()->create(['name' => 'Taquería La Plaza', 'community_id' => $community->id]);
+        $viewer = User::factory()->create(['community_id' => $community->id]);
+        JobVacancy::create([
+            'public_id' => fake()->uuid(),
+            'employer_id' => $employer->id,
+            'community_id' => $community->id,
+            'title' => 'Ayudante para eventos',
+            'description' => 'Apoyo en servicio de tacos para fiestas dentro de la comunidad.',
+            'salary_min_amount' => 180000,
+            'pay_period' => 'weekly',
+            'work_mode' => 'onsite',
+            'contract_type' => 'temporary',
+            'vacancies_count' => 1,
+            'status' => 'published',
+            'published_at' => now(),
+            'expires_at' => now()->addDays(30),
+        ]);
+
+        foreach (['home', 'employment'] as $module) {
+            $this->actingAs($viewer, 'web')
+                ->get(route('dashboard', ['module' => $module]))
+                ->assertOk()
+                ->assertSee('data-vacancy-carousel', false)
+                ->assertSee('Ayudante para eventos')
+                ->assertSee('Taquería La Plaza')
+                ->assertSee('San Felipe Teotlalcingo')
+                ->assertSee('Desde MXN 1,800.00')
+                ->assertDontSee('Continuar al pago')
+                ->assertDontSee('La tarifa se muestra antes del pago.');
+        }
+    }
 }

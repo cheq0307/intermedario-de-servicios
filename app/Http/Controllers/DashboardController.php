@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Community;
 use App\Models\JobVacancy;
+use App\Models\JobRequest;
 use App\Models\Listing;
 use App\Models\Post;
 use Illuminate\Http\RedirectResponse;
@@ -131,6 +132,22 @@ class DashboardController extends Controller
                 ->get();
         }
 
+        $requestHighlights = collect();
+        if (in_array($module, ['home', 'services'], true)) {
+            $requestHighlights = JobRequest::query()
+                ->with(['client:id,name,community_id', 'client.community:id,name,municipality,state', 'category:id,name'])
+                ->withCount('proposals')
+                ->where('status', 'published')
+                ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+                ->when($user->community_id, fn ($query) => $query->orderByRaw(
+                    'CASE WHEN EXISTS (SELECT 1 FROM users WHERE users.id = job_requests.client_id AND users.community_id = ?) THEN 0 ELSE 1 END',
+                    [$user->community_id],
+                ))
+                ->latest('published_at')
+                ->limit(8)
+                ->get();
+        }
+
         $posts = Post::query()
             ->with(['user.community', 'category', 'listing.category', 'jobRequest.category', 'jobRequest.communities', 'media', 'comments' => fn ($query) => $query->with('user:id,name,avatar_path,avatar_disk')->limit(2)])
             ->withCount(['reactions', 'comments', 'shares'])
@@ -161,6 +178,6 @@ class DashboardController extends Controller
         $categories = Category::query()->where('is_active', true)->orderBy('name')->get();
         $communities = Community::query()->where('is_active', true)->orderBy('name')->get();
 
-        return view('dashboard', compact('posts', 'activeMode', 'module', 'feed', 'showComposer', 'publishAs', 'categories', 'communities', 'showcaseSections', 'vacancyHighlights'));
+        return view('dashboard', compact('posts', 'activeMode', 'module', 'feed', 'showComposer', 'publishAs', 'categories', 'communities', 'showcaseSections', 'vacancyHighlights', 'requestHighlights'));
     }
 }

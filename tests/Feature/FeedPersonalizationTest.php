@@ -211,9 +211,9 @@ class FeedPersonalizationTest extends TestCase
         $this->actingAs($viewer, 'web')
             ->get(route('dashboard', ['module' => 'food']))
             ->assertOk()
-            ->assertSee('Escaparate local')
-            ->assertSee('Tu plaza en San Juan Tetla')
-            ->assertSee('Publicar en tu plaza')
+            ->assertSee('Explora tu plaza')
+            ->assertSee('San Juan Tetla')
+            ->assertSee('Publicar')
             ->assertSee('Comida y bebidas')
             ->assertSee('Tacos dorados familiares')
             ->assertSee('aria-label="Ruta local de la publicación"', false)
@@ -318,7 +318,38 @@ class FeedPersonalizationTest extends TestCase
         $this->actingAs($viewer, 'web')
             ->get(route('dashboard', ['module' => 'food', 'feed' => 'offers']))
             ->assertOk()
-            ->assertViewHas('showcaseSections', fn ($sections) => $sections->flatten(1)->isNotEmpty());
+            ->assertViewHas('showcaseSections', fn ($sections) => $sections->flatten(1)->isNotEmpty())
+            ->assertSee('data-discovery-section', false)
+            ->assertSee('data-market-carousel', false)
+            ->assertSee('Comida para compartir');
+    }
+
+    public function test_home_summarizes_published_requests_in_its_own_carousel(): void
+    {
+        $community = Community::query()->create([
+            'name' => 'Comunidad Solicitudes',
+            'municipality' => 'Municipio Solicitudes',
+            'state' => 'Puebla',
+            'is_active' => true,
+        ]);
+        $client = User::factory()->create(['community_id' => $community->id]);
+        $viewer = User::factory()->create(['community_id' => $community->id]);
+        JobRequest::create([
+            'public_id' => (string) Str::uuid(),
+            'client_id' => $client->id,
+            'title' => 'Busco reparación de una fuga',
+            'description' => 'Necesito apoyo local para reparar una fuga de agua en casa.',
+            'status' => 'published',
+            'budget_min_amount' => 50000,
+            'published_at' => now(),
+        ]);
+
+        $this->actingAs($viewer, 'web')
+            ->get(route('dashboard', ['module' => 'home']))
+            ->assertOk()
+            ->assertSee('data-request-carousel', false)
+            ->assertSee('Busco reparación de una fuga')
+            ->assertSee('Desde MXN 500.00');
     }
 
     private function createPost(User $user, string $type, string $body): Post

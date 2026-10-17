@@ -46,18 +46,13 @@
 
     <main class="mx-auto grid max-w-5xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,680px)_280px]">
         <div id="inicio" class="min-w-0 space-y-5">
-            <section class="relative overflow-hidden rounded-[1.75rem] bg-plaza-ink px-5 py-6 text-white shadow-market-feature sm:px-7 sm:py-8">
-                <div class="pointer-events-none absolute -right-10 -top-12 size-40 rounded-full bg-plaza-gold/25 blur-2xl" aria-hidden="true"></div>
-                <div class="relative flex items-end justify-between gap-4">
-                    <div class="min-w-0">
-                        <p class="text-xs font-black uppercase tracking-[.16em] text-brand-gold-soft">Tu plaza en {{ $currentUser->community?->name ?? 'tu comunidad' }}</p>
-                        <h1 class="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Descubre, compra o pide ayuda cerca de ti</h1>
-                        <p class="mt-2 max-w-xl text-sm font-semibold leading-6 text-white/70">Productos, servicios, solicitudes y empleo local, cada uno con su flujo claro.</p>
-                    </div>
-                    <a class="hidden shrink-0 rounded-full bg-plaza-orange px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 sm:inline-flex" href="{{ route('dashboard', ['publicar' => 'choose']).'#publicar' }}">Publicar en tu plaza</a>
+            <header class="flex items-end justify-between gap-4 py-1">
+                <div class="min-w-0">
+                    <p class="truncate text-sm font-bold text-brand-success">{{ $currentUser->community?->name ?? 'Tu comunidad' }}</p>
+                    <h1 class="mt-1 text-2xl font-black tracking-tight text-brand sm:text-3xl">Explora tu plaza</h1>
                 </div>
-                <a class="relative mt-5 inline-flex min-h-11 items-center rounded-full bg-plaza-orange px-5 py-2.5 text-sm font-black text-white sm:hidden" href="{{ route('dashboard', ['publicar' => 'choose']).'#publicar' }}">Publicar en tu plaza</a>
-            </section>
+                <a class="inline-flex min-h-11 shrink-0 items-center rounded-full bg-plaza-orange px-4 py-2 text-sm font-black text-white transition-transform active:scale-[.97]" href="{{ route('dashboard', ['publicar' => 'choose']).'#publicar' }}">Publicar</a>
+            </header>
 
             <nav class="-mx-4 flex gap-6 overflow-x-auto border-b border-brand/10 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0" aria-label="Módulos del marketplace">
                 @foreach($moduleLabels as $moduleKey => $moduleLabel)
@@ -112,39 +107,28 @@
                 </div>
             @endif
 
-            @if($feed === 'for_you' && $showcaseSections->isNotEmpty())
-                <section class="space-y-7 rounded-[2rem] border border-brand/10 bg-white p-5 shadow-sm sm:p-6" aria-labelledby="escaparate-local">
-                    <div class="flex items-end justify-between gap-4">
-                        <div>
-                            <p class="text-xs font-black uppercase tracking-[.18em] text-brand-orange">Escaparate local</p>
-                            <h2 id="escaparate-local" class="mt-1 text-2xl font-black">Descubre algo cerca de ti</h2>
-                        </div>
-                        <a class="shrink-0 text-sm font-black text-brand-success" href="{{ route('explore') }}">Ver todo →</a>
-                    </div>
-
-                    @foreach($showcaseSections as $section)
-                        @php
-                            $carouselId = 'escaparate-'.$section['category']->id;
-                        @endphp
-                        <div data-market-carousel>
-                            <div class="mb-3 flex items-center justify-between gap-3">
-                                <div class="flex min-w-0 items-center gap-2">
-                                    <h3 class="truncate text-lg font-black">{{ $section['category']->name }}</h3>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <a class="mr-1 hidden text-xs font-black text-brand-success sm:inline" href="{{ route('explore', ['category_id' => $section['category']->id]) }}">Ver categoría</a>
-                                    <button class="hidden size-9 place-items-center rounded-full border border-brand/10 text-lg font-black transition hover:bg-brand-success-soft sm:grid" type="button" data-carousel-prev aria-label="Ver ofertas anteriores de {{ $section['category']->name }}">‹</button>
-                                    <button class="hidden size-9 place-items-center rounded-full border border-brand/10 text-lg font-black transition hover:bg-brand-success-soft sm:grid" type="button" data-carousel-next aria-label="Ver más ofertas de {{ $section['category']->name }}">›</button>
-                                </div>
-                            </div>
-                            <div id="{{ $carouselId }}" class="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" data-carousel-track tabindex="0" aria-label="Ofertas de {{ $section['category']->name }}">
-                                @foreach($section['listings'] as $listing)
-                                    <x-marketplace.listing-card :listing="$listing" compact class="w-[76vw] max-w-[17rem] shrink-0 snap-start sm:w-[15rem]" />
-                                @endforeach
-                            </div>
-                        </div>
+            @foreach($showcaseSections as $section)
+                <x-marketplace.discovery-section :title="$section['category']->name" :carousel-id="'escaparate-'.$section['category']->id" :href="route('explore', ['category_id' => $section['category']->id])" link-label="Ver categoría">
+                    @foreach($section['listings'] as $listing)
+                        <x-marketplace.listing-card :listing="$listing" compact class="w-[76vw] max-w-[17rem] shrink-0 snap-start sm:w-[15rem]" />
                     @endforeach
-                </section>
+                </x-marketplace.discovery-section>
+            @endforeach
+
+            @if($requestHighlights->isNotEmpty())
+                <x-marketplace.discovery-section title="Solicitudes cerca de ti" carousel-id="solicitudes-cerca" :href="route('dashboard', ['module' => 'services', 'feed' => 'requests']).'#actividad'" data-request-carousel>
+                    @foreach($requestHighlights as $requestHighlight)
+                        <x-marketplace.request-card :request="$requestHighlight" class="w-[78vw] max-w-[18rem] shrink-0 snap-start sm:w-[17rem]" />
+                    @endforeach
+                </x-marketplace.discovery-section>
+            @endif
+
+            @if($vacancyHighlights->isNotEmpty())
+                <x-marketplace.discovery-section title="Empleo en tu comunidad" carousel-id="empleo-cerca" :href="route('vacancies.index')" data-vacancy-carousel>
+                    @foreach($vacancyHighlights as $vacancy)
+                        <x-marketplace.vacancy-card :vacancy="$vacancy" class="w-[78vw] max-w-[18rem] shrink-0 snap-start sm:w-[17rem]" />
+                    @endforeach
+                </x-marketplace.discovery-section>
             @endif
 
             @if($publishAs === 'choose')
@@ -152,10 +136,10 @@
                 <p class="text-xs font-black uppercase tracking-[.18em] text-brand-orange">Crear publicación</p>
                 <h2 class="mt-2 text-2xl font-black">¿Qué quieres publicar?</h2>
                 <div class="mt-5 grid gap-3 sm:grid-cols-2">
-                    <a class="rounded-2xl border p-5 hover:bg-brand-success-soft" href="{{ route('dashboard',['publicar'=>'offer']).'#crear-publicacion' }}"><strong class="block">Vender un producto</strong><span class="mt-1 block text-sm text-brand-copy">Comisión al concretar la venta.</span></a>
-                    <a class="rounded-2xl border p-5 hover:bg-brand-success-soft" href="{{ route('dashboard',['publicar'=>'offer']).'#crear-publicacion' }}"><strong class="block">Ofrecer un servicio</strong><span class="mt-1 block text-sm text-brand-copy">Comisión al ser contratado.</span></a>
+                    <a class="rounded-2xl border p-5 hover:bg-brand-success-soft" href="{{ route('dashboard',['publicar'=>'offer']).'#crear-publicacion' }}"><strong class="block">Vender un producto</strong><span class="mt-1 block text-sm text-brand-copy">Muéstralo a personas de tu comunidad.</span></a>
+                    <a class="rounded-2xl border p-5 hover:bg-brand-success-soft" href="{{ route('dashboard',['publicar'=>'offer']).'#crear-publicacion' }}"><strong class="block">Ofrecer un servicio</strong><span class="mt-1 block text-sm text-brand-copy">Recibe solicitudes y acuerda los detalles.</span></a>
                     <a class="rounded-2xl border p-5 hover:bg-brand-orange-soft" href="{{ route('dashboard',['publicar'=>'request']).'#crear-publicacion' }}"><strong class="block">Solicitar algo</strong><span class="mt-1 block text-sm text-brand-copy">Pide un producto o servicio.</span></a>
-                    <a class="rounded-2xl border border-brand-gold/30 bg-brand-warning-faint p-5" href="{{ route('vacancies.create') }}"><strong class="block text-brand-warning-deep">Publicar vacante de empleo</strong><span class="mt-1 block text-sm text-brand-warning-copy">La tarifa se muestra antes del pago.</span></a>
+                    <a class="rounded-2xl border border-brand-gold/30 bg-brand-warning-faint p-5" href="{{ route('vacancies.create') }}"><strong class="block text-brand-warning-deep">Publicar vacante de empleo</strong><span class="mt-1 block text-sm text-brand-warning-copy">Encuentra talento dentro de tu comunidad.</span></a>
                 </div>
             </section>
             @endif
@@ -501,7 +485,7 @@
                 <section id="proximamente" class="rounded-[1.75rem] bg-brand-gold-pale p-5">
                     <p class="text-xs font-black uppercase tracking-[.16em] text-brand-amber-deep">Compra protegida</p>
                     <h2 class="mt-2 text-lg font-black">Acuerdos dentro de Plaza Local</h2>
-                    <p class="mt-2 text-sm font-semibold leading-6 text-brand-earth-strong">Las propuestas, pagos de prueba, entregas y disputas quedan registradas para proteger a ambas partes.</p>
+                    <p class="mt-2 text-sm font-semibold leading-6 text-brand-earth-strong">Las propuestas, acuerdos, entregas y disputas quedan registradas para proteger a ambas partes.</p>
                 </section>
             </div>
         </aside>

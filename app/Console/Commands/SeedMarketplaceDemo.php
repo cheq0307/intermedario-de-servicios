@@ -45,6 +45,21 @@ class SeedMarketplaceDemo extends Command
                 ['slug' => 'demostracion-plaza-local'],
                 ['name' => 'Demostración Plaza Local', 'is_active' => true],
             );
+            $activityCategories = collect([
+                'comida-bebidas' => 'Comida y bebidas',
+                'transporte-taxi' => 'Transporte y taxi',
+                'hogar-reparaciones' => 'Hogar y reparaciones',
+                'tiendas-productos' => 'Tiendas y productos',
+                'educacion' => 'Educación',
+                'tecnologia' => 'Tecnología',
+            ])->mapWithKeys(function (string $name, string $slug): array {
+                $category = Category::updateOrCreate(
+                    ['slug' => $slug],
+                    ['name' => $name, 'is_active' => true],
+                );
+
+                return [$slug => $category];
+            });
 
             $users = collect();
             $profileTypes = [
@@ -190,7 +205,7 @@ class SeedMarketplaceDemo extends Command
                 ['cover_letter' => 'Postulación DEMO para comprobar el flujo del candidato.', 'status' => 'submitted'],
             );
 
-            app(PopulateMarketplaceActivity::class)->handle($users, $community, $category);
+            app(PopulateMarketplaceActivity::class)->handle($users, $community, $category, $activityCategories);
         });
 
         $this->newLine();

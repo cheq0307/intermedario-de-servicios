@@ -76,6 +76,21 @@ class SeedMarketplaceDemoTest extends TestCase
         $this->assertSame(15, PostShare::count());
         $this->assertNotNull(Post::firstOrFail()->published_at);
         $this->assertTrue(PostMedia::where('type', 'video')->exists());
+        $this->assertSame(5, Post::whereHas('category', fn ($query) => $query->where('slug', 'comida-bebidas'))->count());
+        $this->assertSame(2, Post::whereHas('category', fn ($query) => $query->where('slug', 'transporte-taxi'))->count());
+
+        $buyer = User::where('email', 'comprador1.demo@example.test')->firstOrFail();
+        $this->actingAs($buyer)
+            ->get(route('dashboard', ['module' => 'food']))
+            ->assertOk()
+            ->assertSee('Tacos para fiestas')
+            ->assertDontSee('Traslado local programado');
+        $this->actingAs($buyer)
+            ->get(route('dashboard', ['module' => 'transport']))
+            ->assertOk()
+            ->assertSee('Traslado local programado')
+            ->assertDontSee('Tacos para fiestas');
+
         Storage::disk('public')->assertExists('demo/publicacion-01.webp');
         $this->assertSame(
             15,

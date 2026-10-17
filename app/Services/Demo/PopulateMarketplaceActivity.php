@@ -26,10 +26,11 @@ use Illuminate\Support\Facades\Storage;
 final class PopulateMarketplaceActivity
 {
     /** @param Collection<string, User> $users */
-    public function handle(Collection $users, Community $community, Category $category): void
+    /** @param Collection<string, Category> $activityCategories */
+    public function handle(Collection $users, Community $community, Category $category, Collection $activityCategories): void
     {
-        $posts = $this->createOffers($users, $category);
-        $requests = $this->createRequests($users, $community, $category, $posts);
+        $posts = $this->createOffers($users, $activityCategories);
+        $requests = $this->createRequests($users, $community, $activityCategories, $posts);
         $proposals = $this->createProposals($users, $requests);
         $orders = $this->createOrders($users, $requests, $proposals);
         $this->createVacancies($users, $community, $category);
@@ -43,29 +44,33 @@ final class PopulateMarketplaceActivity
     /** @param Collection<string, User> $users
      * @return Collection<int, Post>
      */
-    private function createOffers(Collection $users, Category $category): Collection
+    private function createOffers(Collection $users, Collection $categories): Collection
     {
         $offers = [
-            ['Tacos para fiestas', 'service', 'Llevamos carrito, ingredientes y servicio completo para tu evento.', 'starting_at', 320000, null],
-            ['Canasta de pan artesanal', 'product', 'Pan horneado esta mañana con entrega en la comunidad.', 'fixed', 14500, 18],
-            ['Reparación de fugas', 'service', 'Diagnóstico y reparación de plomería doméstica con materiales cotizados aparte.', 'quote', null, null],
-            ['Kit de plantas aromáticas', 'product', 'Cinco plantas listas para cocina y jardín en macetas reutilizables.', 'fixed', 28000, 12],
-            ['Fotografía para eventos', 'service', 'Cobertura local de cumpleaños, bautizos y reuniones familiares.', 'starting_at', 180000, null],
-            ['Pastel personalizado', 'product', 'Pastel para doce personas con decoración y mensaje a elegir.', 'starting_at', 42000, 8],
-            ['Clases de regularización', 'service', 'Apoyo en matemáticas y español para primaria y secundaria.', 'fixed', 12000, null],
-            ['Mueble restaurado', 'product', 'Buró de madera recuperada, lijado y terminado a mano.', 'fixed', 95000, 2],
-            ['Traslado local programado', 'service', 'Viajes dentro de la zona para personas y compras pequeñas.', 'quote', null, null],
-            ['Paquete de comida semanal', 'product', 'Cinco comidas caseras listas para recoger de lunes a viernes.', 'fixed', 55000, 10],
+            ['Tacos para fiestas', 'service', 'Llevamos carrito, ingredientes y servicio completo para tu evento.', 'starting_at', 320000, null, 'comida-bebidas'],
+            ['Canasta de pan artesanal', 'product', 'Pan horneado esta mañana con entrega en la comunidad.', 'fixed', 14500, 18, 'comida-bebidas'],
+            ['Reparación de fugas', 'service', 'Diagnóstico y reparación de plomería doméstica con materiales cotizados aparte.', 'quote', null, null, 'hogar-reparaciones'],
+            ['Kit de plantas aromáticas', 'product', 'Cinco plantas listas para cocina y jardín en macetas reutilizables.', 'fixed', 28000, 12, 'tiendas-productos'],
+            ['Fotografía para eventos', 'service', 'Cobertura local de cumpleaños, bautizos y reuniones familiares.', 'starting_at', 180000, null, 'tecnologia'],
+            ['Pastel personalizado', 'product', 'Pastel para doce personas con decoración y mensaje a elegir.', 'starting_at', 42000, 8, 'comida-bebidas'],
+            ['Clases de regularización', 'service', 'Apoyo en matemáticas y español para primaria y secundaria.', 'fixed', 12000, null, 'educacion'],
+            ['Mueble restaurado', 'product', 'Buró de madera recuperada, lijado y terminado a mano.', 'fixed', 95000, 2, 'hogar-reparaciones'],
+            ['Traslado local programado', 'service', 'Viajes dentro de la zona para personas y compras pequeñas.', 'quote', null, null, 'transporte-taxi'],
+            ['Paquete de comida semanal', 'product', 'Cinco comidas caseras listas para recoger de lunes a viernes.', 'fixed', 55000, 10, 'comida-bebidas'],
         ];
 
-        return collect($offers)->map(function (array $offer, int $index) use ($users, $category): Post {
+        return collect($offers)->map(function (array $offer, int $index) use ($users, $categories): Post {
             $number = $index + 1;
             $providerNumber = ($index % 5) + 1;
             $provider = $users['provider'.$providerNumber];
             $vendor = $provider->vendor;
             $slug = $number === 1 ? 'producto-demo-visible' : 'oferta-demo-'.str_pad((string) $number, 2, '0', STR_PAD_LEFT);
             $token = $number === 1 ? 'demo-marketplace-product' : 'demo-marketplace-offer-'.$number;
-            [$name, $type, $description, $priceType, $price, $stock] = $offer;
+            [$name, $type, $description, $priceType, $price, $stock, $categorySlug] = $offer;
+            $category = $categories->get($categorySlug);
+
+            throw_unless($category instanceof Category, new \RuntimeException("Falta el rubro DEMO {$categorySlug}."));
+            $vendor->categories()->syncWithoutDetaching([$category->id]);
 
             $listing = Listing::updateOrCreate(
                 ['vendor_id' => $vendor->id, 'slug' => $slug],
@@ -109,19 +114,22 @@ final class PopulateMarketplaceActivity
      * @param  Collection<int, Post>  $posts
      * @return Collection<int, JobRequest>
      */
-    private function createRequests(Collection $users, Community $community, Category $category, Collection $posts): Collection
+    private function createRequests(Collection $users, Community $community, Collection $categories, Collection $posts): Collection
     {
         $requests = [
-            ['Reparar una fuga en cocina', 'Busco a alguien que pueda revisar una fuga debajo del fregadero esta semana.', 50000, 120000, 'soon'],
-            ['Comida para reunión familiar', 'Necesito comida para veinte personas el sábado, con opciones sin picante.', 180000, 350000, 'urgent'],
-            ['Arreglar puerta de madera', 'La puerta roza el piso y necesita ajuste de bisagras y acabado.', 70000, 160000, 'normal'],
-            ['Clases de matemáticas', 'Busco apoyo dos tardes por semana para estudiante de secundaria.', 8000, 15000, 'soon'],
-            ['Traslado de compras grandes', 'Necesito recoger materiales en el municipio y llevarlos a casa.', 30000, 90000, 'normal'],
+            ['Reparar una fuga en cocina', 'Busco a alguien que pueda revisar una fuga debajo del fregadero esta semana.', 50000, 120000, 'soon', 'hogar-reparaciones'],
+            ['Comida para reunión familiar', 'Necesito comida para veinte personas el sábado, con opciones sin picante.', 180000, 350000, 'urgent', 'comida-bebidas'],
+            ['Arreglar puerta de madera', 'La puerta roza el piso y necesita ajuste de bisagras y acabado.', 70000, 160000, 'normal', 'hogar-reparaciones'],
+            ['Clases de matemáticas', 'Busco apoyo dos tardes por semana para estudiante de secundaria.', 8000, 15000, 'soon', 'educacion'],
+            ['Traslado de compras grandes', 'Necesito recoger materiales en el municipio y llevarlos a casa.', 30000, 90000, 'normal', 'transporte-taxi'],
         ];
 
-        return collect($requests)->map(function (array $data, int $index) use ($users, $community, $category, $posts): JobRequest {
+        return collect($requests)->map(function (array $data, int $index) use ($users, $community, $categories, $posts): JobRequest {
             $number = $index + 1;
-            [$title, $description, $minimum, $maximum, $urgency] = $data;
+            [$title, $description, $minimum, $maximum, $urgency, $categorySlug] = $data;
+            $category = $categories->get($categorySlug);
+
+            throw_unless($category instanceof Category, new \RuntimeException("Falta el rubro DEMO {$categorySlug}."));
             $request = JobRequest::updateOrCreate(
                 ['public_id' => $this->uuid('1', $number)],
                 [

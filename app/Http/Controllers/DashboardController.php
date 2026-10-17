@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Community;
+use App\Models\JobVacancy;
 use App\Models\Listing;
 use App\Models\Post;
 use Illuminate\Http\RedirectResponse;
@@ -56,9 +57,9 @@ class DashboardController extends Controller
         $showComposer = in_array($publishAs, ['request', 'offer'], true);
         $activeMode = $publishAs === 'offer' ? 'provider' : 'client';
 
-        $module = (string) $request->query('module', 'services');
-        if (! in_array($module, ['food', 'services', 'products', 'transport'], true)) {
-            $module = 'services';
+        $module = (string) $request->query('module', 'home');
+        if (! in_array($module, ['home', 'food', 'services', 'products', 'transport', 'employment'], true)) {
+            $module = 'home';
         }
 
         $feed = (string) $request->query('feed', 'for_you');
@@ -92,6 +93,7 @@ class DashboardController extends Controller
             ->when($module === 'services', fn ($query) => $query
                 ->where('type', 'service')
                 ->whereHas('category', fn ($category) => $category->whereNotIn('slug', ['comida-bebidas', 'transporte-taxi'])))
+            ->when($module === 'employment', fn ($query) => $query->whereRaw('1 = 0'))
             ->orderByRaw('CASE WHEN EXISTS (SELECT 1 FROM post_promotions WHERE post_promotions.post_id = (SELECT posts.id FROM posts WHERE posts.listing_id = listings.id LIMIT 1) AND post_promotions.status = ? AND post_promotions.starts_at <= ? AND post_promotions.ends_at > ?) THEN 0 ELSE 1 END', ['active', now(), now()])
             ->when($preferredCategoryIds !== [], fn ($query) => $query->orderByRaw(
                 'CASE WHEN listings.category_id IN ('.implode(',', array_map('intval', $preferredCategoryIds)).') THEN 0 ELSE 1 END'
@@ -113,6 +115,22 @@ class DashboardController extends Controller
             ->take(5)
             ->values();
 
+        $vacancyHighlights = collect();
+        if (in_array($module, ['home', 'employment'], true)) {
+            $vacancyHighlights = JobVacancy::query()
+                ->with(['employer:id,name', 'community:id,name,municipality,state', 'category:id,name'])
+                ->withCount('applications')
+                ->where('status', 'published')
+                ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+                ->when($user->community_id, fn ($query) => $query->orderByRaw(
+                    'CASE WHEN community_id = ? THEN 0 ELSE 1 END',
+                    [$user->community_id],
+                ))
+                ->latest('published_at')
+                ->limit($module === 'employment' ? 12 : 6)
+                ->get();
+        }
+
         $posts = Post::query()
             ->with(['user.community', 'category', 'listing.category', 'jobRequest.category', 'jobRequest.communities', 'media', 'comments' => fn ($query) => $query->with('user:id,name,avatar_path,avatar_disk')->limit(2)])
             ->withCount(['reactions', 'comments', 'shares'])
@@ -130,6 +148,7 @@ class DashboardController extends Controller
             ->when($module === 'services', fn ($query) => $query
                 ->whereIn('type', ['service', 'job_request', 'portfolio', 'business_update'])
                 ->whereDoesntHave('category', fn ($category) => $category->whereIn('slug', ['comida-bebidas', 'transporte-taxi'])))
+            ->when($module === 'employment', fn ($query) => $query->whereRaw('1 = 0'))
             ->when($feedTypes !== null, fn ($query) => $query->whereIn('type', $feedTypes))
             ->when($feed === 'for_you' && $preferredCategoryIds !== [], fn ($query) => $query->orderByRaw(
                 'CASE WHEN posts.category_id IN ('.implode(',', array_map('intval', $preferredCategoryIds)).') THEN 0 ELSE 1 END'
@@ -142,6 +161,6 @@ class DashboardController extends Controller
         $categories = Category::query()->where('is_active', true)->orderBy('name')->get();
         $communities = Community::query()->where('is_active', true)->orderBy('name')->get();
 
-        return view('dashboard', compact('posts', 'activeMode', 'module', 'feed', 'showComposer', 'publishAs', 'categories', 'communities', 'showcaseSections'));
+        return view('dashboard', compact('posts', 'activeMode', 'module', 'feed', 'showComposer', 'publishAs', 'categories', 'communities', 'showcaseSections', 'vacancyHighlights'));
     }
 }

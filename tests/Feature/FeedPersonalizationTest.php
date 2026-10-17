@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\Community;
 use App\Models\JobRequest;
+use App\Models\JobVacancy;
 use App\Models\Listing;
 use App\Models\Post;
 use App\Models\PostMedia;
@@ -220,6 +221,104 @@ class FeedPersonalizationTest extends TestCase
             ->assertSee('San Juan Tetla')
             ->assertSee('data-market-carousel', false)
             ->assertSee('storage/posts/tacos.webp', false);
+    }
+
+    public function test_home_and_employment_are_first_class_discovery_modules(): void
+    {
+        $viewer = User::factory()->create(['account_type' => 'client']);
+
+        $home = $this->actingAs($viewer, 'web')->get(route('dashboard', ['module' => 'home']));
+        $home->assertOk()->assertViewHas('module', 'home');
+
+        $employment = $this->get(route('dashboard', ['module' => 'employment']));
+        $employment->assertOk()
+            ->assertViewHas('module', 'employment')
+            ->assertViewHas('posts', fn ($posts) => $posts->isEmpty());
+    }
+
+    public function test_discovery_exposes_only_published_vacancies_to_home_and_employment(): void
+    {
+        $community = Community::query()->create([
+            'name' => 'Comunidad Empleo',
+            'municipality' => 'Municipio Empleo',
+            'state' => 'Puebla',
+            'is_active' => true,
+        ]);
+        $employer = User::factory()->create(['account_type' => 'client', 'community_id' => $community->id]);
+        $viewer = User::factory()->create(['account_type' => 'client', 'community_id' => $community->id]);
+
+        foreach ([
+            ['title' => 'Ayudante de cocina publicado', 'status' => 'published', 'published_at' => now()],
+            ['title' => 'Vacante pendiente invisible', 'status' => 'pending_payment', 'published_at' => null],
+        ] as $vacancy) {
+            JobVacancy::create([
+                ...$vacancy,
+                'public_id' => (string) Str::uuid(),
+                'employer_id' => $employer->id,
+                'community_id' => $community->id,
+                'description' => 'Descripción suficientemente larga para una vacante local de prueba.',
+                'pay_period' => 'weekly',
+                'work_mode' => 'onsite',
+                'contract_type' => 'temporary',
+                'vacancies_count' => 1,
+            ]);
+        }
+
+        foreach (['home', 'employment'] as $module) {
+            $this->actingAs($viewer, 'web')
+                ->get(route('dashboard', ['module' => $module]))
+                ->assertOk()
+                ->assertViewHas('vacancyHighlights', function ($vacancies): bool {
+                    return $vacancies instanceof \Illuminate\Support\Collection
+                        && $vacancies->pluck('title')->all() === ['Ayudante de cocina publicado'];
+                });
+        }
+    }
+
+    public function test_showcase_sections_remain_available_outside_for_you_feed(): void
+    {
+        $community = Community::query()->create([
+            'name' => 'Comunidad Ofertas',
+            'municipality' => 'Municipio Ofertas',
+            'state' => 'Puebla',
+            'is_active' => true,
+        ]);
+        $viewer = User::factory()->create(['account_type' => 'client', 'community_id' => $community->id]);
+        $provider = User::factory()->create(['account_type' => 'provider', 'community_id' => $community->id]);
+        $category = Category::query()->firstOrCreate(
+            ['slug' => 'comida-bebidas'],
+            ['name' => 'Comida y bebidas', 'is_active' => true],
+        );
+        $vendor = Vendor::create([
+            'user_id' => $provider->id,
+            'display_name' => 'Cocina del barrio',
+            'slug' => 'cocina-del-barrio',
+            'status' => 'active',
+        ]);
+        $listing = Listing::create([
+            'vendor_id' => $vendor->id,
+            'category_id' => $category->id,
+            'type' => 'product',
+            'name' => 'Comida para compartir',
+            'slug' => 'comida-para-compartir',
+            'description' => 'Platillo disponible en la comunidad.',
+            'price_type' => 'fixed',
+            'price_amount' => 15000,
+            'is_active' => true,
+        ]);
+        Post::create([
+            'user_id' => $provider->id,
+            'vendor_id' => $vendor->id,
+            'listing_id' => $listing->id,
+            'type' => 'product',
+            'body' => $listing->description,
+            'published_at' => now(),
+        ]);
+
+        $this->actingAs($viewer, 'web')
+            ->get(route('dashboard', ['module' => 'food', 'feed' => 'offers']))
+            ->assertOk()
+            ->assertViewHas('showcaseSections', fn ($sections) => $sections->flatten(1)->isNotEmpty());
     }
 
     private function createPost(User $user, string $type, string $body): Post

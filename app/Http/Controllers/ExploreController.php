@@ -75,7 +75,7 @@ class ExploreController extends Controller
         $filters = array_merge($filters, ['community_id' => $communityId, 'scope' => $scope, 'radius_km' => $radiusKm]);
 
         $listings = Listing::query()
-            ->with(['vendor.user:id,name,avatar_path,avatar_disk,city'])
+            ->with(['category:id,name', 'post.media', 'vendor.user:id,name,avatar_path,avatar_disk,city,community_id', 'vendor.user.community:id,name'])
             ->where('is_active', true)
             ->where(fn (Builder $query) => $query->whereDoesntHave('post')->orWhereHas('post', fn (Builder $post) => $post->whereNull('removed_at')))
             ->whereHas('vendor', fn (Builder $query) => $query->where('status', 'active'))

@@ -22,7 +22,14 @@ class ExploreTest extends TestCase
         $client = User::factory()->create(['account_type' => 'client', 'city' => 'Mi Pueblo']);
         JobRequest::create(['public_id' => (string) Str::uuid(), 'client_id' => $client->id, 'title' => 'Necesito plomero', 'description' => 'Hay una fuga importante en casa.', 'status' => 'published', 'urgency' => 'urgent', 'published_at' => now()]);
 
-        $this->actingAs($client, 'web')->get(route('explore', ['q' => 'Plomería']))->assertOk()->assertSee('Plomería Central')->assertSee('Reparación de tuberías');
+        $this->actingAs($client, 'web')->get(route('explore', ['q' => 'Plomería']))
+            ->assertOk()
+            ->assertSee('Resultados para “Plomería”')
+            ->assertSee('aria-label="Tipos de resultado"', false)
+            ->assertSee('aria-label="Filtros avanzados"', false)
+            ->assertSee('Plomería Central')
+            ->assertSee('Reparación de tuberías')
+            ->assertSee('Servicio · Rubro por actualizar');
         $this->actingAs($provider, 'web')->get(route('explore', ['q' => 'plomero', 'type' => 'job_request']))->assertOk()->assertSee('Necesito plomero');
     }
 
@@ -118,6 +125,17 @@ class ExploreTest extends TestCase
         $viewer = User::factory()->create();
 
         $this->actingAs($viewer, 'web')->get(route('explore', ['type' => 'product', 'max_price' => 200]))->assertOk()->assertSee('Producto económico')->assertDontSee('Producto premium');
+    }
+
+    public function test_empty_search_explains_how_to_continue_without_losing_filters(): void
+    {
+        $viewer = User::factory()->create();
+
+        $this->actingAs($viewer, 'web')
+            ->get(route('explore', ['q' => 'algo que no existe', 'type' => 'service']))
+            ->assertOk()
+            ->assertSee('No encontramos servicios con esos filtros')
+            ->assertSee('Prueba otro rubro, amplía la zona o limpia los filtros.');
     }
 
     private function provider(string $name, string $specialty, string $status = 'active'): array

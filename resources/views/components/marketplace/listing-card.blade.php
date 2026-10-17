@@ -1,4 +1,4 @@
-@props(['listing', 'compact' => false])
+@props(['listing', 'compact' => false, 'href' => null])
 @php
     $listingType = $listing->type->value;
     $typeLabel = $listingType === 'product' ? 'Producto' : 'Servicio';
@@ -8,9 +8,9 @@
     $canBuy = $listingType === 'product'
         && $listing->price_type->value === 'fixed'
         && $listing->price_amount !== null;
-    $destination = $canBuy
+    $destination = $href ?: ($canBuy
         ? route('products.checkout', $listing)
-        : route('profile.show', $listing->vendor->user);
+        : route('profile.show', $listing->vendor->user));
 @endphp
 
 <a {{ $attributes->class([

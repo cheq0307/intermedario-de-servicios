@@ -1,83 +1,62 @@
 # Estado y salida a preproducción de Plaza Local
 
-## Avance estimado
+## Release vigente
 
-Estas métricas miden cosas distintas y no deben mezclarse:
-
-- Flujo de contratación de servicios con pagos simulados: **95%**.
-- MVP completo, incluyendo productos, búsqueda, notificaciones y administración: **85%**.
-- Preparación para preproducción controlada: **85%**.
-- Preparación para producción con dinero real: **40%**.
+- Candidato: `v2.0.0-rc.1`.
+- Rama: `feature/feed-social-comercial`.
+- Canal visible: `V2 · Preproducción`.
+- Recuperación de la versión anterior: etiqueta inmutable `v1.0.0`.
+- Pagos, cobros, comisiones y publicidad pagada: deshabilitados para esta salida y para el primer lanzamiento a producción.
 
 ## Flujo funcional disponible
 
-- Una identidad puede operar como cliente, proveedor, ambas o solamente personal administrativo.
-- Verificación de correo y recuperación de contraseña a nivel de aplicación.
-- Perfiles comerciales y reputación pública.
-- Feed local de productos, servicios y solicitudes.
-- Propuestas privadas con precio y plazo.
-- Conversaciones privadas.
-- Contratación y seguimiento: espera de pago, pago, inicio, entrega y confirmación.
-- Pagos simulados con comisión congelada, liberación al completar y devolución administrativa.
-- Cancelación previa al inicio con motivo.
-- Disputas después de iniciar, con expediente y resolución administrativa.
-- Reseñas bilaterales únicamente después de una orden completada.
-- Cálculo y congelamiento de comisión por orden.
+- Una cuenta verificada puede comprar, solicitar, ofrecer y participar en su comunidad según sus capacidades activas.
+- Perfiles públicos, reputación, publicaciones con medios, seguimiento e interacciones sociales.
+- Descubrimiento unificado por Inicio, Comida, Servicios, Productos, Transporte y Empleo.
+- Propuestas privadas, pedidos, acuerdos de servicio, entrega, confirmación, disputas y reseñas sin pasarela interna.
+- Vacantes y postulaciones integradas al descubrimiento general.
+- Conversaciones, soporte y notificaciones con actualización en tiempo real mediante Reverb y refresco de respaldo.
+- Administración separada para cuentas, publicaciones, empleo, operaciones, disputas, soporte y configuración.
+- Escenario DEMO idempotente con perfiles, publicaciones, imágenes, actividad, operaciones, vacantes y postulaciones visibles.
 
-## Estado de la infraestructura de staging
+## Estado de infraestructura
 
-- Completado: SMTP de Gmail y entrega básica verificada.
-- Completado: base de datos y credenciales exclusivas de staging.
-- Completado: entorno staging sin depuración y con clave propia.
-- Completado: HTTPS temporal mediante ngrok y cookies seguras.
-- Completado: worker de colas persistente mediante systemd.
-- Completado: scheduler ejecutado por cron cada minuto.
-- Completado: backups automáticos de base y archivos con validación de integridad.
-- Completado: cuenta superadministradora y cuenta administradora delegada.
-- Pendiente: restaurar un backup completo en una instancia separada.
-- Pendiente: alertas externas y revisión de rotación/retención de logs.
-- Pendiente: ejecutar y firmar la matriz de aceptación con las cuentas piloto.
+- SMTP, HTTPS temporal, worker, scheduler y respaldos deben comprobarse en cada despliegue; una configuración histórica no cuenta como verificación actual.
+- PHP-FPM/CLI requiere GD para el procesamiento de imágenes privadas del chat.
+- Nginx necesita lectura y travesía sobre `public/build` y `storage/app/public`.
+- Reverb es independiente de los webhooks de Stripe/Mercado Pago: estos últimos permanecen cerrados, Reverb permanece activo.
 
-## Bloqueadores para producción con dinero real
+## Despliegue
 
-- Seleccionar proveedor de pagos con producto oficial para marketplace en México.
-- KYC y alta bancaria de proveedores mediante el proveedor de pagos.
-- Webhooks firmados, idempotencia, conciliación y reembolsos.
-- Términos y condiciones, aviso de privacidad y política de disputas revisados legalmente.
-- Reglas fiscales y facturación revisadas con contador.
-- Protección de archivos privados para evidencia.
-- Rate limiting, monitoreo, análisis de vulnerabilidades y pruebas de recuperación.
-- Procedimiento de soporte y respuesta a incidentes.
+El procedimiento vinculante para V2 está en [`docs/releases/V2_PREPRODUCCION.md`](releases/V2_PREPRODUCCION.md). Reglas obligatorias:
 
-## Despliegue inicial de staging
+1. Preflight y respaldo verificable antes de modificar el servidor.
+2. Nunca ejecutar `migrate:fresh`, `db:wipe` ni copiar la base SQLite local.
+3. No copiar `.env`; solo ajustar las variables de release en el servidor.
+4. Compilar Vite en Windows y transferir `public/build`.
+5. Ejecutar migraciones incrementales y `plaza:demo-marketplace --force`.
+6. Mantener la aplicación en mantenimiento si falla una migración, transferencia o verificación crítica.
 
-```bash
-git pull origin feature/feed-social-comercial
-composer install --no-dev --prefer-dist --optimize-autoloader
-npm ci
-npm run build
-php artisan migrate --force
-php artisan storage:link
-php artisan optimize
-php artisan plaza:grant-admin correo@dominio.com
-```
+## Matriz mínima de aceptación V2
 
-La aplicación debe apuntar a una base de datos vacía de staging. No debe reutilizar la base de datos de los otros proyectos ni una base de producción.
+1. Abrir acceso DEMO y comprobar `V2 · Preproducción`.
+2. Entrar como perfiles ficticios de comprador, proveedor, empleador, postulante y administrador.
+3. Visualizar publicaciones e imágenes reales en todos los módulos de descubrimiento.
+4. Crear un pedido sin pago y recorrer aceptación, preparación/ejecución, entrega y confirmación.
+5. Publicar una solicitud, enviar una propuesta y aceptarla.
+6. Publicar una vacante y enviar una postulación.
+7. Enviar mensajes entre dos navegadores sin recargar y comprobar campana/lectura.
+8. Abrir y responder soporte sin recargar.
+9. Confirmar que un tercero no puede leer conversaciones, documentos ni operaciones.
+10. Confirmar que rutas de pasarela, publicidad pagada y webhooks de proveedor responden como servicio no disponible.
+11. Confirmar que CSS, JavaScript, manifiesto e imágenes responden correctamente.
+12. Registrar commit/tag desplegado y comprobar que existe un respaldo recuperable.
 
-## Matriz mínima de aceptación
+## Pendientes antes de producción
 
-1. Registrar y verificar un cliente.
-2. Registrar y verificar dos proveedores.
-3. Publicar una solicitud y recibir dos propuestas.
-4. Aceptar una propuesta y comprobar que la otra se rechaza.
-5. Simular el pago; comprobar que antes no se pueda iniciar, y después iniciar, entregar y confirmar.
-6. Publicar reseñas desde ambas cuentas.
-7. Abrir otra orden, iniciar y abrir una disputa.
-8. Responder como ambas partes y resolver como administrador.
-9. Verificar que un tercero no pueda acceder a orden, chat o disputa.
-10. Restaurar un backup en una instancia separada.
-
-11. Activar cliente y proveedor en una sola cuenta y cambiar de contexto.
-12. Probar una cuenta exclusivamente administrativa sin formulario comercial.
-13. Resolver disputas con liberación y devolución de pagos simulados.
-Los pagos reales deben permanecer desactivados durante esta etapa.
+- Restaurar un respaldo completo en una instancia separada.
+- Definir almacenamiento de medios persistente para nube y separar archivos públicos/privados.
+- Configurar dominio estable, certificados, observabilidad, alertas y rotación de logs.
+- Ejecutar pruebas representativas sobre MySQL/MariaDB y la cola real de despliegue.
+- Revisar legalmente términos, privacidad, moderación, disputas y tratamiento de documentos.
+- Completar y firmar la matriz de aceptación con cuentas piloto.

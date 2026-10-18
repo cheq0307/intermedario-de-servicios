@@ -28,6 +28,29 @@ class SeedMarketplaceDemoTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_command_preserves_existing_accounts_when_demo_phone_numbers_are_already_taken(): void
+    {
+        Storage::fake('public');
+        $existingUser = User::factory()->create([
+            'email' => 'persona.existente@example.com',
+            'phone' => '2229000101',
+        ]);
+        $existingAdmin = AdminUser::factory()->create([
+            'email' => 'admin.existente@example.com',
+            'phone' => '2239000001',
+        ]);
+
+        $this->assertSame(0, Artisan::call('plaza:demo-marketplace'));
+        $this->assertSame(0, Artisan::call('plaza:demo-marketplace'));
+
+        $this->assertSame('2229000101', $existingUser->fresh()->phone);
+        $this->assertSame('2239000001', $existingAdmin->fresh()->phone);
+        $this->assertSame(20, User::where('email', 'like', '%.demo@example.test')->count());
+        $this->assertSame(5, AdminUser::where('email', 'like', '%.demo@example.test')->count());
+        $this->assertNotSame('2229000101', User::where('email', 'comprador1.demo@example.test')->firstOrFail()->phone);
+        $this->assertNotSame('2239000001', AdminUser::where('email', 'administrador1.demo@example.test')->firstOrFail()->phone);
+    }
+
     public function test_command_creates_a_visible_idempotent_marketplace_scenario(): void
     {
         Storage::fake('public');

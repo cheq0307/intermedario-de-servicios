@@ -70,11 +70,14 @@ class SeedMarketplaceDemo extends Command
             ];
             foreach ($profileTypes as $key => [$label, $emailPrefix, $phoneBase]) {
                 foreach (range(1, 5) as $number) {
+                    $email = "{$emailPrefix}{$number}.demo@example.test";
+                    $existingPhone = User::query()->where('email', $email)->value('phone');
+                    $preferredPhone = '2229'.str_pad((string) ($phoneBase + $number), 6, '0', STR_PAD_LEFT);
                     $user = User::updateOrCreate(
-                        ['email' => "{$emailPrefix}{$number}.demo@example.test"],
+                        ['email' => $email],
                         [
                             'name' => "{$label} DEMO {$number}",
-                            'phone' => '2229'.str_pad((string) ($phoneBase + $number), 6, '0', STR_PAD_LEFT),
+                            'phone' => $existingPhone ?: $this->availableDemoPhone(User::class, $preferredPhone, '2298'),
                             'community_id' => $community->id,
                             'password' => $password,
                         ],
@@ -106,11 +109,14 @@ class SeedMarketplaceDemo extends Command
             }
 
             foreach (range(1, 5) as $number) {
+                $email = "administrador{$number}.demo@example.test";
+                $existingPhone = AdminUser::query()->where('email', $email)->value('phone');
+                $preferredPhone = '2239'.str_pad((string) $number, 6, '0', STR_PAD_LEFT);
                 $administrator = AdminUser::updateOrCreate(
-                    ['email' => "administrador{$number}.demo@example.test"],
+                    ['email' => $email],
                     [
                         'name' => "Administrador DEMO {$number}",
-                        'phone' => '2239'.str_pad((string) $number, 6, '0', STR_PAD_LEFT),
+                        'phone' => $existingPhone ?: $this->availableDemoPhone(AdminUser::class, $preferredPhone, '2398'),
                         'password' => $password,
                         'active' => true,
                     ],
@@ -221,6 +227,26 @@ class SeedMarketplaceDemo extends Command
         $this->warn('Son datos ficticios visibles. No cargues documentos reales en estas cuentas.');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * @param  class-string<User|AdminUser>  $modelClass
+     */
+    private function availableDemoPhone(string $modelClass, string $preferredPhone, string $fallbackPrefix): string
+    {
+        if (! $modelClass::query()->where('phone', $preferredPhone)->exists()) {
+            return $preferredPhone;
+        }
+
+        foreach (range(1, 999999) as $suffix) {
+            $candidate = $fallbackPrefix.str_pad((string) $suffix, 6, '0', STR_PAD_LEFT);
+
+            if (! $modelClass::query()->where('phone', $candidate)->exists()) {
+                return $candidate;
+            }
+        }
+
+        throw new \RuntimeException('No hay teléfonos DEMO disponibles para crear el escenario.');
     }
 
     private function demoImage(): string

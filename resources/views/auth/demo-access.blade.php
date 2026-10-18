@@ -1,6 +1,11 @@
 <x-layouts.auth title="Acceso de pruebas - Plaza Local">
     <div>
-        <p class="text-xs font-black uppercase tracking-[.2em] text-brand-coral-strong">Entorno local de validación</p>
+        <div class="flex flex-wrap items-center gap-2">
+            <p class="text-xs font-black uppercase tracking-[.2em] text-brand-coral-strong">Entorno local de validación</p>
+            @if (config('app.release_version') && config('app.release_channel') === 'preproduction')
+                <span class="rounded-full border border-brand-forest-deep/10 bg-brand-cream px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-brand-forest-deep">V{{ str_starts_with((string) config('app.release_version'), '2') ? '2' : config('app.release_version') }} · Preproducción</span>
+            @endif
+        </div>
         <h1 class="mt-3 text-3xl font-black tracking-tight">Perfiles de prueba</h1>
         <p class="mt-3 text-sm font-semibold text-brand-sage-muted">Entra con un perfil ficticio sin contraseña y recorre los flujos completos de la comunidad.</p>
     </div>

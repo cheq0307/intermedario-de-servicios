@@ -40,6 +40,34 @@ class DemoAccessTest extends TestCase
             ->assertSee(route('demo.admin-access.store'));
     }
 
+    public function test_demo_access_identifies_the_configured_v2_preproduction_release(): void
+    {
+        config([
+            'demo.enabled' => true,
+            'app.release_version' => '2.0.0-rc.1',
+            'app.release_channel' => 'preproduction',
+        ]);
+        Artisan::call('plaza:demo-marketplace');
+
+        $this->get('/demo/acceso')
+            ->assertOk()
+            ->assertSee('V2 · Preproducción');
+    }
+
+    public function test_demo_access_omits_release_badge_when_release_metadata_is_empty(): void
+    {
+        config([
+            'demo.enabled' => true,
+            'app.release_version' => '',
+            'app.release_channel' => '',
+        ]);
+        Artisan::call('plaza:demo-marketplace');
+
+        $this->get('/demo/acceso')
+            ->assertOk()
+            ->assertDontSee('Preproducción');
+    }
+
     public function test_demo_access_logs_into_seeded_marketplace_and_admin_profiles(): void
     {
         config(['demo.enabled' => true]);

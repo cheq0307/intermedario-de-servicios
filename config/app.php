@@ -28,6 +28,10 @@ return [
 
     'env' => env('APP_ENV', 'production'),
 
+    'release_version' => env('PLAZA_RELEASE_VERSION'),
+
+    'release_channel' => env('PLAZA_RELEASE_CHANNEL'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Debug Mode

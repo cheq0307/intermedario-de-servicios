@@ -9,7 +9,7 @@ final class DemoMode
 {
     public function enabled(): bool
     {
-        return (bool) config('demo.enabled') && app()->environment(['local', 'testing']);
+        return (bool) config('demo.enabled') && app()->environment(['local', 'testing', 'staging']);
     }
 
     public function ensureEnabled(): void

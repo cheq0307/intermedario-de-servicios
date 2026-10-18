@@ -2,7 +2,7 @@
 
 ## Release vigente
 
-- Candidato: `v2.0.0-rc.1`.
+- Candidato: `v2.0.0-rc.2`.
 - Rama: `feature/feed-social-comercial`.
 - Canal visible: `V2 · Preproducción`.
 - Recuperación de la versión anterior: etiqueta inmutable `v1.0.0`.

@@ -21,6 +21,26 @@ class DemoAccessTest extends TestCase
         $this->get('/demo/acceso')->assertNotFound();
     }
 
+    public function test_demo_access_is_available_in_staging_when_explicitly_enabled(): void
+    {
+        $this->app->detectEnvironment(fn (): string => 'staging');
+        config(['demo.enabled' => true]);
+
+        Artisan::call('plaza:demo-marketplace');
+
+        $this->get('/demo/acceso')
+            ->assertOk()
+            ->assertSee('Perfiles de prueba');
+    }
+
+    public function test_demo_access_remains_hidden_in_production_even_when_flag_is_enabled(): void
+    {
+        $this->app->detectEnvironment(fn (): string => 'production');
+        config(['demo.enabled' => true]);
+
+        $this->get('/demo/acceso')->assertNotFound();
+    }
+
     public function test_demo_access_lists_seeded_profiles_without_exposing_passwords(): void
     {
         config(['demo.enabled' => true]);
@@ -44,7 +64,7 @@ class DemoAccessTest extends TestCase
     {
         config([
             'demo.enabled' => true,
-            'app.release_version' => '2.0.0-rc.1',
+            'app.release_version' => '2.0.0-rc.2',
             'app.release_channel' => 'preproduction',
         ]);
         Artisan::call('plaza:demo-marketplace');

@@ -217,7 +217,7 @@ class SeedMarketplaceDemo extends Command
             ['Postulante', 'postulante1..5.demo@example.test'],
             ['Administrador', 'administrador1..5.demo@example.test'],
         ]);
-        $this->line('El acceso sin contraseña solo aparece cuando PLAZA_DEMO_ACCESS_ENABLED=true en local/testing.');
+        $this->line('El acceso sin contraseña solo aparece cuando PLAZA_DEMO_ACCESS_ENABLED=true en local/testing/staging.');
         $this->warn('Son datos ficticios visibles. No cargues documentos reales en estas cuentas.');
 
         return self::SUCCESS;

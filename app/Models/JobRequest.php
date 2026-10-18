@@ -17,6 +17,7 @@ class JobRequest extends Model
     protected $fillable = [
         'public_id',
         'client_id',
+        'preferred_provider_id',
         'category_id',
         'title',
         'description',
@@ -26,6 +27,7 @@ class JobRequest extends Model
         'urgency',
         'status',
         'location_label',
+        'scheduled_for',
         'latitude',
         'longitude',
         'published_at',
@@ -38,6 +40,7 @@ class JobRequest extends Model
             'status' => JobRequestStatus::class,
             'published_at' => 'datetime',
             'expires_at' => 'datetime',
+            'scheduled_for' => 'datetime',
         ];
     }
 
@@ -49,6 +52,11 @@ class JobRequest extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(User::class, 'client_id');
+    }
+
+    public function preferredProvider(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'preferred_provider_id');
     }
 
     public function post(): HasOne

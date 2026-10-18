@@ -24,13 +24,14 @@
 @elseif($isStaff)
 <a class="mb-2 inline-flex min-h-11 items-center rounded-full bg-brand-deep px-4 text-xs font-black text-white sm:px-5 sm:text-sm" href="{{ route('support.create') }}">Contactar soporte</a>
 @else
-<div class="mb-2 flex items-center gap-2">
+<div class="mb-2 flex flex-wrap items-center justify-end gap-2">
     @guest
         <a class="hidden min-h-11 items-center rounded-full border border-brand-line bg-white px-4 text-xs font-black text-brand-deep sm:inline-flex" href="{{ route('login') }}">Iniciar sesión</a>
         <a class="inline-flex min-h-11 items-center rounded-full bg-brand-coral px-4 text-xs font-black text-white sm:px-5" href="{{ route('register') }}">Regístrate para contactar</a>
     @else
+        @if($isProvider && $vendor->categories->isNotEmpty())<a class="inline-flex min-h-11 items-center rounded-full bg-brand-coral px-4 text-xs font-black text-white sm:px-5 sm:text-sm" href="{{ route('service-requests.create', $user) }}">Solicitar servicio</a>@endif
         <form method="POST" action="{{ route('conversations.start') }}">@csrf<input type="hidden" name="recipient_id" value="{{ $user->id }}"><button class="min-h-11 rounded-full border border-brand-line bg-white px-4 text-xs font-black text-brand-deep sm:px-5 sm:text-sm">Mensaje</button></form>
-        <form method="POST" action="{{ route('profiles.follow.toggle', $user) }}">@csrf<button class="min-h-11 rounded-full px-4 text-xs font-black sm:px-5 sm:text-sm {{ $isFollowing ? 'border border-brand-deep bg-white text-brand-deep' : 'bg-brand-coral text-white' }}">{{ $isFollowing ? 'Siguiendo' : 'Seguir' }}</button></form>
+        <form method="POST" action="{{ route('profiles.follow.toggle', $user) }}">@csrf<button class="min-h-11 rounded-full border border-brand-line bg-white px-4 text-xs font-black text-brand-deep sm:px-5 sm:text-sm">{{ $isFollowing ? 'Siguiendo' : 'Seguir' }}</button></form>
     @endguest
 </div>
 @endif

@@ -3,10 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\JobRequest;
 use App\Models\Post;
 use App\Models\User;
 use App\Models\Vendor;
+use App\Notifications\MarketplaceActivity;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -132,6 +135,73 @@ class PostPublishingTest extends TestCase
             'type' => 'job_request',
             'category_id' => $this->categoryId(),
         ]);
+    }
+
+    public function test_a_client_can_send_a_scheduled_request_to_a_specific_active_provider(): void
+    {
+        Notification::fake();
+        $client = User::factory()->create();
+        $provider = $this->approvedProvider();
+        $category = Category::query()->findOrFail($this->categoryId());
+        $provider->vendor->categories()->attach($category);
+
+        $response = $this->actingAs($client, 'web')->post(route('posts.store'), [
+            'submission_token' => (string) Str::uuid(),
+            'type' => 'job_request',
+            'preferred_provider_id' => $provider->id,
+            'category_id' => $category->id,
+            'title' => 'Reparación de fuga',
+            'urgency' => 'soon',
+            'scheduled_for' => now()->addDays(2)->format('Y-m-d H:i:s'),
+            'body' => 'Necesito reparar una fuga debajo del lavabo de mi casa.',
+        ]);
+
+        $request = JobRequest::query()->firstOrFail();
+
+        $response->assertRedirect(route('service-requests.sent', $request));
+        $this->assertDatabaseHas('job_requests', [
+            'id' => $request->id,
+            'preferred_provider_id' => $provider->id,
+        ]);
+        $this->assertDatabaseHas('posts', [
+            'job_request_id' => $request->id,
+            'published_at' => null,
+        ]);
+        $this->assertNotNull($request->scheduled_for);
+        Notification::assertSentTo(
+            $provider,
+            MarketplaceActivity::class,
+            fn (MarketplaceActivity $notification): bool => $notification->kind === 'direct_service_request'
+                && $notification->routeName === 'job-proposals.index',
+        );
+
+        $this->actingAs($client, 'web')
+            ->get(route('service-requests.sent', $request))
+            ->assertOk()
+            ->assertSee('Solicitud enviada')
+            ->assertSee($provider->vendor->display_name);
+    }
+
+    public function test_targeted_request_rejects_a_provider_that_does_not_offer_the_selected_category(): void
+    {
+        $client = User::factory()->create();
+        $provider = $this->approvedProvider();
+
+        $this->actingAs($client, 'web')
+            ->from(route('service-requests.create', $provider))
+            ->post(route('posts.store'), [
+                'submission_token' => (string) Str::uuid(),
+                'type' => 'job_request',
+                'preferred_provider_id' => $provider->id,
+                'category_id' => $this->categoryId(),
+                'title' => 'Solicitud fuera del rubro',
+                'urgency' => 'normal',
+                'body' => 'Esta solicitud intenta elegir un rubro que la persona no ofrece.',
+            ])
+            ->assertRedirect(route('service-requests.create', $provider))
+            ->assertSessionHasErrors('category_id');
+
+        $this->assertDatabaseCount('job_requests', 0);
     }
 
     public function test_a_client_cannot_publish_a_provider_offer(): void

@@ -58,6 +58,52 @@ class ProfileTest extends TestCase
             ->assertDontSee($provider->email);
     }
 
+    public function test_authenticated_user_can_start_a_service_request_from_an_active_provider_profile(): void
+    {
+        $viewer = User::factory()->create();
+        $provider = User::factory()->create();
+        $category = Category::query()->firstOrFail();
+        $vendor = $provider->vendor()->create([
+            'display_name' => 'Plomería Express',
+            'slug' => 'plomeria-express-'.$provider->id,
+            'status' => 'active',
+        ]);
+        $vendor->categories()->attach($category);
+
+        $this->actingAs($viewer, 'web')
+            ->get(route('profile.show', $provider))
+            ->assertOk()
+            ->assertSee('Solicitar servicio')
+            ->assertSee(route('service-requests.create', $provider), false);
+
+        $this->actingAs($viewer, 'web')
+            ->get(route('service-requests.create', $provider))
+            ->assertOk()
+            ->assertSee('Solicitar servicio a Plomería Express')
+            ->assertSee($category->name)
+            ->assertSee('Fecha y horario');
+    }
+
+    public function test_service_request_form_rejects_inactive_providers_and_the_profile_hides_the_action(): void
+    {
+        $viewer = User::factory()->create();
+        $provider = User::factory()->create();
+        $provider->vendor()->create([
+            'display_name' => 'Servicio suspendido',
+            'slug' => 'servicio-suspendido-'.$provider->id,
+            'status' => 'suspended',
+        ]);
+
+        $this->actingAs($viewer, 'web')
+            ->get(route('profile.show', $provider))
+            ->assertOk()
+            ->assertDontSee('Solicitar servicio');
+
+        $this->actingAs($viewer, 'web')
+            ->get(route('service-requests.create', $provider))
+            ->assertNotFound();
+    }
+
     public function test_profile_owner_can_see_their_own_email_address(): void
     {
         $user = User::factory()->create(['account_type' => 'client']);

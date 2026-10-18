@@ -6,6 +6,7 @@ use App\Domain\Marketplace\Enums\JobRequestStatus;
 use App\Models\JobRequest;
 use App\Models\Listing;
 use App\Models\Post;
+use App\Models\User;
 use App\Models\Vendor;
 use App\Services\Marketplace\NotifyMatchingProviders;
 use App\Services\Marketplace\PublicationDraftService;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class PostController extends Controller
 {
@@ -37,8 +39,25 @@ class PostController extends Controller
             'category_id' => ['required', 'integer', Rule::exists('categories', 'id')->where('is_active', true)],
             'community_ids' => ['nullable', 'array', 'max:25'],
             'community_ids.*' => ['integer', 'distinct', Rule::exists('communities', 'id')->where('is_active', true)],
+            'preferred_provider_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'media.*' => ['file', 'mimetypes:image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm', 'max:51200'],
         ]);
+
+        if ($postData['type'] === 'job_request' && isset($postData['preferred_provider_id'])) {
+            $providerMatchesRequest = User::query()
+                ->whereKey($postData['preferred_provider_id'])
+                ->whereKeyNot($request->user()->id)
+                ->whereHas('vendor', fn ($vendor) => $vendor
+                    ->where('status', 'active')
+                    ->whereHas('categories', fn ($categories) => $categories->whereKey($postData['category_id'])))
+                ->exists();
+
+            if (! $providerMatchesRequest) {
+                throw ValidationException::withMessages([
+                    'category_id' => 'Esta persona no ofrece el rubro seleccionado.',
+                ]);
+            }
+        }
 
         $isProvider = in_array($postData['type'], $providerTypes, true);
         if ($isProvider && $request->user()->vendor?->status !== 'active') {
@@ -79,9 +98,13 @@ class PostController extends Controller
                 }
                 $request->user()->publicationDraft()->delete();
 
-                return redirect()
-                    ->route('dashboard')
-                    ->with('status', 'Tu publicación ya está visible en la comunidad.');
+                if ($post->jobRequest?->preferred_provider_id) {
+                    return redirect()
+                        ->route('service-requests.sent', $post->jobRequest)
+                        ->with('status', 'La solicitud fue enviada a la persona seleccionada.');
+                }
+
+                return redirect()->route('dashboard')->with('status', 'Tu publicación ya está visible en la comunidad.');
             });
     }
 
@@ -93,12 +116,14 @@ class PostController extends Controller
             'budget_max' => ['nullable', 'numeric', 'min:0', 'max:99999999.99', 'gte:budget_min'],
             'urgency' => ['required', 'string', Rule::in(['normal', 'soon', 'urgent'])],
             'location_label' => ['nullable', 'string', 'max:120'],
+            'scheduled_for' => ['nullable', 'date', 'after:now'],
         ]);
 
         return DB::transaction(function () use ($request, $postData, $details): Post {
             $jobRequest = JobRequest::create([
                 'public_id' => (string) Str::uuid(),
                 'client_id' => $request->user()->id,
+                'preferred_provider_id' => $postData['preferred_provider_id'] ?? null,
                 'title' => $details['title'],
                 'description' => $postData['body'],
                 'budget_min_amount' => $this->toMinorUnits($details['budget_min'] ?? null),
@@ -107,6 +132,7 @@ class PostController extends Controller
                 'urgency' => $details['urgency'],
                 'status' => JobRequestStatus::Published->value,
                 'location_label' => $details['location_label'] ?? null,
+                'scheduled_for' => $details['scheduled_for'] ?? null,
                 'published_at' => now(),
             ]);
 
@@ -119,7 +145,7 @@ class PostController extends Controller
                 ...$postData,
                 'user_id' => $request->user()->id,
                 'job_request_id' => $jobRequest->id,
-                'published_at' => now(),
+                'published_at' => isset($postData['preferred_provider_id']) ? null : now(),
             ]);
         });
     }

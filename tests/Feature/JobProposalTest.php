@@ -85,6 +85,30 @@ class JobProposalTest extends TestCase
         $this->actingAs($incompleteProvider, 'web')->get(route('job-proposals.index', $jobRequest))->assertOk()->assertSee('pendiente de aprobación');
     }
 
+    public function test_only_the_selected_provider_can_view_and_answer_a_direct_request(): void
+    {
+        [$client, $provider, $jobRequest] = $this->scenario();
+        $otherProvider = $this->provider();
+        $jobRequest->update(['preferred_provider_id' => $provider->id]);
+
+        $this->actingAs($provider, 'web')
+            ->get(route('job-proposals.index', $jobRequest))
+            ->assertOk();
+        $this->actingAs($provider, 'web')
+            ->post(route('job-proposals.store', $jobRequest), $this->payload('850'))
+            ->assertRedirect();
+
+        $this->actingAs($otherProvider, 'web')
+            ->get(route('job-proposals.index', $jobRequest))
+            ->assertForbidden();
+        $this->actingAs($otherProvider, 'web')
+            ->post(route('job-proposals.store', $jobRequest), $this->payload('900'))
+            ->assertForbidden();
+
+        $this->assertDatabaseCount('job_proposals', 1);
+        $this->assertDatabaseHas('job_proposals', ['provider_id' => $provider->id]);
+    }
+
     private function scenario(): array
     {
         $client = User::factory()->create(['account_type' => 'client']);

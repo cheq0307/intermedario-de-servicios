@@ -37,6 +37,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileFollowController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ServiceOrderController;
+use App\Http\Controllers\ServiceRequestController;
 use App\Http\Controllers\StripeConnectController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\SupportController;
@@ -84,6 +85,8 @@ Route::middleware(['auth:web', 'marketplace.identity', 'account.active'])->group
     Route::get('/actividad/resumen', [NotificationController::class, 'summary'])->middleware('throttle:activity-read')->name('activity.summary');
     Route::post('/publicaciones', [PostController::class, 'store'])->middleware('throttle:publications')->name('posts.store');
     Route::middleware('verified')->group(function () {
+        Route::get('/perfiles/{provider}/solicitar', [ServiceRequestController::class, 'create'])->name('service-requests.create');
+        Route::get('/solicitudes/{jobRequest}/enviada', [ServiceRequestController::class, 'sent'])->name('service-requests.sent');
         Route::post('/mi-cuenta/capacidades/{capability}', [MarketplaceCapabilityController::class, 'activate'])->name('capabilities.activate');
         Route::get('/mi-empleo', [JobVacancyController::class, 'mine'])->name('vacancies.mine');
         Route::get('/empleo-publicar', [JobVacancyController::class, 'create'])->name('vacancies.create');

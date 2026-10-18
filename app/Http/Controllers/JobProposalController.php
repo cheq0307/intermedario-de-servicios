@@ -28,6 +28,7 @@ class JobProposalController extends Controller
         $isOwner = $jobRequest->client_id === $request->user()->id;
         $isProvider = $request->user()->canActAsProvider();
         abort_unless($isOwner || $isProvider, 403);
+        $this->assertDirectRequestRecipient($request, $jobRequest, $isOwner);
 
         $jobRequest->load('client:id,name,avatar_path,avatar_disk');
         $proposals = $jobRequest->proposals()
@@ -45,6 +46,7 @@ class JobProposalController extends Controller
         $jobRequest->loadMissing('post');
         abort_if($jobRequest->post?->removed_at !== null, 404, 'Esta publicación ya no está disponible.');
         abort_unless($request->user()->canActAsProvider(), 403);
+        $this->assertDirectRequestRecipient($request, $jobRequest, false);
         if ($request->user()->vendor?->status !== 'active') {
             throw ValidationException::withMessages(['proposal' => 'Tu perfil comercial debe estar aprobado antes de enviar propuestas.']);
         }
@@ -213,5 +215,12 @@ class JobProposalController extends Controller
     {
         abort_unless($jobRequest->client_id === $request->user()->id, 403);
         abort_unless($proposal->job_request_id === $jobRequest->id, 404);
+    }
+
+    private function assertDirectRequestRecipient(Request $request, JobRequest $jobRequest, bool $isOwner): void
+    {
+        if ($jobRequest->preferred_provider_id !== null && ! $isOwner) {
+            abort_unless($jobRequest->preferred_provider_id === $request->user()->id, 403);
+        }
     }
 }

@@ -14,7 +14,19 @@ class NotifyMatchingProviders
             return 0;
         }
 
-        $jobRequest->loadMissing(['communities:id,name', 'client:id,name']);
+        $jobRequest->loadMissing(['communities:id,name', 'client:id,name', 'preferredProvider:id,name']);
+
+        if ($jobRequest->preferredProvider) {
+            $jobRequest->preferredProvider->notify(new MarketplaceActivity(
+                'Nueva solicitud directa de servicio',
+                $jobRequest->client->name.' te envió “'.$jobRequest->title.'”. Revisa los detalles y responde con una propuesta.',
+                'job-proposals.index',
+                ['jobRequest' => $jobRequest->public_id],
+                'direct_service_request',
+            ));
+
+            return 1;
+        }
         $targetIds = $jobRequest->communities->pluck('id');
         $targetNames = $jobRequest->communities->pluck('name')->join(', ');
         $notified = 0;

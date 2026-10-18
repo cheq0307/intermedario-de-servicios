@@ -1,4 +1,4 @@
-# Release `v2.0.0-rc.3` — preproducción
+# Release `v2.0.0-rc.4` — preproducción
 
 Este procedimiento actualiza `/home/ejidos/plaza-local` sin reemplazar la base ni sus secretos. Los comandos remotos se ejecutan como `ejidos` salvo los reinicios que ya requieran `sudo`.
 
@@ -10,7 +10,7 @@ En Windows, confirmar que la rama y el build están listos:
 git status --short
 git rev-parse HEAD
 git rev-parse v1.0.0
-git rev-parse v2.0.0-rc.3
+git rev-parse v2.0.0-rc.4
 Get-Content .\public\build\manifest.json
 ```
 
@@ -80,7 +80,7 @@ No ejecutar `migrate:fresh`, `db:wipe` ni copiar `.env`/SQLite desde Windows.
 Agregar o actualizar solamente estas dos líneas del `.env` remoto:
 
 ```dotenv
-PLAZA_RELEASE_VERSION=2.0.0-rc.3
+PLAZA_RELEASE_VERSION=2.0.0-rc.4
 PLAZA_RELEASE_CHANNEL=preproduction
 PLAZA_DEMO_ACCESS_ENABLED=true
 ```

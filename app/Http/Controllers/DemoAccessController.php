@@ -22,13 +22,14 @@ final class DemoAccessController extends Controller
                 'proveedor' => 'Proveedores',
                 'empleador' => 'Empleadores',
                 'postulante' => 'Postulantes',
+                'otros' => 'Otros perfiles de prueba',
             ],
             'profiles' => User::query()
                 ->where('email', 'like', '%.demo@example.test')
                 ->with('vendor')
                 ->orderBy('name')
                 ->get()
-                ->groupBy(fn (User $user): string => (string) preg_replace('/\d+\.demo@example\.test$/', '', $user->email)),
+                ->groupBy(fn (User $user): string => $this->profileType($user)),
         ]);
     }
 
@@ -77,5 +78,16 @@ final class DemoAccessController extends Controller
         $request->session()->regenerate();
 
         return redirect()->route('admin.index');
+    }
+
+    private function profileType(User $user): string
+    {
+        preg_match(
+            '/^(comprador|proveedor|empleador|postulante)\d*\.demo@example\.test$/',
+            strtolower($user->email),
+            $matches,
+        );
+
+        return $matches[1] ?? 'otros';
     }
 }

@@ -60,11 +60,26 @@ class DemoAccessTest extends TestCase
             ->assertSee(route('demo.admin-access.store'));
     }
 
+    public function test_demo_access_groups_legacy_unnumbered_profiles_without_failing(): void
+    {
+        config(['demo.enabled' => true]);
+        Artisan::call('plaza:demo-marketplace');
+        User::factory()->create([
+            'name' => 'Comprador DEMO heredado',
+            'email' => 'comprador.demo@example.test',
+        ]);
+
+        $this->get('/demo/acceso')
+            ->assertOk()
+            ->assertSee('Compradores y solicitantes')
+            ->assertSee('Comprador DEMO heredado');
+    }
+
     public function test_demo_access_identifies_the_configured_v2_preproduction_release(): void
     {
         config([
             'demo.enabled' => true,
-            'app.release_version' => '2.0.0-rc.3',
+            'app.release_version' => '2.0.0-rc.4',
             'app.release_channel' => 'preproduction',
         ]);
         Artisan::call('plaza:demo-marketplace');

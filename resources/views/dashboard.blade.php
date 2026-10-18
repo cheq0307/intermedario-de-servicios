@@ -56,7 +56,7 @@
 
             <nav class="-mx-4 flex gap-6 overflow-x-auto border-b border-brand/10 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0" aria-label="Módulos del marketplace">
                 @foreach($moduleLabels as $moduleKey => $moduleLabel)
-                    <a class="relative shrink-0 px-0.5 pb-3 pt-1 text-sm font-bold transition {{ $module === $moduleKey ? 'text-brand' : 'text-brand-muted hover:text-brand' }}" href="{{ route('dashboard', ['module' => $moduleKey, 'feed' => $feed]) }}#actividad" @if($module === $moduleKey) aria-current="page" @endif>
+                    <a class="relative shrink-0 px-0.5 pb-3 pt-1 text-sm font-bold transition {{ $module === $moduleKey ? 'text-brand' : 'text-brand-muted hover:text-brand' }}" href="{{ route('dashboard', ['module' => $moduleKey, 'feed' => $feed]) }}" @if($module === $moduleKey) aria-current="page" @endif>
                         {{ $moduleLabel }}
                         @if($module === $moduleKey)<span class="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-brand-orange"></span>@endif
                     </a>

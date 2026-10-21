@@ -7,7 +7,7 @@
     <div class="shrink-0 border-b border-brand/10 bg-brand-surface px-4 py-2 text-xs">
         <div class="flex flex-wrap gap-3 font-bold">
             @if($chat->post && !$chat->post->removed_at)<a class="text-brand-success underline" href="{{ route('chat.publication', $chat) }}">Ver publicación</a>@endif
-            @if($chat->order ?? $chat->agreementOrder)<a class="text-brand-success underline" href="{{ route('orders.show', $chat->order ?? $chat->agreementOrder) }}">Ver estado de la orden</a>@endif
+            @if($chat->order ?? $chat->agreementOrder)<a class="inline-flex min-h-9 items-center rounded-full border border-brand/10 bg-white px-3 text-brand-success" href="{{ route('orders.show', $chat->order ?? $chat->agreementOrder) }}">Ver seguimiento →</a>@endif
         </div>
         @if($chat->isNegotiation() && $chat->acceptsMessages())
             <div class="mt-2 flex flex-wrap items-center gap-2"><span>Disponible hasta {{ $chat->expires_at?->format('d/m/Y H:i') }}</span>

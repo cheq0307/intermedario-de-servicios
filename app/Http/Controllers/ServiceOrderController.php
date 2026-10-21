@@ -9,6 +9,7 @@ use App\Jobs\FinalizeMarketplacePayment;
 use App\Models\Conversation;
 use App\Models\Order;
 use App\Notifications\MarketplaceActivity;
+use App\ViewData\OrderTrackingData;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -39,8 +40,9 @@ class ServiceOrderController extends Controller
         $this->authorizeParticipant($request, $order);
 
         $conversation = Conversation::where('order_id', $order->id)->first();
+        $tracking = OrderTrackingData::from($order, $request->user()->id);
 
-        return view('orders.show', compact('order', 'conversation'));
+        return view('orders.show', compact('order', 'conversation', 'tracking'));
     }
 
     public function simulatePayment(Request $request, Order $order): RedirectResponse

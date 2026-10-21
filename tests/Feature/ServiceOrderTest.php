@@ -19,7 +19,14 @@ class ServiceOrderTest extends TestCase
     public function test_provider_and_client_follow_the_service_order_lifecycle(): void
     {
         [$client, $provider, $order, $jobRequest] = $this->scenario();
-        $this->actingAs($provider, 'web')->get(route('orders.show', $order))->assertOk();
+        $this->actingAs($provider, 'web')
+            ->get(route('orders.show', $order))
+            ->assertOk()
+            ->assertSee('Servicio en proceso')
+            ->assertSee('Solicitud enviada')
+            ->assertSee('Proveedor confirmado')
+            ->assertSee('Iniciar servicio')
+            ->assertSee('Ver conversación');
 
         $this->actingAs($provider, 'web')->patch(route('orders.start', $order))->assertRedirect();
         $this->assertSame('in_progress', $order->fresh()->status->value);
@@ -30,12 +37,32 @@ class ServiceOrderTest extends TestCase
         $this->actingAs($provider, 'web')->patch(route('orders.deliver', $order))->assertRedirect();
         $this->assertSame('delivered', $order->fresh()->status->value);
 
+        $this->actingAs($client, 'web')
+            ->get(route('orders.show', $order))
+            ->assertOk()
+            ->assertSee('Marcar como completado');
+
         $this->actingAs($provider, 'web')->patch(route('orders.complete', $order))->assertForbidden();
         $this->actingAs($client, 'web')->patch(route('orders.complete', $order))->assertRedirect();
         $this->assertSame('completed', $order->fresh()->status->value);
         $this->assertSame('completed', $jobRequest->fresh()->status->value);
         $this->assertDatabaseCount('payments', 0);
-        $this->actingAs($client, 'web')->get(route('orders.show', $order))->assertOk()->assertSee('Califica esta experiencia');
+        $this->actingAs($client, 'web')
+            ->get(route('orders.show', $order))
+            ->assertOk()
+            ->assertSee('¿Cómo fue tu experiencia?');
+    }
+
+    public function test_operation_chat_links_back_to_the_service_tracking_screen(): void
+    {
+        [$client, , $order] = $this->scenario();
+        $conversation = Conversation::query()->where('order_id', $order->id)->firstOrFail();
+
+        $this->actingAs($client, 'web')
+            ->get(route('conversations.show', $conversation))
+            ->assertOk()
+            ->assertSee('Ver seguimiento')
+            ->assertSee(route('orders.show', $order), false);
     }
 
     public function test_participant_can_cancel_only_before_work_starts_and_reason_is_recorded(): void
